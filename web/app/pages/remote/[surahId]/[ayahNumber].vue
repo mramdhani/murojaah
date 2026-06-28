@@ -675,7 +675,7 @@ useHead({
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Solusi agar ayat panjang tidak terpotong di atas dan bisa di-scroll */
   width: 100%;
   max-height: 100%;
   overflow-y: auto;
