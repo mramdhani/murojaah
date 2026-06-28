@@ -537,7 +537,7 @@ useHead({
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--safe-top) + 8px) 16px 8px;
-  background: linear-gradient(135deg, #064E3B 0%, #047857 100%);
+  background: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-dark) 100%);
   color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 10;

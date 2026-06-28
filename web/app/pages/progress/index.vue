@@ -64,6 +64,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="isDeleteModalOpen" class="modal-overlay animate-fade-in" @click="closeDeleteModal">
+      <div class="modal-dialog animate-scale-in" @click.stop>
+        <div class="modal-header">
+          <div class="modal-icon-warning">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <h3 class="modal-title">Hapus Progress</h3>
+        </div>
+        <div class="modal-body">
+          <p>Apakah Kakak yakin ingin menghapus <strong>seluruh progress murojaah</strong> dan <strong>riwayat</strong> untuk surat <strong>{{ surahToDelete?.name }}</strong>?</p>
+          <p class="modal-text-danger">Tindakan ini tidak dapat dibatalkan.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeDeleteModal">Batal</button>
+          <button class="btn btn-danger" @click="executeDelete" :disabled="isDeleting">
+            <span v-if="isDeleting">Menghapus...</span>
+            <span v-else>Ya, Hapus</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -102,21 +129,38 @@ const fetchSurahProgress = async () => {
   }
 }
 
-const confirmDelete = async (surahId: number, surahName: string) => {
+const isDeleteModalOpen = ref(false)
+const isDeleting = ref(false)
+const surahToDelete = ref<{id: number, name: string} | null>(null)
+
+const confirmDelete = (surahId: number, surahName: string) => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     navigator.vibrate(60)
   }
+  surahToDelete.value = { id: surahId, name: surahName }
+  isDeleteModalOpen.value = true
+}
 
-  if (confirm(`Hapus seluruh progress murojaah untuk surat "${surahName}"?`)) {
-    try {
-      await apiFetch(`/progress/surahs/${surahId}`, {
-        method: 'DELETE',
-      })
-      // Refresh list
-      await fetchSurahProgress()
-    } catch (e) {
-      console.error('Failed to delete progress:', e)
-    }
+const closeDeleteModal = () => {
+  isDeleteModalOpen.value = false
+  surahToDelete.value = null
+}
+
+const executeDelete = async () => {
+  if (!surahToDelete.value) return
+  
+  isDeleting.value = true
+  try {
+    await apiFetch(`/progress/surahs/${surahToDelete.value.id}`, {
+      method: 'DELETE',
+    })
+    // Refresh list
+    await fetchSurahProgress()
+    closeDeleteModal()
+  } catch (e) {
+    console.error('Failed to delete progress:', e)
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -137,6 +181,101 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
 .progress-card {
   padding: 16px;
   text-decoration: none;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-dialog {
+  background: var(--color-bg);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 24px 24px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.modal-icon-warning {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.modal-body {
+  padding: 16px 24px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.modal-text-danger {
+  color: #DC2626;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-top: 12px;
+}
+
+.modal-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.modal-footer .btn {
+  flex: 1;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--border-color);
+}
+
+.btn-danger {
+  background: #DC2626;
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #B91C1C;
+}
+
+.btn-danger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .progress-card__header {

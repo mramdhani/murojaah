@@ -8,6 +8,8 @@ use App\Models\MemorizationProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+use App\Models\Ayah;
+
 class SurahController extends Controller
 {
     /**
@@ -26,9 +28,17 @@ class SurahController extends Controller
             ->get()
             ->groupBy('surah_id');
 
-        $data = $surahs->map(function ($surah) use ($progressCounts) {
+        // Fetch Juz range for all surahs in a single query
+        $juzRanges = Ayah::selectRaw('surah_id, MIN(juz) as juz_start, MAX(juz) as juz_end')
+            ->groupBy('surah_id')
+            ->get()
+            ->keyBy('surah_id');
+
+        $data = $surahs->map(function ($surah) use ($progressCounts, $juzRanges) {
             $progress = $progressCounts->get($surah->id, collect());
             $statusCounts = $progress->pluck('count', 'status')->toArray();
+            
+            $juz = $juzRanges->get($surah->id);
 
             return [
                 'id' => $surah->id,
@@ -38,6 +48,8 @@ class SurahController extends Controller
                 'name_translation' => $surah->name_translation,
                 'total_ayah' => $surah->total_ayah,
                 'revelation_place' => $surah->revelation_place,
+                'juz_start' => $juz ? (int) $juz->juz_start : null,
+                'juz_end' => $juz ? (int) $juz->juz_end : null,
                 'progress' => [
                     'fluent' => $statusCounts['fluent'] ?? 0,
                     'doubtful' => $statusCounts['doubtful'] ?? 0,

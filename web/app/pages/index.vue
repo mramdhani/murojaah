@@ -270,7 +270,7 @@ useHead({
 /* ========== HEADER ========== */
 .home-header {
   padding: calc(var(--safe-top) + 20px) 20px 28px;
-  background: linear-gradient(145deg, #064E3B 0%, #047857 60%, #059669 100%);
+  background: linear-gradient(145deg, var(--color-primary-900) 0%, var(--color-primary-dark) 60%, var(--color-primary) 100%);
   color: white;
   position: relative;
   overflow: hidden;

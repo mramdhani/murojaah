@@ -439,3 +439,147 @@ button {
     max-width: 540px;
   }
 }
+
+/* ========== Theme-specific decorative elements (emojis) ========== */
+.home-header, .page-header {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Base style for decorations */
+.page-header::before {
+  position: absolute;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  pointer-events: none;
+  z-index: 0;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
+  
+  /* Centered vertically on the right side to prevent clipping */
+  top: calc(50% - 24px); 
+  right: 24px;
+  font-size: 48px;
+  opacity: 0.14;
+  animation: float-slow 12s ease-in-out infinite;
+}
+
+/* Remove second emoji on page-header to keep it clean */
+.page-header::after {
+  display: none;
+}
+
+/* Home Header decorations (positioned inside relative container) */
+.home-header__top::before,
+.home-header__top::after {
+  position: absolute;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  pointer-events: none;
+  z-index: 0;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
+}
+
+/* Floating emoji next to avatar */
+.home-header__top::before {
+  top: 10px;
+  right: 76px;
+  font-size: 44px;
+  opacity: 0.12;
+  animation: float-slow 10s ease-in-out infinite;
+}
+
+/* Floating emoji at the bottom right of the header */
+.home-header__top::after {
+  top: 64px;
+  right: 20px;
+  font-size: 48px;
+  opacity: 0.14;
+  animation: float-slow-reverse 14s ease-in-out infinite;
+}
+
+/* Floating Animations */
+@keyframes float-slow {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) rotate(4deg) scale(1.02);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes float-slow-reverse {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(6px) rotate(-4deg) scale(0.98);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+}
+
+/* --- Theme Mapping --- */
+
+/* Emerald (Default) */
+[data-theme="emerald"] .page-header::before,
+[data-theme="emerald"] .home-header__top::before {
+  content: '🌿';
+}
+[data-theme="emerald"] .page-header::after,
+[data-theme="emerald"] .home-header__top::after {
+  content: '✨';
+}
+
+/* Pink */
+[data-theme="pink"] .page-header::before,
+[data-theme="pink"] .home-header__top::before {
+  content: '🌸';
+}
+[data-theme="pink"] .page-header::after,
+[data-theme="pink"] .home-header__top::after {
+  content: '✨';
+}
+
+/* Lavender */
+[data-theme="lavender"] .page-header::before,
+[data-theme="lavender"] .home-header__top::before {
+  content: '💜';
+}
+[data-theme="lavender"] .page-header::after,
+[data-theme="lavender"] .home-header__top::after {
+  content: '✨';
+}
+
+/* Ocean */
+[data-theme="ocean"] .page-header::before,
+[data-theme="ocean"] .home-header__top::before {
+  content: '🌊';
+}
+[data-theme="ocean"] .page-header::after,
+[data-theme="ocean"] .home-header__top::after {
+  content: '🐚';
+}
+
+/* Sunset */
+[data-theme="sunset"] .page-header::before,
+[data-theme="sunset"] .home-header__top::before {
+  content: '🌅';
+}
+[data-theme="sunset"] .page-header::after,
+[data-theme="sunset"] .home-header__top::after {
+  content: '☀️';
+}
+
+/* Forest */
+[data-theme="forest"] .page-header::before,
+[data-theme="forest"] .home-header__top::before {
+  content: '🌲';
+}
+[data-theme="forest"] .page-header::after,
+[data-theme="forest"] .home-header__top::after {
+  content: '🍃';
+}

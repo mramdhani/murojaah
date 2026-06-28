@@ -1,0 +1,177 @@
+import { ref, watch, computed } from 'vue'
+
+export type ThemeId = 'emerald' | 'pink' | 'lavender' | 'ocean' | 'sunset' | 'forest'
+
+export interface Theme {
+  id: ThemeId
+  name: string
+  emoji: string
+  colors: {
+    primary: string
+    primaryLight: string
+    primaryDark: string
+    primary50: string
+    primary100: string
+    primary900: string
+  }
+}
+
+export const themes: Record<ThemeId, Theme> = {
+  emerald: {
+    id: 'emerald',
+    name: 'Hijau Emerald',
+    emoji: '🌿',
+    colors: {
+      primary: '#059669',
+      primaryLight: '#10B981',
+      primaryDark: '#047857',
+      primary50: '#ECFDF5',
+      primary100: '#D1FAE5',
+      primary900: '#064E3B',
+    }
+  },
+  pink: {
+    id: 'pink',
+    name: 'Pink Manis',
+    emoji: '🌸',
+    colors: {
+      primary: '#D01C66',
+      primaryLight: '#EC4899',
+      primaryDark: '#9D174D',
+      primary50: '#FDF2F8',
+      primary100: '#FCE7F3',
+      primary900: '#500724',
+    }
+  },
+  lavender: {
+    id: 'lavender',
+    name: 'Lavender',
+    emoji: '💜',
+    colors: {
+      primary: '#7C3AED',
+      primaryLight: '#8B5CF6',
+      primaryDark: '#5B21B6',
+      primary50: '#F5F3FF',
+      primary100: '#EDE9FE',
+      primary900: '#2E1065',
+    }
+  },
+  ocean: {
+    id: 'ocean',
+    name: 'Biru Laut',
+    emoji: '🌊',
+    colors: {
+      primary: '#0284C7',
+      primaryLight: '#38BDF8',
+      primaryDark: '#0369A1',
+      primary50: '#F0F9FF',
+      primary100: '#E0F2FE',
+      primary900: '#0C4A6E',
+    }
+  },
+  sunset: {
+    id: 'sunset',
+    name: 'Senja Jingga',
+    emoji: '🌅',
+    colors: {
+      primary: '#EA580C',
+      primaryLight: '#F97316',
+      primaryDark: '#C2410C',
+      primary50: '#FFF7ED',
+      primary100: '#FFEDD5',
+      primary900: '#431407',
+    }
+  },
+  forest: {
+    id: 'forest',
+    name: 'Hutan Teduh',
+    emoji: '🌲',
+    colors: {
+      primary: '#065F46',
+      primaryLight: '#047857',
+      primaryDark: '#064E3B',
+      primary50: '#ECFDF5',
+      primary100: '#D1FAE5',
+      primary900: '#022C22',
+    }
+  }
+}
+
+const STORAGE_KEY = 'murojaah_theme_id'
+
+export const useTheme = () => {
+  const currentThemeId = useState<ThemeId>('app_theme_id', () => 'emerald')
+  const { isLoggedIn } = useAuth()
+
+  const currentTheme = computed<Theme>(() => themes[currentThemeId.value] || themes.emerald)
+
+  const applyTheme = (themeId: ThemeId) => {
+    if (!import.meta.client) return
+    const theme = themes[themeId] || themes.emerald
+    const root = document.documentElement
+    
+    root.style.setProperty('--color-primary', theme.colors.primary)
+    root.style.setProperty('--color-primary-light', theme.colors.primaryLight)
+    root.style.setProperty('--color-primary-dark', theme.colors.primaryDark)
+    root.style.setProperty('--color-primary-50', theme.colors.primary50)
+    root.style.setProperty('--color-primary-100', theme.colors.primary100)
+    root.style.setProperty('--color-primary-900', theme.colors.primary900)
+    root.style.setProperty('--shadow-glow', `0 0 20px ${theme.colors.primary}26`)
+    
+    root.setAttribute('data-theme', theme.id)
+  }
+
+  const setTheme = (themeId: ThemeId) => {
+    if (!isLoggedIn.value) return false // Prevent theme switching if not logged in
+    
+    currentThemeId.value = themeId
+    applyTheme(themeId)
+    if (import.meta.client) {
+      localStorage.setItem(STORAGE_KEY, themeId)
+    }
+    return true
+  }
+
+  const initTheme = () => {
+    if (!import.meta.client) return
+    
+    // Check localStorage first
+    const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null
+    if (saved && themes[saved]) {
+      // Only apply if user is logged in
+      if (isLoggedIn.value) {
+        currentThemeId.value = saved
+        applyTheme(saved)
+      } else {
+        // Force default emerald for guests
+        currentThemeId.value = 'emerald'
+        applyTheme('emerald')
+      }
+    } else {
+      applyTheme('emerald')
+    }
+  }
+
+  // Watch login state: if user logs out, reset theme to emerald
+  watch(isLoggedIn, (newVal) => {
+    if (!newVal) {
+      currentThemeId.value = 'emerald'
+      applyTheme('emerald')
+    } else {
+      // Re-init theme if they log in
+      const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null
+      if (saved && themes[saved]) {
+        currentThemeId.value = saved
+        applyTheme(saved)
+      }
+    }
+  })
+
+  return {
+    currentThemeId,
+    currentTheme,
+    setTheme,
+    initTheme,
+    themesList: Object.values(themes)
+  }
+}

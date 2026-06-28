@@ -51,6 +51,7 @@ const showToast = (message: string, type: ToastItem['type'] = 'info') => {
 provide('showToast', showToast)
 
 const { initSession, loading: authLoading, user } = useAuth()
+const { initTheme } = useTheme()
 
 // Safety: never show splash longer than 5 seconds
 // in case backend is unreachable on VPS
@@ -59,6 +60,7 @@ const showSplash = computed(() => authLoading.value && !user.value && !splashTim
 
 onMounted(() => {
   initSession()
+  initTheme()
   // Force-hide splash after 5s even if backend is down
   setTimeout(() => { splashTimedOut.value = true }, 5000)
 })

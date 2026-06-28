@@ -72,6 +72,33 @@
         </template>
       </div>
 
+      <!-- Theme Selection Section -->
+      <div class="theme-section card animate-fade-in" style="animation-delay: 0.1s">
+        <h3>Tema Aplikasi</h3>
+        <p class="theme-section__subtitle">Ganti warna utama aplikasi (Khusus pengguna terdaftar)</p>
+        
+        <div class="theme-grid">
+          <button 
+            v-for="t in themesList" 
+            :key="t.id"
+            class="theme-card"
+            :class="{ 'theme-card--active': currentThemeId === t.id, 'theme-card--locked': user?.is_guest }"
+            @click="handleThemeChange(t.id)"
+          >
+            <div class="theme-preview" :style="{ background: `linear-gradient(135deg, ${t.colors.primary900} 0%, ${t.colors.primaryDark} 60%, ${t.colors.primary} 100%)` }">
+              <span class="theme-emoji">{{ t.emoji }}</span>
+              <div v-if="user?.is_guest" class="theme-lock-badge">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+            </div>
+            <span class="theme-name">{{ t.name }}</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Stats Section -->
       <div class="stats-section animate-fade-in" style="animation-delay: 0.15s">
         <h3>Statistik Hafalan Kakak</h3>
@@ -119,9 +146,25 @@
 <script setup lang="ts">
 const { user, loginWithGoogle, logout, loading: authLoading } = useAuth()
 const { apiFetch } = useApi()
+const { currentThemeId, setTheme, themesList } = useTheme()
+
+const showToast = inject<(message: string, type?: string) => void>('showToast')
 
 const stats = ref<any>(null)
 const statsLoading = ref(false)
+
+const handleThemeChange = (themeId: any) => {
+  if (user.value?.is_guest) {
+    if (showToast) {
+      showToast('Hubungkan ke Google untuk membuka fitur ganti tema!', 'info')
+    }
+    return
+  }
+  setTheme(themeId)
+  if (showToast) {
+    showToast('Tema berhasil diubah!', 'fluent')
+  }
+}
 
 const triggerHaptic = () => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -367,5 +410,90 @@ useHead({
   font-weight: 500 !important;
   font-size: 0.6875rem !important;
   margin-top: 2px;
+}
+
+/* Theme Selection Styles */
+.theme-section {
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.theme-section h3 {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.theme-section__subtitle {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.theme-preview {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  border: 2px solid transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-card--active .theme-preview {
+  border-color: var(--color-text);
+  transform: scale(1.05);
+}
+
+.theme-card--locked {
+  opacity: 0.65;
+}
+
+.theme-emoji {
+  font-size: 1.25rem;
+}
+
+.theme-lock-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #374151;
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--color-bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.theme-card--active .theme-name {
+  color: var(--color-text);
+  font-weight: 700;
 }
 </style>

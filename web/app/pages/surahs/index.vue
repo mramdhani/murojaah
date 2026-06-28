@@ -8,19 +8,28 @@
     </header>
 
     <div class="page-content container">
-      <!-- Search -->
-      <div class="search-wrapper">
-        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Cari surat..."
-          v-model="searchQuery"
-          id="search-surah"
-        />
+      <!-- Search & Filter Controls -->
+      <div class="controls-row">
+        <div class="search-wrapper">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Cari surat..."
+            v-model="searchQuery"
+            id="search-surah"
+          />
+        </div>
+
+        <div class="filter-wrapper">
+          <select v-model="selectedJuz" class="filter-select">
+            <option value="">Semua Juz</option>
+            <option v-for="juz in 30" :key="juz" :value="juz">Juz {{ juz }}</option>
+          </select>
+        </div>
       </div>
 
       <!-- Surah List -->
@@ -41,7 +50,11 @@
               <span class="surah-card__arabic">{{ surah.name_arabic }}</span>
             </div>
             <div class="surah-card__meta">
-              {{ surah.total_ayah }} ayat · {{ surah.revelation_place === 'meccan' ? 'Makkiyah' : 'Madaniyah' }}
+              <span class="juz-label" v-if="surah.juz_start">
+                Juz {{ surah.juz_start === surah.juz_end ? surah.juz_start : `${surah.juz_start}-${surah.juz_end}` }}
+              </span>
+              <span v-if="surah.juz_start"> · </span>
+              {{ surah.name_translation }} · {{ surah.total_ayah }} ayat · {{ surah.revelation_place === 'meccan' ? 'Makkiyah' : 'Madaniyah' }}
             </div>
             <!-- Mini progress bar -->
             <div class="progress-bar" v-if="surah.progress.fluent + surah.progress.doubtful + surah.progress.forgot > 0">
@@ -83,6 +96,8 @@ interface SurahItem {
   name_translation: string
   total_ayah: number
   revelation_place: string
+  juz_start: number | null
+  juz_end: number | null
   progress: {
     fluent: number
     doubtful: number
@@ -93,16 +108,35 @@ interface SurahItem {
 
 const surahs = ref<SurahItem[]>([])
 const searchQuery = ref('')
+const selectedJuz = ref<number | string>('')
 const loading = ref(true)
 
 const filteredSurahs = computed(() => {
-  if (!searchQuery.value) return surahs.value
-  const q = searchQuery.value.toLowerCase()
-  return surahs.value.filter(s =>
-    s.name_latin.toLowerCase().includes(q) ||
-    s.name_arabic.includes(q) ||
-    s.number.toString() === q
-  )
+  let result = surahs.value
+
+  // 1. Filter by Juz
+  if (selectedJuz.value !== '') {
+    const juzNum = Number(selectedJuz.value)
+    result = result.filter(s => 
+      s.juz_start !== null && 
+      s.juz_end !== null && 
+      juzNum >= s.juz_start && 
+      juzNum <= s.juz_end
+    )
+  }
+
+  // 2. Filter by search query
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    result = result.filter(s =>
+      s.name_latin.toLowerCase().includes(q) ||
+      s.name_translation.toLowerCase().includes(q) ||
+      s.name_arabic.includes(q) ||
+      s.number.toString() === q
+    )
+  }
+
+  return result
 })
 
 const progressPercent = (surah: SurahItem, status: string) => {
@@ -126,9 +160,51 @@ useHead({ title: 'Pilih Surat — Murojaah' })
 </script>
 
 <style scoped>
+.controls-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
 .search-wrapper {
   position: relative;
-  margin-bottom: 16px;
+  flex: 1;
+}
+
+.filter-wrapper {
+  flex-shrink: 0;
+  width: 130px;
+}
+
+.filter-select {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--color-bg);
+  padding: 0 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+.filter-select:focus {
+  border-color: var(--color-primary);
+}
+
+.juz-label {
+  font-weight: 700;
+  color: var(--color-primary);
 }
 
 .search-icon {
