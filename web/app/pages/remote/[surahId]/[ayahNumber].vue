@@ -261,10 +261,15 @@ const filteredPickerSurahs = computed(() => {
 let touchStartX = 0
 let touchStartY = 0
 const onTouchStart = (e: TouchEvent) => {
+  // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
+  if (showSurahPicker.value || showAyahPicker.value) return
   touchStartX = e.touches[0].clientX
   touchStartY = e.touches[0].clientY
 }
 const onTouchEnd = (e: TouchEvent) => {
+  // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
+  if (showSurahPicker.value || showAyahPicker.value) return
+
   const diffX = e.changedTouches[0].clientX - touchStartX
   const diffY = e.changedTouches[0].clientY - touchStartY
 
