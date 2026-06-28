@@ -43,25 +43,8 @@
         <div v-else class="remote-revealed" key="revealed">
           <div class="remote-ayah-card">
 
-            <p class="text-arabic text-arabic-xl remote-ayah-text" v-if="currentAyah">
-              <span v-html="formatArabicText(currentAyah.text_arabic)"></span>
-              <span class="ayah-ornament">
-                <svg viewBox="0 0 100 100" class="ayah-ornament__svg">
-                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)" />
-                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" />
-                  <circle cx="50" cy="50" r="23" fill="#FAF8F2" stroke="currentColor" stroke-width="2.5" />
-                  <circle cx="50" cy="50" r="19" fill="none" stroke="var(--color-primary-dark)" stroke-width="1.5" stroke-dasharray="3,2.5" />
-                  <circle cx="50" cy="11" r="3.5" fill="var(--color-primary-dark)" />
-                  <circle cx="50" cy="89" r="3.5" fill="var(--color-primary-dark)" />
-                  <circle cx="11" cy="50" r="3.5" fill="var(--color-primary-dark)" />
-                  <circle cx="89" cy="50" r="3.5" fill="var(--color-primary-dark)" />
-                  <circle cx="22.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)" />
-                  <circle cx="77.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)" />
-                  <circle cx="22.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)" />
-                  <circle cx="77.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)" />
-                </svg>
-                <span class="ayah-ornament__num">{{ currentAyahNumber }}</span>
-              </span>
+            <p :class="['text-arabic', dynamicFontSizeClass, 'remote-ayah-text']" v-if="currentAyah"
+               v-html="formatArabicWithOrnament(currentAyah.text_arabic, currentAyahNumber)">
             </p>
           </div>
           
@@ -239,6 +222,16 @@ const pickerSearch = ref('')
 const surahName = computed(() => currentAyah.value?.surah_name || '...')
 const surahNumber = computed(() => currentAyah.value?.surah_number || surahId.value)
 const totalAyah = computed(() => currentAyah.value?.total_ayah || 0)
+
+// Dynamic font size depending on length of Arabic text to prevent wrapping issues
+const dynamicFontSizeClass = computed(() => {
+  if (!currentAyah.value) return 'text-arabic-xl'
+  const text = currentAyah.value.text_arabic || ''
+  const len = text.length
+  if (len > 120) return 'text-arabic-md'
+  if (len > 60) return 'text-arabic-lg'
+  return 'text-arabic-xl'
+})
 
 // Helper for haptic vibration
 const triggerHaptic = (ms = 40) => {
@@ -493,7 +486,16 @@ const formatArabicText = (text: string) => {
   return cleanText
 }
 
-// Watch for route changes to load the correct ayah dynamically
+// Combines Arabic text + end-of-ayah ornament into a single HTML string
+// so they share one bidi text run — preventing the ornament from wrapping
+// to its own line due to the browser's RTL/LTR bidi boundary algorithm.
+const ORNAMENT_SVG = `<svg viewBox="0 0 100 100" class="ayah-ornament__svg"><rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/><rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="50" cy="50" r="23" fill="#FAF8F2" stroke="currentColor" stroke-width="2.5"/><circle cx="50" cy="50" r="19" fill="none" stroke="var(--color-primary-dark)" stroke-width="1.5" stroke-dasharray="3,2.5"/><circle cx="50" cy="11" r="3.5" fill="var(--color-primary-dark)"/><circle cx="50" cy="89" r="3.5" fill="var(--color-primary-dark)"/><circle cx="11" cy="50" r="3.5" fill="var(--color-primary-dark)"/><circle cx="89" cy="50" r="3.5" fill="var(--color-primary-dark)"/><circle cx="22.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)"/><circle cx="77.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)"/><circle cx="22.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)"/><circle cx="77.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)"/></svg>`
+
+const formatArabicWithOrnament = (text: string, ayahNum: number) => {
+  const arabicHtml = formatArabicText(text)
+  const ornament = `<span class="ayah-ornament">${ORNAMENT_SVG}<span class="ayah-ornament__num">${ayahNum}</span></span>`
+  return arabicHtml + ornament
+}
 watch(() => [route.params.surahId, route.params.ayahNumber], async ([newSurahId, newAyahNum]) => {
   if (newSurahId && newAyahNum) {
     currentAyahNumber.value = Number(newAyahNum)
@@ -664,7 +666,7 @@ useHead({
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 20px;
+  padding: 12px 10px;
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
@@ -719,7 +721,7 @@ useHead({
   background: #FAF8F2;
   border: 2px solid #E6DFCE;
   border-radius: var(--radius-lg);
-  padding: 24px 20px;
+  padding: 20px 12px;
   margin-bottom: 16px;
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
   text-align: center;
@@ -746,15 +748,24 @@ useHead({
 .remote-ayah-text {
   color: var(--color-text);
   padding: 0 4px;
-  font-size: clamp(2rem, 7vw, 3.5rem);
-  line-height: 2.2;
+  line-height: 1.7;
+  text-align: right;
+  width: 100%;
 }
 
-.ayah-ornament {
+.text-arabic-md {
+  font-size: clamp(1.6rem, 5vw, 2.6rem) !important;
+}
+.text-arabic-lg {
+  font-size: clamp(1.9rem, 6vw, 3.0rem) !important;
+}
+.text-arabic-xl {
+  font-size: clamp(2.3rem, 7.5vw, 3.8rem) !important;
+}
+
+:deep(.ayah-ornament) {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   width: 44px;
   height: 44px;
   margin: 0 10px;
@@ -763,7 +774,7 @@ useHead({
   vertical-align: middle;
 }
 
-.ayah-ornament__svg {
+:deep(.ayah-ornament__svg) {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -772,12 +783,13 @@ useHead({
   transition: transform var(--transition-normal);
 }
 
-.ayah-ornament:hover .ayah-ornament__svg {
+:deep(.ayah-ornament:hover .ayah-ornament__svg) {
   transform: rotate(45deg);
 }
 
-.ayah-ornament__num {
-  position: relative;
+:deep(.ayah-ornament__num) {
+  position: absolute;
+  inset: 0;
   z-index: 10;
   font-size: 0.8125rem;
   font-weight: 900;
@@ -1181,6 +1193,24 @@ useHead({
     border-left: 1px solid rgba(0, 0, 0, 0.08);
     border-right: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: var(--shadow-lg);
+  }
+  .remote-content {
+    padding: 16px 20px;
+  }
+  .remote-ayah-card {
+    padding: 24px 20px;
+  }
+  .remote-ayah-text {
+    /* Font sizes will be handled by the dynamic classes */
+  }
+  .text-arabic-md {
+    font-size: clamp(1.5rem, 5vw, 2.5rem) !important;
+  }
+  .text-arabic-lg {
+    font-size: clamp(1.8rem, 6vw, 3rem) !important;
+  }
+  .text-arabic-xl {
+    font-size: clamp(2rem, 7vw, 3.5rem) !important;
   }
 }
 

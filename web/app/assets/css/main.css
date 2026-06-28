@@ -126,7 +126,7 @@ button {
   font-family: var(--font-arabic);
   direction: rtl;
   text-align: right;
-  line-height: 2.2;
+  line-height: 1.7;
   letter-spacing: normal !important;
   font-feature-settings: "liga" on, "clig" on !important;
   font-variant-ligatures: common-ligatures !important;
