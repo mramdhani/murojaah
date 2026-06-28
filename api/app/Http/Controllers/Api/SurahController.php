@@ -6,15 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Surah;
 use App\Models\MemorizationProgress;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SurahController extends Controller
 {
     /**
      * GET /api/surahs — List all surahs with progress summary
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $userId = 1; // Default user for MVP
+        $userId = $request->user()->id;
 
         $surahs = Surah::orderBy('number')->get();
 

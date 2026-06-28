@@ -6,15 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Ayah;
 use App\Models\MemorizationProgress;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AyahController extends Controller
 {
     /**
      * GET /api/surahs/{surahId}/ayahs — Get all ayahs for a surah
      */
-    public function index(int $surahId): JsonResponse
+    public function index(Request $request, int $surahId): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         $ayahs = Ayah::where('surah_id', $surahId)
             ->orderBy('ayah_number')
@@ -45,9 +46,9 @@ class AyahController extends Controller
     /**
      * GET /api/surahs/{surahId}/ayahs/{ayahNumber} — Get single ayah
      */
-    public function show(int $surahId, int $ayahNumber): JsonResponse
+    public function show(Request $request, int $surahId, int $ayahNumber): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         $ayah = Ayah::where('surah_id', $surahId)
             ->where('ayah_number', $ayahNumber)

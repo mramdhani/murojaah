@@ -7,15 +7,16 @@ use App\Models\Ayah;
 use App\Models\MemorizationProgress;
 use App\Models\Surah;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProgressController extends Controller
 {
     /**
      * GET /api/progress/surahs/{surahId} — Get progress detail for a surah
      */
-    public function show(int $surahId): JsonResponse
+    public function show(Request $request, int $surahId): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         $surah = Surah::findOrFail($surahId);
 
@@ -63,9 +64,9 @@ class ProgressController extends Controller
     /**
      * DELETE /api/progress/surahs/{surahId} — Reset/delete progress and logs for a surah
      */
-    public function destroy(int $surahId): JsonResponse
+    public function destroy(Request $request, int $surahId): JsonResponse
     {
-        $userId = 1; // Default user ID for MVP
+        $userId = $request->user()->id; // Default user ID for MVP
 
         // Delete memorization progress for all ayahs in this surah
         MemorizationProgress::where('user_id', $userId)

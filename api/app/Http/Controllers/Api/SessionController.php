@@ -14,7 +14,7 @@ class SessionController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         $validated = $request->validate([
             'surah_id' => 'required|integer|exists:surahs,id',
@@ -47,7 +47,7 @@ class SessionController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         $session = MemorizationSession::where('user_id', $userId)->findOrFail($id);
 

@@ -1,7 +1,18 @@
 <template>
   <div id="app">
-    <NuxtPage />
-    <BottomNav />
+    <!-- Splash Screen during authentication initialization -->
+    <div v-if="authLoading && !user" class="app-loading">
+      <div class="spinner-container">
+        <div class="spinner"></div>
+        <p>Mempersiapkan Murojaah...</p>
+      </div>
+    </div>
+
+    <template v-else>
+      <NuxtPage />
+      <BottomNav />
+    </template>
+
     <Teleport to="body">
       <TransitionGroup name="toast">
         <div
@@ -18,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { provide, ref } from 'vue'
+import { provide, ref, onMounted } from 'vue'
 
 export interface ToastItem {
   id: number
@@ -38,10 +49,54 @@ const showToast = (message: string, type: ToastItem['type'] = 'info') => {
 }
 
 provide('showToast', showToast)
+
+const { initSession, loading: authLoading, user } = useAuth()
+
+onMounted(() => {
+  initSession()
+})
 </script>
 
 <style scoped>
 #app {
   min-height: 100dvh;
+}
+
+.app-loading {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  z-index: 9999;
+}
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(5, 150, 105, 0.1);
+  border-left-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+p {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

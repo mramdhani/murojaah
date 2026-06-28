@@ -42,11 +42,7 @@
         <!-- Revealed State -->
         <div v-else class="remote-revealed" key="revealed">
           <div class="remote-ayah-card">
-            <!-- Prominent Ayah Number Badge -->
-            <div class="remote-ayah-number-badge animate-scale-in">
-              Ayat {{ currentAyahNumber }}
-            </div>
-            
+
             <p class="text-arabic text-arabic-xl remote-ayah-text" v-if="currentAyah">
               <span v-html="formatArabicText(currentAyah.text_arabic)"></span>
               <span class="ayah-ornament">
@@ -453,6 +449,22 @@ const formatArabicText = (text: string) => {
   // Clean BOM character if any
   let cleanText = text.replace(/^\uFEFF/, '')
 
+  // Strip all known Quranic annotation/waqf marks that render as black dots/blocks
+  // in browsers with Uthmanic Hafs font. Covers Arabic Supplement + Extended-A:
+  //   U+0610–U+061A — Arabic Annotation Signs
+  //   U+06D6–U+06ED — Small High/Low signs (waqf, saktah, mushaf marks)
+  //   U+08A0–U+08FF — Arabic Extended-A small high marks for Quran
+  cleanText = cleanText.replace(/[\u0610-\u061A\u06D6-\u06ED\u08A0-\u08FF]/g, '')
+
+  // DEBUG: log remaining non-standard chars to console for identification
+  const remainingChars = [...cleanText].filter(c => {
+    const code = c.charCodeAt(0)
+    return code < 0x0621 || (code > 0x0652 && code < 0x0660) || (code > 0x0669 && code !== 0x0670 && code !== 0x0671 && code < 0xFEFB) || code > 0xFEFF
+  })
+  if (remainingChars.length > 0) {
+    console.log('⚠️ Non-standard Arabic chars found:', [...new Set(remainingChars)].map(c => c + ' U+' + c.charCodeAt(0).toString(16).toUpperCase()).join(', '))
+  }
+
   // Regex to match: [rule[text] or [rule:meta[text]
   const regex = /\[([a-z0-9:]+)\[([^\]]+)\]/g
 
@@ -466,13 +478,15 @@ const formatArabicText = (text: string) => {
   )
 
   if (isWebKit) {
-    return cleanText.replace(regex, '$2')
+    cleanText = cleanText.replace(regex, '$2')
+  } else {
+    cleanText = cleanText.replace(regex, (match, ruleInfo, char) => {
+      const rule = ruleInfo.split(':')[0]
+      return `<span class="tajweed-${rule}">${char}</span>`
+    })
   }
 
-  return cleanText.replace(regex, (match, ruleInfo, char) => {
-    const rule = ruleInfo.split(':')[0]
-    return `<span class="tajweed-${rule}">${char}</span>`
-  })
+  return cleanText
 }
 
 // Watch for route changes to load the correct ayah dynamically

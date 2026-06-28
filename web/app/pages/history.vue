@@ -14,7 +14,7 @@
           <h2 class="history-date">{{ formatDate(group.date) }}</h2>
 
           <div class="history-list">
-            <div v-for="log in group.items" :key="log.id" class="history-item card">
+            <div v-for="log in group.items" :key="log.id" class="history-item card" @click="goToAyah(log.surah_id, log.ayah_number)">
               <div class="history-item__left">
                 <span class="history-item__surah">{{ log.surah_name }}</span>
                 <span class="history-item__ayah">Ayat {{ log.ayah_number }}</span>
@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+const router = useRouter()
 const { apiFetch } = useApi()
 
 interface ReviewLogItem {
@@ -87,7 +88,7 @@ const statusLabel = (status: string) => {
     doubtful: 'Ragu',
     forgot: 'Lupa',
   }
-  return labels[status] || status
+  return labels[status as keyof typeof labels] || status
 }
 
 const formatDate = (dateStr: string) => {
@@ -107,6 +108,10 @@ const formatDate = (dateStr: string) => {
   })
 }
 
+const goToAyah = (surahId: number, ayahNumber: number) => {
+  router.push(`/surahs/${surahId}?ayah=${ayahNumber}`)
+}
+
 const formatTime = (dateTimeStr: string) => {
   const parts = dateTimeStr.split(' ')
   if (parts.length < 2) return ''
@@ -116,7 +121,7 @@ const formatTime = (dateTimeStr: string) => {
 onMounted(async () => {
   try {
     const res = await apiFetch<{ data: ReviewLogItem[] }>('/review-logs')
-    logs.value = res.data
+    logs.value = res.data ?? []
   } catch (e) {
     console.error('Failed to load history:', e)
   } finally {
@@ -152,6 +157,12 @@ useHead({ title: 'Riwayat Murajaah — Murojaah' })
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.history-item:active {
+  opacity: 0.7;
 }
 
 .history-item__surah {

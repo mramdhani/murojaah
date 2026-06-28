@@ -7,15 +7,16 @@ use App\Models\MemorizationProgress;
 use App\Models\MemorizationSession;
 use App\Models\ReviewLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     /**
      * GET /api/dashboard — Get dashboard summary for home page
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         // Overall progress counts
         $progressCounts = MemorizationProgress::where('user_id', $userId)

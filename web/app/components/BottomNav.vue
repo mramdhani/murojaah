@@ -32,6 +32,14 @@
       </svg>
       <span>Riwayat</span>
     </NuxtLink>
+
+    <NuxtLink to="/profile" class="bottom-nav__item" :class="{ active: route.path === '/profile' }">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v-2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>Profil</span>
+    </NuxtLink>
   </nav>
 </template>
 

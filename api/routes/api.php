@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AyahController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ProgressController;
@@ -15,27 +16,38 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Dashboard
-Route::get('/dashboard', [DashboardController::class, 'index']);
+// Auth (Public)
+Route::post('/auth/guest', [AuthController::class, 'guest']);
+Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
-// Surahs
-Route::get('/surahs', [SurahController::class, 'index']);
-Route::get('/surahs/{id}', [SurahController::class, 'show']);
+// Authenticated Routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Current User profile
+    Route::get('/auth/me', [AuthController::class, 'me']);
 
-// Ayahs
-Route::get('/surahs/{surahId}/ayahs', [AyahController::class, 'index']);
-Route::get('/surahs/{surahId}/ayahs/{ayahNumber}', [AyahController::class, 'show']);
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
-// Reviews
-Route::post('/reviews', [ReviewController::class, 'store']);
+    // Surahs
+    Route::get('/surahs', [SurahController::class, 'index']);
+    Route::get('/surahs/{id}', [SurahController::class, 'show']);
 
-// Progress
-Route::get('/progress/surahs/{surahId}', [ProgressController::class, 'show']);
-Route::delete('/progress/surahs/{surahId}', [ProgressController::class, 'destroy']);
+    // Ayahs
+    Route::get('/surahs/{surahId}/ayahs', [AyahController::class, 'index']);
+    Route::get('/surahs/{surahId}/ayahs/{ayahNumber}', [AyahController::class, 'show']);
 
-// Review Logs
-Route::get('/review-logs', [ReviewLogController::class, 'index']);
+    // Reviews
+    Route::post('/reviews', [ReviewController::class, 'store']);
 
-// Sessions
-Route::post('/sessions', [SessionController::class, 'store']);
-Route::patch('/sessions/{id}', [SessionController::class, 'update']);
+    // Progress
+    Route::get('/progress/surahs/{surahId}', [ProgressController::class, 'show']);
+    Route::delete('/progress/surahs/{surahId}', [ProgressController::class, 'destroy']);
+
+    // Review Logs
+    Route::get('/review-logs', [ReviewLogController::class, 'index']);
+
+    // Sessions
+    Route::post('/sessions', [SessionController::class, 'store']);
+    Route::patch('/sessions/{id}', [SessionController::class, 'update']);
+});

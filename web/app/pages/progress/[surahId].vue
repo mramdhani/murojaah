@@ -1,10 +1,16 @@
 <template>
   <div class="page">
     <header class="page-header">
-      <div class="container">
-        <NuxtLink to="/progress" class="back-link">← Kembali</NuxtLink>
-        <h1 v-if="data">{{ data.surah_name }}</h1>
-        <p v-if="data">{{ data.surah_name_arabic }} · {{ data.total_ayah }} ayat</p>
+      <div class="container page-header__content">
+        <NuxtLink to="/progress" class="page-header__back" aria-label="Kembali">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </NuxtLink>
+        <div class="page-header__info" v-if="data">
+          <h1>{{ data.surah_name }}</h1>
+          <p>{{ data.surah_name_arabic }} · {{ data.total_ayah }} ayat</p>
+        </div>
       </div>
     </header>
 
@@ -52,6 +58,7 @@
           v-for="ayah in data.ayahs"
           :key="ayah.ayah_number"
           class="ayah-row"
+          @click="goToAyah(ayah.ayah_number)"
         >
           <span class="ayah-row__number">Ayat {{ ayah.ayah_number }}</span>
           <div class="ayah-row__right">
@@ -106,6 +113,12 @@ const pct = (status: string) => {
   return `${(count / data.value.total_ayah) * 100}%`
 }
 
+const router = useRouter()
+
+const goToAyah = (ayahNumber: number) => {
+  router.push(`/remote/${route.params.surahId}/${ayahNumber}`)
+}
+
 const statusLabel = (status: string) => {
   const labels: Record<string, string> = {
     fluent: 'Lancar',
@@ -131,12 +144,33 @@ useHead({
 </script>
 
 <style scoped>
-.back-link {
-  display: inline-block;
-  font-size: 0.875rem;
-  opacity: 0.8;
-  margin-bottom: 8px;
+.page-header__content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-header__back {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
   text-decoration: none;
+}
+
+.page-header__back:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.page-header__info {
+  flex: 1;
+  min-width: 0;
 }
 
 .summary-grid {
@@ -182,6 +216,12 @@ useHead({
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.ayah-row:active {
+  opacity: 0.7;
 }
 
 .ayah-row__number {

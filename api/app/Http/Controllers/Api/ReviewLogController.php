@@ -14,7 +14,7 @@ class ReviewLogController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         $query = ReviewLog::where('user_id', $userId)
             ->with(['surah:id,name_latin,name_arabic', 'ayah:id,ayah_number'])

@@ -16,7 +16,7 @@ class ReviewController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $userId = 1;
+        $userId = $request->user()->id;
 
         $validated = $request->validate([
             'surah_id' => 'required|integer|exists:surahs,id',
