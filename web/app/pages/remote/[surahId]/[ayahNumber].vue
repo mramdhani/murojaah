@@ -434,6 +434,19 @@ const formatArabicText = (text: string) => {
   // Regex to match: [rule[text] or [rule:meta[text]
   const regex = /\[([a-z0-9:]+)\[([^\]]+)\]/g
 
+  // WebKit (Safari dan semua browser di iOS seperti Chrome/Firefox) merusak sambungan huruf Arab
+  // jika dibungkus dalam tag span. Kita deteksi WebKit untuk otomatis men-strip kode warna
+  // agar huruf Arab tersambung rapi kembali di perangkat Apple.
+  const isWebKit = typeof navigator !== 'undefined' && (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent))
+  )
+
+  if (isWebKit) {
+    return cleanText.replace(regex, '$2')
+  }
+
   return cleanText.replace(regex, (match, ruleInfo, char) => {
     const rule = ruleInfo.split(':')[0]
     return `<span class="tajweed-${rule}">${char}</span>`
