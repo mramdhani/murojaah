@@ -1,5 +1,5 @@
 <template>
-  <div class="remote-page" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
+  <div class="remote-page" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
     <!-- Header — 12% -->
     <header class="remote-header">
       <div class="remote-header__left">
@@ -137,7 +137,10 @@
                 @click="handleSurahSelect(s.id)"
               >
                 <span class="picker-wheel__number">{{ s.number }}</span>
-                <span class="picker-wheel__latin">{{ s.name_latin }}</span>
+                <div class="picker-wheel__names">
+                  <span class="picker-wheel__latin">{{ s.name_latin }}</span>
+                  <span class="picker-wheel__translation">{{ s.name_translation }}</span>
+                </div>
                 <span class="picker-wheel__arabic">{{ s.name_arabic }}</span>
               </div>
             </div>
@@ -260,11 +263,23 @@ const filteredPickerSurahs = computed(() => {
 // Track swipe gestures (horizontal for ayahs, vertical for surahs)
 let touchStartX = 0
 let touchStartY = 0
+let isScrolling = false
 const onTouchStart = (e: TouchEvent) => {
   // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
   if (showSurahPicker.value || showAyahPicker.value) return
   touchStartX = e.touches[0].clientX
   touchStartY = e.touches[0].clientY
+  isScrolling = false
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  if (showSurahPicker.value || showAyahPicker.value) return
+  const diffX = Math.abs(e.touches[0].clientX - touchStartX)
+  const diffY = Math.abs(e.touches[0].clientY - touchStartY)
+  // Jika jari bergeser lebih dari 10px, anggap sedang melakukan scroll/drag
+  if (diffX > 10 || diffY > 10) {
+    isScrolling = true
+  }
 }
 const onTouchEnd = (e: TouchEvent) => {
   // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
@@ -273,24 +288,12 @@ const onTouchEnd = (e: TouchEvent) => {
   const diffX = e.changedTouches[0].clientX - touchStartX
   const diffY = e.changedTouches[0].clientY - touchStartY
 
+  // Hanya aktifkan swipe horizontal (kiri/kanan) untuk ganti ayat.
+  // Swipe vertikal (atas/bawah) kita matikan agar tidak memicu ganti surat secara tidak sengaja saat men-scroll atau mengetuk layar.
   if (Math.abs(diffX) > Math.abs(diffY)) {
-    // Horizontal swipe -> Prev/Next Ayah
     if (Math.abs(diffX) > 75) {
       if (diffX > 0 && currentAyahNumber.value > 1) prevAyah()
       else if (diffX < 0 && currentAyahNumber.value < totalAyah.value) skipAyah()
-    }
-  } else {
-    // Vertical swipe -> Prev/Next Surah
-    if (Math.abs(diffY) > 85) {
-      if (diffY > 0 && prevSurah.value) {
-        // Swipe down -> Prev Surah
-        showToast?.(`Surat: ${prevSurah.value.name_latin}`, 'info')
-        changeSurah(prevSurah.value.id)
-      } else if (diffY < 0 && nextSurah.value) {
-        // Swipe up -> Next Surah
-        showToast?.(`Surat: ${nextSurah.value.name_latin}`, 'info')
-        changeSurah(nextSurah.value.id)
-      }
     }
   }
 }
@@ -315,10 +318,10 @@ const fetchSurahList = async () => {
 }
 
 const toggleReveal = () => {
-  if (!isRevealed.value) {
-    triggerHaptic(30)
-    isRevealed.value = true
-  }
+  // Jika user sedang men-scroll teks yang panjang, jangan sembunyikan ayat
+  if (isScrolling) return
+  triggerHaptic(35)
+  isRevealed.value = !isRevealed.value
 }
 
 const hideAyah = () => {
@@ -440,20 +443,20 @@ const formatArabicText = (text: string) => {
   const regex = /\[([a-z0-9:]+)\[([^\]]+)\]/g
 
   // WebKit (Safari dan semua browser di iOS seperti Chrome/Firefox) merusak sambungan huruf Arab
-  // jika dibungkus dalam tag span. Kita deteksi WebKit untuk menyisipkan Zero-Width Joiner (\u200D)
-  // di awal dan akhir karakter di dalam span agar huruf Arab tetap tersambung rapi.
+  // jika dibungkus dalam tag span. Di iOS/Safari, kita hapus tag tajwid sepenuhnya (fallback ke teks polos)
+  // agar huruf Arab tampil tersambung secara rapi dan sempurna demi kelancaran membaca Al-Qur'an.
   const isWebKit = typeof navigator !== 'undefined' && (
     /iPad|iPhone|iPod/.test(navigator.userAgent) || 
     (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) ||
     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent))
   )
 
+  if (isWebKit) {
+    return cleanText.replace(regex, '$2')
+  }
+
   return cleanText.replace(regex, (match, ruleInfo, char) => {
     const rule = ruleInfo.split(':')[0]
-    if (isWebKit) {
-      // Sisipkan ZWJ (\u200D) sebelum dan sesudah karakter agar Safari menyambungnya dengan huruf luar
-      return `<span class="tajweed-${rule}">\u200D${char}\u200D</span>`
-    }
     return `<span class="tajweed-${rule}">${char}</span>`
   })
 }
@@ -1030,9 +1033,29 @@ useHead({
   color: var(--color-primary);
 }
 
+.picker-wheel__names {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .picker-wheel__latin {
   font-size: 1rem;
   font-weight: 600;
+  line-height: 1.2;
+}
+
+.picker-wheel__translation {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.picker-wheel__item--active .picker-wheel__translation {
+  color: var(--color-primary-dark);
+  opacity: 0.8;
 }
 
 .picker-wheel__arabic {

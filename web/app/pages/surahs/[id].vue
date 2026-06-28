@@ -7,9 +7,14 @@
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </NuxtLink>
-        <div class="page-header__info">
-          <h1 v-if="surah">{{ surah.name_latin }}</h1>
-          <p v-if="surah">Pilih ayat awal — {{ surah.total_ayah }} ayat · {{ surah.name_arabic }}</p>
+        <div class="page-header__info page-header__surah-trigger" @click="openSurahPicker" v-if="surah">
+          <h1>
+            {{ surah.name_latin }}
+            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </h1>
+          <p>Pilih ayat awal — {{ surah.total_ayah }} ayat · {{ surah.name_arabic }}</p>
         </div>
       </div>
     </header>
@@ -42,11 +47,55 @@
         <div v-for="i in 20" :key="i" class="skeleton ayah-cell" style="border: none"></div>
       </div>
     </div>
+
+    <!-- iOS-style Surah Picker Sheet -->
+    <Transition name="sheet">
+      <div v-if="showSurahPicker" class="picker-overlay" @click="closeSurahPicker">
+        <div class="picker-sheet animate-slide-up" @click.stop>
+          <div class="picker-sheet__header">
+            <div class="picker-sheet__indicator"></div>
+            <div class="picker-sheet__title-row">
+              <h3>Pilih Surat</h3>
+              <button class="picker-sheet__close" @click="closeSurahPicker">Selesai</button>
+            </div>
+            <div class="picker-sheet__search">
+              <input
+                v-model="pickerSearch"
+                type="text"
+                placeholder="Cari nama atau nomor surat..."
+                class="picker-sheet__search-input"
+                id="picker-search"
+                @click.stop
+              />
+            </div>
+          </div>
+          <div class="picker-sheet__content" @touchstart="isWheelDragging = false" @touchmove="isWheelDragging = true">
+            <div class="picker-wheel">
+              <div
+                v-for="s in filteredPickerSurahs"
+                :key="s.id"
+                class="picker-wheel__item"
+                :class="{ 'picker-wheel__item--active': s.id === Number(route.params.id) }"
+                @click="handleSurahSelect(s.id)"
+              >
+                <span class="picker-wheel__number">{{ s.number }}</span>
+                <div class="picker-wheel__names">
+                  <span class="picker-wheel__latin">{{ s.name_latin }}</span>
+                  <span class="picker-wheel__translation">{{ s.name_translation }}</span>
+                </div>
+                <span class="picker-wheel__arabic">{{ s.name_arabic }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 const route = useRoute()
+const router = useRouter()
 const { apiFetch } = useApi()
 
 const triggerHaptic = () => {
@@ -60,6 +109,7 @@ interface SurahDetail {
   number: number
   name_latin: string
   name_arabic: string
+  name_translation: string
   total_ayah: number
 }
 
@@ -72,13 +122,47 @@ interface AyahItem {
 
 const surah = ref<SurahDetail | null>(null)
 const ayahs = ref<AyahItem[]>([])
+const surahList = ref<SurahDetail[]>([])
 const loading = ref(true)
 
-onMounted(async () => {
+const showSurahPicker = ref(false)
+const isWheelDragging = ref(false)
+const pickerSearch = ref('')
+
+const openSurahPicker = () => {
+  triggerHaptic()
+  pickerSearch.value = ''
+  showSurahPicker.value = true
+}
+
+const closeSurahPicker = () => {
+  triggerHaptic()
+  showSurahPicker.value = false
+}
+
+const handleSurahSelect = (id: number) => {
+  if (isWheelDragging.value) return
+  triggerHaptic()
+  showSurahPicker.value = false
+  router.push(`/surahs/${id}`)
+}
+
+const filteredPickerSurahs = computed(() => {
+  if (!pickerSearch.value) return surahList.value
+  const q = pickerSearch.value.toLowerCase()
+  return surahList.value.filter(s =>
+    s.name_latin.toLowerCase().includes(q) ||
+    s.name_arabic.includes(q) ||
+    s.number.toString() === q
+  )
+})
+
+const loadData = async (id: number | string) => {
+  loading.value = true
   try {
     const [surahRes, ayahsRes] = await Promise.all([
-      apiFetch<{ data: SurahDetail }>(`/surahs/${route.params.id}`),
-      apiFetch<{ data: AyahItem[] }>(`/surahs/${route.params.id}/ayahs`),
+      apiFetch<{ data: SurahDetail }>(`/surahs/${id}`),
+      apiFetch<{ data: AyahItem[] }>(`/surahs/${id}/ayahs`),
     ])
     surah.value = surahRes.data
     ayahs.value = ayahsRes.data
@@ -86,6 +170,25 @@ onMounted(async () => {
     console.error('Failed to load ayahs:', e)
   } finally {
     loading.value = false
+  }
+}
+
+onMounted(async () => {
+  loadData(route.params.id as string)
+
+  // Load surah list for the picker
+  try {
+    const listRes = await apiFetch<{ data: SurahDetail[] }>('/surahs')
+    surahList.value = listRes.data
+  } catch (e) {
+    console.error('Failed to load surah list:', e)
+  }
+})
+
+// Watch for route changes to load new surah details when selected via picker
+watch(() => route.params.id, (newId) => {
+  if (newId) {
+    loadData(newId as string)
   }
 })
 
@@ -195,6 +298,218 @@ useHead({
   background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
   border-color: transparent;
+}
+
+.page-header__surah-trigger {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.page-header__surah-trigger h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.page-header__surah-trigger:active h1 {
+  opacity: 0.7;
+}
+
+.chevron-icon {
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+/* iOS-style Sheet Picker Overlay */
+.picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.picker-sheet {
+  width: 100%;
+  max-width: 540px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 75dvh;
+  box-shadow: var(--shadow-lg);
+  padding-bottom: calc(var(--safe-bottom) + 8px);
+}
+
+.picker-sheet__header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.picker-sheet__indicator {
+  width: 40px;
+  height: 5px;
+  background: var(--color-text-muted);
+  border-radius: var(--radius-full);
+  margin: 0 auto 4px;
+  opacity: 0.5;
+}
+
+.picker-sheet__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.picker-sheet__title-row h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.picker-sheet__close {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.picker-sheet__search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  outline: none;
+  background: var(--color-bg-subtle);
+  transition: all var(--transition-fast);
+}
+
+.picker-sheet__search-input:focus {
+  border-color: var(--color-primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.picker-sheet__content {
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 16px 20px;
+}
+
+.picker-wheel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.picker-wheel__item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--color-text);
+}
+
+.picker-wheel__item:active {
+  background: var(--color-bg-subtle);
+}
+
+.picker-wheel__item--active {
+  background: var(--color-primary-50) !important;
+  color: var(--color-primary-dark) !important;
+  font-weight: 700;
+}
+
+.picker-wheel__number {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: rgba(0, 0, 0, 0.04);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.picker-wheel__item--active .picker-wheel__number {
+  background: rgba(5, 150, 105, 0.12);
+  color: var(--color-primary);
+}
+
+.picker-wheel__names {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.picker-wheel__latin {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.picker-wheel__translation {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.picker-wheel__item--active .picker-wheel__translation {
+  color: var(--color-primary-dark);
+  opacity: 0.8;
+}
+
+.picker-wheel__arabic {
+  margin-left: auto;
+  font-family: var(--font-arabic);
+  font-size: 1.35rem;
+  color: var(--color-primary-dark);
+}
+
+/* Sheet slide-up transition */
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+
+.sheet-enter-active .picker-sheet,
+.sheet-leave-active .picker-sheet {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sheet-enter-from .picker-sheet,
+.sheet-leave-to .picker-sheet {
+  transform: translateY(100%);
 }
 
 @media (min-width: 480px) {

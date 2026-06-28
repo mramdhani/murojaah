@@ -53,9 +53,15 @@ class SurahSeeder extends Seeder
             if ($indoResponse->successful()) {
                 $indoSurahs = $indoResponse->json('data');
                 foreach ($indoSurahs as $indoSurah) {
+                    $arti = $indoSurah['arti'];
+                    // Koreksi terjemahan spesifik agar sesuai standar Kemenag RI
+                    if ($indoSurah['nomor'] === 2 && $arti === 'Sapi') {
+                        $arti = 'Sapi Betina';
+                    }
+
                     Surah::where('number', $indoSurah['nomor'])->update([
                         'name_latin' => $indoSurah['namaLatin'],
-                        'name_translation' => $indoSurah['arti'],
+                        'name_translation' => $arti,
                     ]);
                 }
                 $this->command->info('✅ Translated 114 surah names to Indonesian successfully.');
