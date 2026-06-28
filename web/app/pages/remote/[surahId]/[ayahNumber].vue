@@ -49,8 +49,22 @@
             
             <p class="text-arabic text-arabic-xl remote-ayah-text" v-if="currentAyah">
               <span v-html="formatArabicText(currentAyah.text_arabic)"></span>
-              <span class="ayah-circle">
-                <span class="ayah-circle-num">{{ currentAyahNumber }}</span>
+              <span class="ayah-ornament">
+                <svg viewBox="0 0 100 100" class="ayah-ornament__svg">
+                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)" />
+                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" />
+                  <circle cx="50" cy="50" r="23" fill="#FAF8F2" stroke="currentColor" stroke-width="2.5" />
+                  <circle cx="50" cy="50" r="19" fill="none" stroke="var(--color-primary-dark)" stroke-width="1.5" stroke-dasharray="3,2.5" />
+                  <circle cx="50" cy="11" r="3.5" fill="var(--color-primary-dark)" />
+                  <circle cx="50" cy="89" r="3.5" fill="var(--color-primary-dark)" />
+                  <circle cx="11" cy="50" r="3.5" fill="var(--color-primary-dark)" />
+                  <circle cx="89" cy="50" r="3.5" fill="var(--color-primary-dark)" />
+                  <circle cx="22.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)" />
+                  <circle cx="77.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)" />
+                  <circle cx="22.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)" />
+                  <circle cx="77.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)" />
+                </svg>
+                <span class="ayah-ornament__num">{{ currentAyahNumber }}</span>
               </span>
             </p>
           </div>
@@ -718,24 +732,42 @@ useHead({
   line-height: 2.2;
 }
 
-.ayah-circle {
+.ayah-ornament {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 2px solid var(--color-primary-light);
-  border-radius: 50%;
-  font-family: var(--font-ui);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--color-primary-dark);
+  width: 44px;
+  height: 44px;
+  margin: 0 10px;
+  user-select: none;
+  flex-shrink: 0;
   vertical-align: middle;
-  margin-right: 12px;
-  background: rgba(16, 185, 129, 0.05);
 }
 
-.ayah-circle-num {
+.ayah-ornament__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #C29B38; /* Gold color */
+  transition: transform var(--transition-normal);
+}
+
+.ayah-ornament:hover .ayah-ornament__svg {
+  transform: rotate(45deg);
+}
+
+.ayah-ornament__num {
+  position: relative;
+  z-index: 10;
+  font-size: 0.8125rem;
+  font-weight: 900;
+  color: var(--color-primary-dark);
+  font-family: var(--font-ui);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 
