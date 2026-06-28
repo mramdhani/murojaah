@@ -45,6 +45,27 @@ class SurahSeeder extends Seeder
 
         $bar->finish();
         $this->command->newLine();
-        $this->command->info('✅ ' . count($surahs) . ' surahs seeded successfully.');
+
+        // Secondary step: Translate Latin names and translations to Indonesian
+        $this->command->info('Translating surah names and translations to Indonesian...');
+        try {
+            $indoResponse = Http::timeout(30)->get('https://equran.id/api/v2/surat');
+            if ($indoResponse->successful()) {
+                $indoSurahs = $indoResponse->json('data');
+                foreach ($indoSurahs as $indoSurah) {
+                    Surah::where('number', $indoSurah['nomor'])->update([
+                        'name_latin' => $indoSurah['namaLatin'],
+                        'name_translation' => $indoSurah['arti'],
+                    ]);
+                }
+                $this->command->info('✅ Translated 114 surah names to Indonesian successfully.');
+            } else {
+                $this->command->warn('Could not translate names: equran.id returned status ' . $indoResponse->status());
+            }
+        } catch (\Exception $e) {
+            $this->command->warn('Could not translate names: ' . $e->getMessage());
+        }
+
+        $this->command->info('✅ Seeders completed.');
     }
 }
