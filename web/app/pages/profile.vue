@@ -11,7 +11,7 @@
       <!-- Profile Card -->
       <div class="profile-card card">
         <!-- Sesi Loading / Menghubungkan -->
-        <div v-if="loading || !user" class="profile-loading">
+        <div v-if="authLoading || !user" class="profile-loading">
           <div class="skeleton-avatar skeleton"></div>
           <div class="skeleton-info">
             <div class="skeleton skeleton-line" style="width: 140px; height: 18px; margin-bottom: 8px;"></div>

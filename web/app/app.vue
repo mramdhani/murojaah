@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <!-- Splash Screen during authentication initialization -->
-    <div v-if="authLoading && !user" class="app-loading">
+    <!-- Splash Screen during authentication initialization (max 5s timeout) -->
+    <div v-if="showSplash" class="app-loading">
       <div class="spinner-container">
         <div class="spinner"></div>
         <p>Mempersiapkan Murojaah...</p>
@@ -52,8 +52,15 @@ provide('showToast', showToast)
 
 const { initSession, loading: authLoading, user } = useAuth()
 
+// Safety: never show splash longer than 5 seconds
+// in case backend is unreachable on VPS
+const splashTimedOut = ref(false)
+const showSplash = computed(() => authLoading.value && !user.value && !splashTimedOut.value)
+
 onMounted(() => {
   initSession()
+  // Force-hide splash after 5s even if backend is down
+  setTimeout(() => { splashTimedOut.value = true }, 5000)
 })
 </script>
 
