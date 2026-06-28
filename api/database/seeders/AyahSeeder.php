@@ -18,8 +18,8 @@ class AyahSeeder extends Seeder
             return;
         }
 
-        $this->command->info('Fetching complete Quran (Arabic Uthmani)...');
-        $arabicResponse = Http::timeout(60)->get('https://api.alquran.cloud/v1/quran/quran-uthmani');
+        $this->command->info('Fetching complete Quran (Arabic Tajweed)...');
+        $arabicResponse = Http::timeout(90)->get('https://api.alquran.cloud/v1/quran/quran-tajweed');
 
         if (!$arabicResponse->successful()) {
             $this->command->error('Failed to fetch Arabic text. Status: ' . $arabicResponse->status());
@@ -27,7 +27,7 @@ class AyahSeeder extends Seeder
         }
 
         $this->command->info('Fetching Indonesian translation...');
-        $translationResponse = Http::timeout(60)->get('https://api.alquran.cloud/v1/quran/id.indonesian');
+        $translationResponse = Http::timeout(90)->get('https://api.alquran.cloud/v1/quran/id.indonesian');
 
         if (!$translationResponse->successful()) {
             $this->command->error('Failed to fetch translation. Status: ' . $translationResponse->status());
@@ -65,9 +65,13 @@ class AyahSeeder extends Seeder
 
                 // Strip Bismillah prefix from first ayah of all surahs except Al-Fatihah (number 1)
                 if ($arabicSurah['number'] > 1 && $ayahNumber === 1) {
-                    $bismillahPrefix = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ';
-                    if (str_starts_with($textArabic, $bismillahPrefix)) {
-                        $textArabic = substr($textArabic, strlen($bismillahPrefix));
+                    $bismillahPrefixPlain = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ';
+                    $bismillahPrefixTajweed = 'بِسْمِ [h:1[ٱ]للَّهِ [h:2[ٱ][l[ل]رَّحْم[n[ـٰ]نِ [h:3[ٱ][l[ل]رَّح[p[ِي]مِ ';
+
+                    if (str_starts_with($textArabic, $bismillahPrefixPlain)) {
+                        $textArabic = substr($textArabic, strlen($bismillahPrefixPlain));
+                    } elseif (str_starts_with($textArabic, $bismillahPrefixTajweed)) {
+                        $textArabic = substr($textArabic, strlen($bismillahPrefixTajweed));
                     }
                 }
 

@@ -48,7 +48,7 @@
             </div>
             
             <p class="text-arabic text-arabic-xl remote-ayah-text" v-if="currentAyah">
-              {{ currentAyah.text_arabic }}
+              <span v-html="formatArabicText(currentAyah.text_arabic)"></span>
               <span class="ayah-circle">
                 <span class="ayah-circle-num">{{ currentAyahNumber }}</span>
               </span>
@@ -422,6 +422,22 @@ const skipAyah = async () => {
 const goBack = () => {
   triggerHaptic(40)
   router.push(`/surahs/${surahId.value}`)
+}
+
+// Parse Quran Tajweed API markup into color-coded HTML spans
+const formatArabicText = (text: string) => {
+  if (!text) return ''
+  
+  // Clean BOM character if any
+  let cleanText = text.replace(/^\uFEFF/, '')
+
+  // Regex to match: [rule[text] or [rule:meta[text]
+  const regex = /\[([a-z0-9:]+)\[([^\]]+)\]/g
+
+  return cleanText.replace(regex, (match, ruleInfo, char) => {
+    const rule = ruleInfo.split(':')[0]
+    return `<span class="tajweed-${rule}">${char}</span>`
+  })
 }
 
 // Watch for route changes to load the correct ayah dynamically
@@ -1075,5 +1091,51 @@ useHead({
     border-right: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow: var(--shadow-lg);
   }
+}
+
+/* Tajweed Color Coding Rules */
+:deep(.tajweed-h),
+:deep(.tajweed-s),
+:deep(.tajweed-l) {
+  color: #AAAAAA !important; /* Silent/Wasl - Grey */
+}
+
+:deep(.tajweed-n) {
+  color: #537FFF !important; /* Madda Normal - Light Blue */
+}
+
+:deep(.tajweed-p) {
+  color: #4050FF !important; /* Madda Permissible - Blue */
+}
+
+:deep(.tajweed-m) {
+  color: #000EBC !important; /* Madda Necessary - Dark Blue */
+}
+
+:deep(.tajweed-o) {
+  color: #2144C1 !important; /* Madda Obligatory - Royal Blue */
+}
+
+:deep(.tajweed-q) {
+  color: #DD0008 !important; /* Qalaqah - Red */
+  font-weight: 700;
+}
+
+:deep(.tajweed-f),
+:deep(.tajweed-c) {
+  color: #9400A8 !important; /* Ikhfa - Purple */
+}
+
+:deep(.tajweed-i) {
+  color: #26BFFD !important; /* Iqlab - Cyan */
+}
+
+:deep(.tajweed-g) {
+  color: #169777 !important; /* Ghunnah/Idgham with Ghunnah - Teal/Green */
+  font-weight: 700;
+}
+
+:deep(.tajweed-u) {
+  color: #169200 !important; /* Idgham without Ghunnah - Dark Green */
 }
 </style>
