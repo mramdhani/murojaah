@@ -61,6 +61,15 @@ class AyahSeeder extends Seeder
             foreach ($arabicSurah['ayahs'] as $ayah) {
                 $ayahNumber = $ayah['numberInSurah'];
                 $translation = $translationMap[$arabicSurah['number']][$ayahNumber] ?? null;
+                $textArabic = $ayah['text'];
+
+                // Strip Bismillah prefix from first ayah of all surahs except Al-Fatihah (number 1)
+                if ($arabicSurah['number'] > 1 && $ayahNumber === 1) {
+                    $bismillahPrefix = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ';
+                    if (str_starts_with($textArabic, $bismillahPrefix)) {
+                        $textArabic = substr($textArabic, strlen($bismillahPrefix));
+                    }
+                }
 
                 Ayah::updateOrCreate(
                     [
@@ -68,7 +77,7 @@ class AyahSeeder extends Seeder
                         'ayah_number' => $ayahNumber,
                     ],
                     [
-                        'text_arabic' => $ayah['text'],
+                        'text_arabic' => $textArabic,
                         'translation_id' => $translation,
                         'juz' => $ayah['juz'] ?? null,
                         'page' => $ayah['page'] ?? null,
