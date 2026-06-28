@@ -1,6 +1,6 @@
 import { ref, watch, computed } from 'vue'
 
-export type ThemeId = 'emerald' | 'pink' | 'lavender' | 'ocean' | 'sunset' | 'forest'
+export type ThemeId = 'emerald' | 'pink' | 'lavender' | 'ocean' | 'sunset' | 'forest' | 'kabah' | 'madinah' | 'alaqsa'
 
 export interface Theme {
   id: ThemeId
@@ -93,6 +93,45 @@ export const themes: Record<ThemeId, Theme> = {
       primary50: '#ECFDF5',
       primary100: '#D1FAE5',
       primary900: '#022C22',
+    }
+  },
+  kabah: {
+    id: 'kabah',
+    name: 'Ka\'bah',
+    emoji: '🕋',
+    colors: {
+      primary: '#D4AF37', // Ka'bah Gold Accent
+      primaryLight: '#F3E5AB', // Light gold
+      primaryDark: '#AA7C11', // Dark gold
+      primary50: '#1F1F1F', // Dark gray card (matches dark background)
+      primary100: '#2A2A2A',
+      primary900: '#111111', // Jet Black
+    }
+  },
+  madinah: {
+    id: 'madinah',
+    name: 'Madinah',
+    emoji: '🕌',
+    colors: {
+      primary: '#047857', // Nabawi Green
+      primaryLight: '#10B981',
+      primaryDark: '#064E3B',
+      primary50: '#ECFDF5',
+      primary100: '#D1FAE5',
+      primary900: '#022C22',
+    }
+  },
+  alaqsa: {
+    id: 'alaqsa',
+    name: 'Al-Aqsa',
+    emoji: '✨',
+    colors: {
+      primary: '#C27D38', // Qubbatus Sakhrah Gold
+      primaryLight: '#D49D42',
+      primaryDark: '#9F5B1A',
+      primary50: '#F0F4F8', // Light blue/gray base (looks like night sky backdrop)
+      primary100: '#D9E2EC',
+      primary900: '#102A43', // Royal Deep Blue
     }
   }
 }

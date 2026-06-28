@@ -2,9 +2,12 @@
   <div id="app">
     <!-- Splash Screen during authentication initialization (max 5s timeout) -->
     <div v-if="showSplash" class="app-loading">
-      <div class="spinner-container">
-        <div class="spinner"></div>
-        <p>Mempersiapkan Murojaah...</p>
+      <div class="splash-container">
+        <img src="/logo.png" alt="Murojaah Logo" class="splash-logo" />
+        <div class="splash-loader">
+          <div class="spinner"></div>
+          <p>Mempersiapkan murojaah...</p>
+        </div>
       </div>
     </div>
 
@@ -81,31 +84,71 @@ onMounted(() => {
   z-index: 9999;
 }
 
-.spinner-container {
+.splash-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 28px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.splash-logo {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(5, 150, 105, 0.15));
+  animation: pulse-slow 2s infinite ease-in-out;
+}
+
+.splash-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(5, 150, 105, 0.1);
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(5, 150, 105, 0.12);
   border-left-color: var(--color-primary);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 p {
   color: var(--color-text-secondary);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
 }
 
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 8px 16px rgba(5, 150, 105, 0.15));
+  }
+  50% {
+    transform: scale(1.04);
+    filter: drop-shadow(0 12px 24px rgba(5, 150, 105, 0.25));
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

@@ -249,11 +249,11 @@ useHead({ title: 'Riwayat Murajaah — Murojaah' })
 
 /* Status colors for chips */
 .ayah-chip--fluent {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.3);
+  background: var(--color-fluent-bg);
+  border-color: var(--color-fluent-border);
 }
 .ayah-chip--fluent .ayah-chip__icon {
-  color: #059669;
+  color: var(--color-fluent);
 }
 
 .ayah-chip--doubtful {
