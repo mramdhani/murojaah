@@ -440,20 +440,20 @@ const formatArabicText = (text: string) => {
   const regex = /\[([a-z0-9:]+)\[([^\]]+)\]/g
 
   // WebKit (Safari dan semua browser di iOS seperti Chrome/Firefox) merusak sambungan huruf Arab
-  // jika dibungkus dalam tag span. Kita deteksi WebKit untuk otomatis men-strip kode warna
-  // agar huruf Arab tersambung rapi kembali di perangkat Apple.
+  // jika dibungkus dalam tag span. Kita deteksi WebKit untuk menyisipkan Zero-Width Joiner (\u200D)
+  // di awal dan akhir karakter di dalam span agar huruf Arab tetap tersambung rapi.
   const isWebKit = typeof navigator !== 'undefined' && (
     /iPad|iPhone|iPod/.test(navigator.userAgent) || 
     (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) ||
     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent))
   )
 
-  if (isWebKit) {
-    return cleanText.replace(regex, '$2')
-  }
-
   return cleanText.replace(regex, (match, ruleInfo, char) => {
     const rule = ruleInfo.split(':')[0]
+    if (isWebKit) {
+      // Sisipkan ZWJ (\u200D) sebelum dan sesudah karakter agar Safari menyambungnya dengan huruf luar
+      return `<span class="tajweed-${rule}">\u200D${char}\u200D</span>`
+    }
     return `<span class="tajweed-${rule}">${char}</span>`
   })
 }
