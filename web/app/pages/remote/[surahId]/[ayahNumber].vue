@@ -449,6 +449,10 @@ const formatArabicText = (text: string) => {
   // Clean BOM character if any
   let cleanText = text.replace(/^\uFEFF/, '')
 
+  // Replace U+0672 (Arabic letter Alef with wavy hamza above) which renders as a dotted circle
+  // with the standard U+0670 (Arabic superscript alif / dagger alif) supported by Uthmanic Hafs font
+  cleanText = cleanText.replace(/\u0672/g, '\u0670')
+
   // Strip all known Quranic annotation/waqf marks that render as black dots/blocks
   // in browsers with Uthmanic Hafs font. Covers Arabic Supplement + Extended-A:
   //   U+0610–U+061A — Arabic Annotation Signs
