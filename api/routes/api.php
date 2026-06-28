@@ -31,6 +31,7 @@ Route::post('/reviews', [ReviewController::class, 'store']);
 
 // Progress
 Route::get('/progress/surahs/{surahId}', [ProgressController::class, 'show']);
+Route::delete('/progress/surahs/{surahId}', [ProgressController::class, 'destroy']);
 
 // Review Logs
 Route::get('/review-logs', [ReviewLogController::class, 'index']);

@@ -59,4 +59,27 @@ class ProgressController extends Controller
             ],
         ]);
     }
+
+    /**
+     * DELETE /api/progress/surahs/{surahId} — Reset/delete progress and logs for a surah
+     */
+    public function destroy(int $surahId): JsonResponse
+    {
+        $userId = 1; // Default user ID for MVP
+
+        // Delete memorization progress for all ayahs in this surah
+        MemorizationProgress::where('user_id', $userId)
+            ->where('surah_id', $surahId)
+            ->delete();
+
+        // Delete historical review logs for this surah's ayahs
+        $ayahIds = Ayah::where('surah_id', $surahId)->pluck('id');
+        \App\Models\ReviewLog::where('user_id', $userId)
+            ->whereIn('ayah_id', $ayahIds)
+            ->delete();
+
+        return response()->json([
+            'message' => 'Progress and review history for this surah has been deleted.',
+        ]);
+    }
 }

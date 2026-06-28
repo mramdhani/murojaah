@@ -99,7 +99,7 @@
         Sebelumnya
       </button>
       <button class="nav-btn nav-btn--skip" @click="skipAyah" :disabled="currentAyahNumber >= totalAyah">
-        Lewati
+        Selanjutnya
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="9 18 15 12 9 6"/>
         </svg>
@@ -127,14 +127,14 @@
               />
             </div>
           </div>
-          <div class="picker-sheet__content">
+          <div class="picker-sheet__content" @touchstart="isWheelDragging = false" @touchmove="isWheelDragging = true">
             <div class="picker-wheel">
               <div
                 v-for="s in filteredPickerSurahs"
                 :key="s.id"
                 class="picker-wheel__item"
                 :class="{ 'picker-wheel__item--active': s.id === surahId }"
-                @click="changeSurah(s.id)"
+                @click="handleSurahSelect(s.id)"
               >
                 <span class="picker-wheel__number">{{ s.number }}</span>
                 <span class="picker-wheel__latin">{{ s.name_latin }}</span>
@@ -220,6 +220,7 @@ const submitting = ref(false)
 const flashStatus = ref<string | null>(null)
 const showSurahPicker = ref(false)
 const showAyahPicker = ref(false)
+const isWheelDragging = ref(false)
 const pickerSearch = ref('')
 
 const surahName = computed(() => currentAyah.value?.surah_name || '...')
@@ -347,6 +348,11 @@ const changeSurah = (targetSurahId: number) => {
   router.push(`/remote/${targetSurahId}/1`)
 }
 
+const handleSurahSelect = (id: number) => {
+  if (isWheelDragging.value) return
+  changeSurah(id)
+}
+
 const changeAyah = (targetAyahNum: number) => {
   triggerHaptic(50)
   showAyahPicker.value = false
@@ -450,6 +456,7 @@ useHead({
   max-width: 540px;
   margin: 0 auto;
   position: relative;
+  touch-action: pan-x;
 }
 
 /* Header — 12% */
@@ -598,6 +605,7 @@ useHead({
 .remote-hidden {
   text-align: center;
   animation: scaleIn 0.3s ease;
+  touch-action: none;
 }
 
 .remote-hidden__icon {
@@ -823,7 +831,7 @@ useHead({
   gap: 8px;
   border-radius: var(--radius-lg);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.15rem;
   min-height: 60px;
   transition: all var(--transition-fast);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);

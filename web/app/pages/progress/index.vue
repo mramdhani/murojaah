@@ -16,11 +16,21 @@
           class="progress-card card card-interactive animate-fade-in"
         >
           <div class="progress-card__header">
-            <div>
-              <span class="progress-card__number">{{ surah.number }}.</span>
-              <span class="progress-card__name">{{ surah.name_latin }}</span>
+            <div class="progress-card__title-section">
+              <div>
+                <span class="progress-card__number">{{ surah.number }}.</span>
+                <span class="progress-card__name">{{ surah.name_latin }}</span>
+              </div>
+              <span class="progress-card__arabic">{{ surah.name_arabic }}</span>
             </div>
-            <span class="progress-card__arabic">{{ surah.name_arabic }}</span>
+            <button class="progress-card__delete-btn" @click.stop.prevent="confirmDelete(surah.id, surah.name_latin)" title="Hapus Progress">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
           </div>
 
           <div class="progress-bar" style="height: 8px; margin: 12px 0">
@@ -81,7 +91,7 @@ const pct = (surah: SurahProgress, status: string) => {
   return `${(count / surah.total_ayah) * 100}%`
 }
 
-onMounted(async () => {
+const fetchSurahProgress = async () => {
   try {
     const res = await apiFetch<{ data: SurahProgress[] }>('/surahs')
     surahs.value = res.data
@@ -90,6 +100,28 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+const confirmDelete = async (surahId: number, surahName: string) => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(60)
+  }
+
+  if (confirm(`Hapus seluruh progress murojaah untuk surat "${surahName}"?`)) {
+    try {
+      await apiFetch(`/progress/surahs/${surahId}`, {
+        method: 'DELETE',
+      })
+      // Refresh list
+      await fetchSurahProgress()
+    } catch (e) {
+      console.error('Failed to delete progress:', e)
+    }
+  }
+}
+
+onMounted(() => {
+  fetchSurahProgress()
 })
 
 useHead({ title: 'Progress Hafalan — Murojaah' })
@@ -110,7 +142,36 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
 .progress-card__header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-card__title-section {
+  display: flex;
+  justify-content: space-between;
   align-items: baseline;
+  flex: 1;
+}
+
+.progress-card__delete-btn {
+  color: var(--color-text-muted);
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.progress-card__delete-btn:hover {
+  color: var(--color-forgot);
+  background: var(--color-forgot-bg);
+}
+
+.progress-card__delete-btn:active {
+  transform: scale(0.9);
 }
 
 .progress-card__number {
