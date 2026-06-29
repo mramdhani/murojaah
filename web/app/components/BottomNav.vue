@@ -33,9 +33,12 @@
       <span>Riwayat</span>
     </NuxtLink>
 
-    <NuxtLink to="/profile" class="bottom-nav__item" :class="{ active: route.path === '/profile' }">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v-2"/>
+    <NuxtLink to="/profile" class="bottom-nav__item bottom-nav__item--profile" :class="{ active: route.path === '/profile' }">
+      <span class="bottom-nav__avatar-wrap" v-if="user?.avatar">
+        <img :src="user.avatar" alt="" class="bottom-nav__avatar" />
+      </span>
+      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
         <circle cx="12" cy="7" r="4"/>
       </svg>
       <span>Profil</span>
@@ -45,9 +48,9 @@
 
 <script setup lang="ts">
 const route = useRoute()
+const { user } = useAuth()
 
 const showNav = computed(() => {
-  // Hide bottom nav on remote/fullscreen page
   return !route.path.startsWith('/remote')
 })
 </script>
@@ -60,7 +63,6 @@ const showNav = computed(() => {
   right: 0;
   height: calc(var(--bottom-nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  background: var(--color-bg-card);
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
@@ -75,13 +77,14 @@ const showNav = computed(() => {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 6px 16px;
+  padding: 6px 12px;
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   font-size: 0.6875rem;
   font-weight: 500;
   transition: color var(--transition-fast);
   text-decoration: none;
+  position: relative;
 }
 
 .bottom-nav__item.active {
@@ -91,6 +94,29 @@ const showNav = computed(() => {
 .bottom-nav__item svg {
   width: 22px;
   height: 22px;
+}
+
+/* Avatar photo in bottom nav */
+.bottom-nav__avatar-wrap {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav__item.active .bottom-nav__avatar-wrap {
+  border-color: var(--color-primary);
+}
+
+.bottom-nav__avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media (min-width: 768px) {
