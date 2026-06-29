@@ -166,6 +166,29 @@
       </div>
       <div style="height: 32px"></div>
     </div>
+
+    <!-- Custom Logout Confirmation Modal -->
+    <div v-if="isLogoutModalOpen" class="modal-overlay animate-fade-in" @click="closeLogoutModal">
+      <div class="modal-dialog animate-scale-in" @click.stop>
+        <div class="modal-header">
+          <div class="modal-icon-logout">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </div>
+          <h3 class="modal-title">Keluar Akun</h3>
+        </div>
+        <div class="modal-body">
+          <p>Apakah Kakak yakin ingin keluar dari akun Google? Progress murojaah Kakak tidak akan hilang, namun Kakak perlu login kembali untuk sinkronisasi cloud.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeLogoutModal">Batal</button>
+          <button class="btn btn-danger" @click="executeLogout">Ya, Keluar</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -203,11 +226,20 @@ const handleGoogleLogin = () => {
   loginWithGoogle()
 }
 
+const isLogoutModalOpen = ref(false)
+
 const handleLogout = () => {
   triggerHaptic()
-  if (confirm('Apakah Kakak yakin ingin keluar dari akun Google?')) {
-    logout()
-  }
+  isLogoutModalOpen.value = true
+}
+
+const closeLogoutModal = () => {
+  isLogoutModalOpen.value = false
+}
+
+const executeLogout = () => {
+  logout()
+  closeLogoutModal()
 }
 
 const loadStats = async () => {
@@ -594,5 +626,96 @@ useHead({
   font-size: 0.72rem !important;
   margin-top: 4px;
   color: var(--color-text-muted) !important;
+}
+
+/* Modal Styles (Matches progress modal layout) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-dialog {
+  background: var(--color-bg);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 24px 24px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.modal-icon-logout {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.modal-body {
+  padding: 16px 24px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.modal-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.modal-footer .btn {
+  flex: 1;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1.5px solid var(--border-color);
+  border-radius: 99px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background: #DC2626;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: #B91C1C;
 }
 </style>
