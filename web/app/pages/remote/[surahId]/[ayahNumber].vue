@@ -349,7 +349,6 @@ const stopAudio = () => {
 }
 
 const playAudio = () => {
-  if (!currentAyah.value) return
   triggerHaptic(50)
 
   if (isPlaying.value && audioObj) {
