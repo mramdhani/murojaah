@@ -3,58 +3,124 @@
 
     <!-- ===== HEADER ===== -->
     <header class="home-header">
-      <!-- Background arabesque overlay -->
-      <div class="home-header__arabesque"></div>
+  <!-- Background ornament -->
+  <div class="home-header__arabesque" aria-hidden="true"></div>
+  <div class="home-header__aura" aria-hidden="true"></div>
 
-      <!-- Floating sparkles -->
-      <span class="hdr-sparkle hdr-sparkle--1">✦</span>
-      <span class="hdr-sparkle hdr-sparkle--2">◈</span>
-      <span class="hdr-sparkle hdr-sparkle--3">✧</span>
-      <span class="hdr-dot hdr-dot--1"></span>
-      <span class="hdr-dot hdr-dot--2"></span>
+  <!-- Floating sparkles -->
+  <span class="hdr-sparkle hdr-sparkle--1" aria-hidden="true">✦</span>
+  <span class="hdr-sparkle hdr-sparkle--2" aria-hidden="true">✧</span>
+  <span class="hdr-sparkle hdr-sparkle--3" aria-hidden="true">✦</span>
+  <span class="hdr-dot hdr-dot--1" aria-hidden="true"></span>
+  <span class="hdr-dot hdr-dot--2" aria-hidden="true"></span>
 
-      <div class="container">
-        <div class="home-header__top">
-          <div class="home-header__greeting">
-            <span class="greeting-label">Assalamualaikum,</span>
-            <h1>{{ user?.name || 'Kakak' }}</h1>
-            <p class="home-header__sub">
-              <span class="hdr-diamond">◆</span>
-              Jaga hafalan Qur'an, murojaah setiap hari ✨
-            </p>
-          </div>
+  <div class="container">
+    <div class="home-header__top">
+      <div class="home-header__greeting">
+        <span class="greeting-label">Assalamualaikum,</span>
 
-          <!-- Avatar foto user — hanya tampil jika sudah login (bukan guest) -->
-          <NuxtLink to="/profile" class="hdr-avatar-btn" v-if="isLoggedIn">
-            <img v-if="user?.avatar" :src="user.avatar" :alt="user.name" class="hdr-avatar-photo" />
-            <div v-else class="hdr-avatar-initials">
-              {{ user?.name?.charAt(0)?.toUpperCase() || '?' }}
-            </div>
-          </NuxtLink>
+        <h1>{{ user?.name || 'Kakak' }}</h1>
+
+        <p class="home-header__sub">
+          <span class="hdr-diamond" aria-hidden="true">◆</span>
+          <span>Jaga hafalan Qur'an, murojaah setiap hari ✨</span>
+        </p>
+      </div>
+
+      <NuxtLink to="/profile" class="hdr-avatar-btn" v-if="isLoggedIn">
+        <img
+          v-if="user?.avatar"
+          :src="user.avatar"
+          :alt="user.name"
+          class="hdr-avatar-photo"
+        />
+        <div v-else class="hdr-avatar-initials">
+          {{ user?.name?.charAt(0)?.toUpperCase() || '?' }}
         </div>
-      </div>
+      </NuxtLink>
+    </div>
+  </div>
 
-      <!-- Elegant curved divider -->
-      <div class="home-header__divider">
-        <div class="home-header__divider-fill"></div>
-        <svg class="home-header__divider-svg" viewBox="0 0 390 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="divGold" x1="0" y1="0" x2="390" y2="0" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="rgba(170,124,17,0)"/>
-              <stop offset="20%" stop-color="#D4AF37"/>
-              <stop offset="50%" stop-color="#FFF8D6"/>
-              <stop offset="80%" stop-color="#D4AF37"/>
-              <stop offset="100%" stop-color="rgba(170,124,17,0)"/>
-            </linearGradient>
-          </defs>
-          <!-- Clean single smooth arc -->
-          <path d="M0,28 Q195,0 390,28 L390,28 L0,28 Z" fill="#FAFAF5"/>
-          <path d="M0,28 Q195,0 390,28" fill="none" stroke="url(#divGold)" stroke-width="1.5"/>
-        </svg>
-        <!-- Diamond ornament at top center -->
-        <div class="hdr-diamond-ornament">◆</div>
-      </div>
-    </header>
+  <!-- Smooth premium wave -->
+  <div class="home-header__divider" aria-hidden="true">
+    <svg
+      class="home-header__divider-svg"
+      viewBox="0 0 390 96"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="waveCream" x1="0" y1="0" x2="0" y2="96">
+          <stop offset="0%" stop-color="#FFFDF6" />
+          <stop offset="100%" stop-color="#FAFAF2" />
+        </linearGradient>
+
+        <linearGradient id="waveGold" x1="0" y1="0" x2="390" y2="0">
+          <stop offset="0%" stop-color="#A87518" />
+          <stop offset="32%" stop-color="#F7D979" />
+          <stop offset="62%" stop-color="#FFF3B8" />
+          <stop offset="100%" stop-color="#C6952B" />
+        </linearGradient>
+
+        <filter id="softWaveShadow" x="-20%" y="-50%" width="140%" height="180%">
+          <feDropShadow
+            dx="0"
+            dy="5"
+            stdDeviation="5"
+            flood-color="#04251A"
+            flood-opacity="0.14"
+          />
+        </filter>
+      </defs>
+
+      <!-- Cream area -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37
+           L390,96
+           L0,96
+           Z"
+        fill="url(#waveCream)"
+        filter="url(#softWaveShadow)"
+      />
+
+      <!-- Soft gold glow -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37"
+        fill="none"
+        stroke="#E7C765"
+        stroke-width="6"
+        stroke-linecap="round"
+        opacity="0.2"
+      />
+
+      <!-- Main gold line -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37"
+        fill="none"
+        stroke="url(#waveGold)"
+        stroke-width="2.2"
+        stroke-linecap="round"
+      />
+
+      <!-- White highlight -->
+      <path
+        d="M0,51
+           C58,35 118,33 174,42
+           C242,53 304,56 390,33"
+        fill="none"
+        stroke="rgba(255,255,255,0.75)"
+        stroke-width="1"
+        stroke-linecap="round"
+      />
+    </svg>
+  </div>
+</header>
 
     <div class="page-content container">
 
@@ -75,7 +141,10 @@
           <div class="badge-hero-card__info">
             <span class="badge-hero-card__label">LEVEL HAFALAN</span>
             <span class="badge-hero-card__name">{{ userBadge?.name }}</span>
-            <span class="badge-hero-card__arabic">{{ userBadge?.arabic }} · {{ userBadge?.meaning }}</span>
+            <span class="badge-hero-card__arabic">
+              {{ userBadge?.arabic }} · {{ userBadge?.meaning }}
+              <span class="badge-hero-card__juz">({{ userBadge?.juzRange }})</span>
+            </span>
           </div>
         </div>
 
@@ -95,8 +164,8 @@
                 </svg>
               </div>
               <div>
-                <span class="bpc-ayah-count">{{ ayahsToNext }} <span class="bpc-ayah-unit">ayat lagi</span></span>
-                <span class="bpc-ayah-sub">menuju level berikutnya</span>
+                <span class="bpc-ayah-count">{{ ayahsToNext }}</span>
+                <span class="bpc-ayah-sub">Ayat Lagi</span>
               </div>
             </div>
           </div>
@@ -136,21 +205,23 @@
               'badge-step--locked': Number(badge.level) > Number(userBadge?.level)
             }"
           >
-            <div
-              class="badge-step__dot"
-              :style="Number(badge.level) <= Number(userBadge?.level)
-                ? { borderColor: badge.level === userBadge?.level ? '#D4AF37' : badge.color, boxShadow: badge.level === userBadge?.level ? '0 0 0 4px rgba(212,175,55,0.2)' : 'none' }
-                : {}"
-            >
-              <img
-                :src="badge.image"
-                :alt="badge.name"
-                class="badge-step__img"
-                :class="{
-                  'badge-step__img--active': badge.level === userBadge?.level,
-                  'badge-step__img--locked': Number(badge.level) > Number(userBadge?.level)
-                }"
-              />
+            <div class="badge-step__dot-wrap">
+              <div
+                class="badge-step__dot"
+                :style="Number(badge.level) <= Number(userBadge?.level)
+                  ? { borderColor: badge.level === userBadge?.level ? '#D4AF37' : badge.color, boxShadow: badge.level === userBadge?.level ? '0 0 0 4px rgba(212,175,55,0.2)' : 'none' }
+                  : {}"
+              >
+                <img
+                  :src="badge.image"
+                  :alt="badge.name"
+                  class="badge-step__img"
+                  :class="{
+                    'badge-step__img--active': badge.level === userBadge?.level,
+                    'badge-step__img--locked': Number(badge.level) > Number(userBadge?.level)
+                  }"
+                />
+              </div>
             </div>
             <span
               class="badge-step__name"
@@ -200,8 +271,10 @@
         <div class="badge-roadmap badge-roadmap--gs">
           <div class="badge-roadmap__line"></div>
           <div v-for="badge in badges" :key="badge.level" class="badge-step">
-            <div class="badge-step__dot badge-step__dot--gs">
-              <img :src="badge.image" :alt="badge.name" class="badge-step__img badge-step__img--locked" />
+            <div class="badge-step__dot-wrap">
+              <div class="badge-step__dot badge-step__dot--gs">
+                <img :src="badge.image" :alt="badge.name" class="badge-step__img badge-step__img--locked" />
+              </div>
             </div>
             <span class="badge-step__name badge-step__name--locked">{{ badge.name }}</span>
           </div>
@@ -586,7 +659,7 @@ useHead({
 .home-header__top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
 }
 
@@ -598,8 +671,8 @@ useHead({
 .greeting-label {
   display: block;
   font-size: 0.8125rem;
-  font-weight: 500;
-  opacity: 0.65;
+  font-weight: 700;
+  color: #D4AF37; /* Yellow gold */
   margin-bottom: 3px;
   letter-spacing: 0.01em;
 }
@@ -688,7 +761,7 @@ useHead({
 
 .hdr-diamond-ornament {
   position: absolute;
-  top: -7px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.85rem;
@@ -788,7 +861,7 @@ useHead({
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.55);
+  color: #D4AF37; /* Yellow gold */
   text-transform: uppercase;
   margin-bottom: 4px;
 }
@@ -799,16 +872,24 @@ useHead({
   font-weight: 900;
   letter-spacing: -0.03em;
   line-height: 1;
-  color: #fff;
+  color: #fff; /* White */
   margin-bottom: 4px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
 .badge-hero-card__arabic {
   display: block;
   font-size: 0.8rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.65);
+  font-weight: 700;
+  color: #FDE68A; /* Light warm gold for contrast and readability */
+}
+
+.badge-hero-card__juz {
+  font-weight: 800;
+  color: #FFF8D6; /* Bright gold-white for emphasis */
+  margin-left: 6px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
 }
 
 /* ================================================
@@ -864,6 +945,7 @@ useHead({
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .bpc-divider {
@@ -896,24 +978,23 @@ useHead({
 
 .bpc-ayah-count {
   display: block;
-  font-size: 1.1rem;
+  font-size: 2rem;
   font-weight: 900;
   color: var(--color-text);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.bpc-ayah-unit {
-  font-size: 0.8rem;
-  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 2px;
 }
 
 .bpc-ayah-sub {
   display: block;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-top: 2px;
+  white-space: nowrap;
 }
 
 /* Progress bar */
@@ -977,7 +1058,6 @@ useHead({
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 12px 4px 4px;
   background: var(--color-bg-card);
   border-radius: 16px;
   border: 1px solid rgba(0,0,0,0.04);
@@ -987,7 +1067,7 @@ useHead({
 
 .badge-roadmap__line {
   position: absolute;
-  top: 33px;
+  top: 40px; /* Perfectly centered with 48px dot-wrap height (16px padding-top + 24px half height) */
   left: 30px;
   right: 30px;
   height: 2px;
@@ -1000,30 +1080,38 @@ useHead({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   position: relative;
   z-index: 1;
   flex: 1;
 }
 
+.badge-step__dot-wrap {
+  height: 48px; /* Fixed height for alignment */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .badge-step__dot {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid #E5E7EB;
   background: white;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   overflow: hidden;
 }
 
 .badge-step__img {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
+  transition: all 0.3s ease;
 }
 
 .badge-step__img--active {
@@ -1059,9 +1147,15 @@ useHead({
 }
 
 .badge-step--active .badge-step__dot {
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border-width: 2.5px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.badge-step--active .badge-step__img {
+  width: 30px;
+  height: 30px;
 }
 
 /* ================================================
@@ -1431,5 +1525,161 @@ useHead({
 .badge-step__dot--gs {
   border-color: #D1D5DB !important;
   background: #F3F4F6 !important;
+}
+.home-header__divider {
+  position: relative;
+  z-index: 2;
+  line-height: 0;
+  margin-top: 0;
+}
+
+.home-header {
+  padding: calc(var(--safe-top) + 40px) 0 0 !important;
+  background:
+    radial-gradient(circle at 84% 18%, rgba(246, 215, 120, 0.14) 0%, rgba(246, 215, 120, 0.04) 28%, transparent 46%),
+    radial-gradient(circle at 22% 82%, rgba(255, 255, 255, 0.08) 0%, transparent 42%),
+    linear-gradient(155deg, #042719 0%, #064431 42%, #087052 100%) !important;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.home-header::before {
+  content: '';
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  right: -82px;
+  top: -84px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 244, 198, 0.18) 0%, rgba(212, 175, 55, 0.06) 42%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, transparent 42%, rgba(0, 0, 0, 0.06) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ornament background lebih premium dan halus */
+.home-header__arabesque {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.46;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='rgba(255,248,214,0.18)' stroke-width='1'%3E%3Cpath d='M48 4 56 32 92 48 56 64 48 92 40 64 4 48 40 32Z'/%3E%3Cpath d='M48 18 60 36 78 48 60 60 48 78 36 60 18 48 36 36Z'/%3E%3Ccircle cx='48' cy='48' r='18'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(circle at 16% 30%, rgba(255, 232, 163, 0.10) 0%, transparent 34%),
+    radial-gradient(circle at 78% 72%, rgba(255, 255, 255, 0.08) 0%, transparent 32%);
+  background-size: 96px 96px, auto, auto;
+  background-position: center top, left center, right bottom;
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.8) 58%,
+    rgba(0, 0, 0, 0.22) 100%
+  );
+}
+
+.home-header .container {
+  padding: 0 22px 38px;
+  position: relative;
+  z-index: 2;
+}
+
+.home-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.greeting-label {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #F6D978;
+  margin-bottom: 5px;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.home-header__top h1 {
+  font-size: 1.62rem;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  margin-bottom: 10px;
+  color: #fff;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+
+.home-header__sub {
+  font-size: 0.86rem;
+  opacity: 0.74;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.hdr-diamond {
+  color: #D4AF37;
+  opacity: 0.95;
+  font-size: 0.62rem;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+/* Avatar dibuat lebih nyatu dengan header */
+.hdr-avatar-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 230, 150, 0.75);
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 0 0 5px rgba(212, 175, 55, 0.14),
+    0 10px 22px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-decoration: none;
+  position: relative;
+}
+
+.hdr-avatar-btn::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
+.home-header__divider {
+  position: relative;
+  z-index: 2;
+  line-height: 0;
+  margin-top: -8px;
+  transform: translateY(1px);
+}
+
+.home-header__divider-svg {
+  width: 100%;
+  height: 72px;
+  display: block;
 }
 </style>

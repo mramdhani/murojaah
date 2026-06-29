@@ -1,9 +1,110 @@
 <template>
   <div class="page">
-    <header class="page-header">
-      <div class="container">
-        <h1>Pilih Surat</h1>
-        <p>Pilih surat untuk memulai hafalan</p>
+    <header class="surah-header">
+      <!-- Background arabesque overlay -->
+      <div class="surah-header__arabesque"></div>
+
+      <!-- Floating sparkles -->
+      <span class="hdr-sparkle hdr-sparkle--1">✦</span>
+      <span class="hdr-sparkle hdr-sparkle--2">◈</span>
+      <span class="hdr-sparkle hdr-sparkle--3">✧</span>
+      <span class="hdr-dot hdr-dot--1"></span>
+      <span class="hdr-dot hdr-dot--2"></span>
+
+      <div class="container" style="position: relative; z-index: 2; padding-bottom: 24px;">
+        <div class="surah-header__text">
+          <h1 class="surah-title">Pilih Surat</h1>
+          <p class="surah-subtitle">
+            <span class="hdr-diamond">◆</span>
+            Pilih surat untuk memulai hafalan
+          </p>
+        </div>
+      </div>
+
+      <!-- Elegant curved divider -->
+      <div class="surah-header__divider">
+        <svg
+          class="surah-header__divider-svg"
+          viewBox="0 0 390 70"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <linearGradient id="waveGold" x1="0" y1="0" x2="390" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#B8891D" />
+              <stop offset="50%" stop-color="#F7E7A2" />
+              <stop offset="100%" stop-color="#D4AF37" />
+            </linearGradient>
+
+            <linearGradient id="waveCream" x1="0" y1="0" x2="0" y2="70" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFFDF7" />
+              <stop offset="100%" stop-color="#FAFAF5" />
+            </linearGradient>
+          </defs>
+
+          <!-- area putih / cream -->
+          <path
+            d="M0,40
+               C45,26 92,22 132,28
+               C165,33 185,43 220,46
+               C272,50 320,43 390,22
+               L390,70
+               L0,70
+               Z"
+            fill="url(#waveCream)"
+          />
+
+          <!-- bayangan emas lembut -->
+          <path
+            d="M0,40
+               C45,26 92,22 132,28
+               C165,33 185,43 220,46
+               C272,50 320,43 390,22"
+            fill="none"
+            stroke="#D4AF37"
+            stroke-width="5"
+            opacity="0.22"
+          />
+
+          <!-- garis emas utama -->
+          <path
+            d="M0,40
+               C45,26 92,22 132,28
+               C165,33 185,43 220,46
+               C272,50 320,43 390,22"
+            fill="none"
+            stroke="url(#waveGold)"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+
+          <!-- highlight putih tipis -->
+          <path
+            d="M0,37
+               C45,23 92,19 132,25
+               C165,30 185,40 220,43
+               C272,47 320,40 390,19"
+            fill="none"
+            stroke="rgba(255,255,255,0.65)"
+            stroke-width="1"
+            stroke-linecap="round"
+          />
+        </svg>
+
+        <!-- <div class="hdr-diamond-ornament">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="ornGold" x1="2" y1="2" x2="22" y2="22">
+                <stop offset="0%" stop-color="#FFF8D6" />
+                <stop offset="50%" stop-color="#D4AF37" />
+                <stop offset="100%" stop-color="#9A6B0E" />
+              </linearGradient>
+            </defs>
+            <path d="M12 2L22 12L12 22L2 12Z" fill="url(#ornGold)" stroke="#FFF8D6" stroke-width="1.2"/>
+            <path d="M12 6L14.2 10L18 12L14.2 14L12 18L9.8 14L6 12L9.8 10Z" fill="#0B5D47"/>
+            <circle cx="12" cy="12" r="1.8" fill="#FFF8D6"/>
+          </svg>
+        </div> -->
       </div>
     </header>
 
@@ -160,9 +261,14 @@ useHead({ title: 'Pilih Surat — Murojaah' })
 </script>
 
 <style scoped>
+.page-content {
+  padding-top: 0 !important;
+}
+
 .controls-row {
   display: flex;
   gap: 10px;
+  margin-top: 16px; /* Give breathing room below the curved divider and diamond ornament */
   margin-bottom: 20px;
   width: 100%;
   position: sticky;
@@ -171,7 +277,7 @@ useHead({ title: 'Pilih Surat — Murojaah' })
   background: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-dark) 60%, var(--color-primary) 100%);
   padding: 12px;
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 15px rgba(5, 150, 105, 0.15);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.15);
   border: 1px solid var(--color-primary-dark);
 }
 
@@ -309,5 +415,129 @@ useHead({ title: 'Pilih Surat — Murojaah' })
   text-align: center;
   padding: 48px 20px;
   color: var(--color-text-muted);
+}
+
+/* ================================================
+   HEADER (Mirrors homepage & progress)
+   ================================================ */
+.surah-header {
+  padding: calc(var(--safe-top) + 36px) 0 0 !important;
+  background: linear-gradient(160deg, #052e1c 0%, #064E3B 45%, #0a6349 100%) !important;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle arabesque/geometric overlay */
+.surah-header__arabesque {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse at 10% 60%, rgba(212, 175, 55, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 45%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0 L35 25 L60 30 L35 35 L30 60 L25 35 L0 30 L25 25 Z' fill='none' stroke='rgba(212,175,55,0.04)' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: auto, auto, 60px 60px;
+  pointer-events: none;
+}
+
+/* Floating sparkles */
+.hdr-sparkle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hdr-sparkle--1 { top: 18%; right: 18%; font-size: 1rem; color: #FFF8D6; opacity: 0.4; animation: sparkFloat 4s ease-in-out infinite; }
+.hdr-sparkle--2 { top: 55%; left: 6%; font-size: 0.75rem; color: #D4AF37; opacity: 0.35; animation: sparkFloat 5.5s ease-in-out infinite reverse; }
+.hdr-sparkle--3 { top: 28%; left: 22%; font-size: 0.65rem; color: rgba(255, 255, 255, 0.5); opacity: 0.3; animation: sparkFloat 3.5s ease-in-out infinite; animation-delay: 1.5s; }
+
+.hdr-dot {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hdr-dot--1 { width: 5px; height: 5px; top: 62%; right: 28%; background: rgba(212, 175, 55, 0.3); animation: sparkFloat 6s ease-in-out infinite; animation-delay: 0.8s; }
+.hdr-dot--2 { width: 3px; height: 3px; top: 38%; left: 32%; background: rgba(255, 255, 255, 0.25); animation: sparkFloat 4.5s ease-in-out infinite; animation-delay: 2s; }
+
+@keyframes sparkFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.35; }
+  50% { transform: translateY(-7px) rotate(12deg); opacity: 0.7; }
+}
+
+.surah-header .container {
+  padding: 0 20px;
+}
+
+.surah-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.surah-subtitle {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.hdr-diamond {
+  color: #D4AF37;
+  opacity: 0.8;
+  font-size: 0.65rem;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* Elegant curved divider */
+.surah-header__divider {
+  position: relative;
+  z-index: 1;
+  line-height: 0;
+  margin-top: 4px;
+}
+
+/* Elegant curved divider */
+.surah-header__divider {
+  position: relative;
+  z-index: 2;
+  line-height: 0;
+  margin-top: 0;
+}
+
+.surah-header__divider-fill {
+  height: 0;
+}
+
+.surah-header__divider-svg {
+  width: 100%;
+  height: 44px;
+  display: block;
+}
+
+.hdr-diamond-ornament {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #FAFAF5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  box-shadow:
+    0 6px 16px rgba(5, 46, 28, 0.14),
+    0 0 0 4px rgba(250, 250, 245, 0.95),
+    0 0 0 5.5px rgba(212, 175, 55, 0.18);
 }
 </style>

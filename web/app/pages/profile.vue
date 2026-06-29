@@ -82,24 +82,85 @@
         </div>
       </div>
 
-      <!-- Elegant curved divider -->
-      <div class="profile-header__divider">
-        <div class="profile-header__divider-fill"></div>
-        <svg class="profile-header__divider-svg" viewBox="0 0 390 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="divGold" x1="0" y1="0" x2="390" y2="0" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="rgba(170,124,17,0)"/>
-              <stop offset="20%" stop-color="#D4AF37"/>
-              <stop offset="50%" stop-color="#FFF8D6"/>
-              <stop offset="80%" stop-color="#D4AF37"/>
-              <stop offset="100%" stop-color="rgba(170,124,17,0)"/>
-            </linearGradient>
-          </defs>
-          <path d="M0,28 Q195,0 390,28 L390,28 L0,28 Z" fill="#FAFAF5"/>
-          <path d="M0,28 Q195,0 390,28" fill="none" stroke="url(#divGold)" stroke-width="1.5"/>
-        </svg>
-        <div class="hdr-diamond-ornament">◆</div>
-      </div>
+  <!-- Smooth premium wave -->
+  <div class="profile-header__divider" aria-hidden="true">
+    <svg
+      class="profile-header__divider-svg"
+      viewBox="0 0 390 96"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="waveCream" x1="0" y1="0" x2="0" y2="96">
+          <stop offset="0%" stop-color="#FFFDF6" />
+          <stop offset="100%" stop-color="#FAFAF2" />
+        </linearGradient>
+
+        <linearGradient id="waveGold" x1="0" y1="0" x2="390" y2="0">
+          <stop offset="0%" stop-color="#A87518" />
+          <stop offset="32%" stop-color="#F7D979" />
+          <stop offset="62%" stop-color="#FFF3B8" />
+          <stop offset="100%" stop-color="#C6952B" />
+        </linearGradient>
+
+        <filter id="softWaveShadow" x="-20%" y="-50%" width="140%" height="180%">
+          <feDropShadow
+            dx="0"
+            dy="5"
+            stdDeviation="5"
+            flood-color="#04251A"
+            flood-opacity="0.14"
+          />
+        </filter>
+      </defs>
+
+      <!-- Cream area -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37
+           L390,96
+           L0,96
+           Z"
+        fill="url(#waveCream)"
+        filter="url(#softWaveShadow)"
+      />
+
+      <!-- Soft gold glow -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37"
+        fill="none"
+        stroke="#E7C765"
+        stroke-width="6"
+        stroke-linecap="round"
+        opacity="0.2"
+      />
+
+      <!-- Main gold line -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37"
+        fill="none"
+        stroke="url(#waveGold)"
+        stroke-width="2.2"
+        stroke-linecap="round"
+      />
+
+      <!-- White highlight -->
+      <path
+        d="M0,51
+           C58,35 118,33 174,42
+           C242,53 304,56 390,33"
+        fill="none"
+        stroke="rgba(255,255,255,0.75)"
+        stroke-width="1"
+        stroke-linecap="round"
+      />
+    </svg>
+  </div>
     </header>
 
     <div class="page-content container animate-slide-up">
@@ -522,9 +583,10 @@ useHead({
 /* Elegant curved divider */
 .profile-header__divider {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   line-height: 0;
-  margin-top: 4px;
+  margin-top: -8px;
+  transform: translateY(1px);
 }
 
 .profile-header__divider-fill {
@@ -533,20 +595,27 @@ useHead({
 
 .profile-header__divider-svg {
   width: 100%;
-  height: 28px;
+  height: 72px;
   display: block;
 }
 
 .hdr-diamond-ornament {
   position: absolute;
-  top: -7px;
+  top: 22px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.85rem;
-  color: #D4AF37;
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.6), 0 0 20px rgba(212, 175, 55, 0.3);
-  z-index: 3;
-  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #FAFAF5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  box-shadow:
+    0 6px 16px rgba(5, 46, 28, 0.14),
+    0 0 0 4px rgba(250, 250, 245, 0.95),
+    0 0 0 5.5px rgba(212, 175, 55, 0.18);
 }
 
 /* ================================================

@@ -9,6 +9,7 @@ export interface Badge {
   bgGradient: string
   minAyah: number
   maxAyah: number
+  juzRange: string
 }
 
 const badges: Badge[] = [
@@ -23,6 +24,7 @@ const badges: Badge[] = [
     bgGradient: 'linear-gradient(135deg, #EEF2FF, #C7D2FE)',
     minAyah: 0,
     maxAyah: 1039,
+    juzRange: '1 - 5 Juz',
   },
   {
     level: '2',
@@ -35,6 +37,7 @@ const badges: Badge[] = [
     bgGradient: 'linear-gradient(135deg, #D1FAE5, #A7F3D0)',
     minAyah: 1040,
     maxAyah: 2079,
+    juzRange: '6 - 10 Juz',
   },
   {
     level: '3',
@@ -47,6 +50,7 @@ const badges: Badge[] = [
     bgGradient: 'linear-gradient(135deg, #FEF3C7, #FCD34D)',
     minAyah: 2080,
     maxAyah: 3119,
+    juzRange: '11 - 15 Juz',
   },
   {
     level: '4',
@@ -59,6 +63,7 @@ const badges: Badge[] = [
     bgGradient: 'linear-gradient(135deg, #CFFAFE, #A5F3FC)',
     minAyah: 3120,
     maxAyah: 4159,
+    juzRange: '16 - 20 Juz',
   },
   {
     level: '5',
@@ -71,6 +76,7 @@ const badges: Badge[] = [
     bgGradient: 'linear-gradient(135deg, #F3E8FF, #E9D5FF)',
     minAyah: 4160,
     maxAyah: 5199,
+    juzRange: '21 - 25 Juz',
   },
   {
     level: '6',
@@ -83,6 +89,7 @@ const badges: Badge[] = [
     bgGradient: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
     minAyah: 5200,
     maxAyah: Infinity,
+    juzRange: '26 - 30 Juz',
   },
 ]
 
