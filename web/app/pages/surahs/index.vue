@@ -163,13 +163,36 @@ useHead({ title: 'Pilih Surat — Murojaah' })
 .controls-row {
   display: flex;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   width: 100%;
+  position: sticky;
+  top: 8px; /* small gap from top of screen when sticky for floating card effect */
+  z-index: 10;
+  background: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-dark) 60%, var(--color-primary) 100%);
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 15px rgba(5, 150, 105, 0.15);
+  border: 1px solid var(--color-primary-dark);
 }
 
 .search-wrapper {
   position: relative;
   flex: 1;
+}
+
+.search-wrapper .search-input {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding-left: 44px !important;
+}
+
+.search-wrapper .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.search-wrapper .search-icon {
+  color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .filter-wrapper {
@@ -181,25 +204,30 @@ useHead({ title: 'Pilih Surat — Murojaah' })
   width: 100%;
   height: 46px;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background-color: var(--color-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.15);
   padding: 0 12px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: white;
   cursor: pointer;
   outline: none;
   transition: border-color var(--transition-fast);
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 16px;
   padding-right: 32px;
 }
 
+.filter-select option {
+  color: var(--color-text) !important;
+  background-color: var(--color-bg-card) !important;
+}
+
 .filter-select:focus {
-  border-color: var(--color-primary);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .juz-label {

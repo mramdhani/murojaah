@@ -1,25 +1,61 @@
 <template>
   <div class="page">
     <header class="page-header">
-      <div class="container page-header__content">
-        <NuxtLink to="/surahs" class="page-header__back" aria-label="Kembali" @click="triggerHaptic">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </NuxtLink>
-        <div class="page-header__info page-header__surah-trigger" @click="openSurahPicker" v-if="surah">
-          <h1>
-            {{ surah.name_latin }}
-            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
+      <div class="container">
+        <!-- Top Row: Back button & Title Info -->
+        <div class="page-header__top-row">
+          <NuxtLink to="/surahs" class="page-header__back" aria-label="Kembali" @click="triggerHaptic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
             </svg>
-          </h1>
-          <p>Pilih ayat awal — {{ surah.total_ayah }} ayat · {{ surah.name_arabic }}</p>
+          </NuxtLink>
+          <div class="page-header__info page-header__surah-trigger" @click="openSurahPicker" v-if="surah">
+            <h1>
+              {{ surah.name_latin }}
+              <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </h1>
+            <p>Pilih ayat awal — {{ surah.total_ayah }} ayat · {{ surah.name_arabic }}</p>
+          </div>
+        </div>
+
+        <!-- Surah Pagination Navigation Bar inside Header -->
+        <div class="surah-pagination" v-if="surah">
+          <button
+            class="surah-pagelink surah-pagelink--prev"
+            :disabled="surah.number === 1"
+            @click="handleSurahSelect(surah.number - 1)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            <span class="surah-pagelink__name">
+              <span class="surah-pagelink__label">Sebelumnya</span>
+              <span class="surah-pagelink__title">{{ prevSurah ? prevSurah.name_latin : '-' }}</span>
+            </span>
+          </button>
+
+          <button
+            class="surah-pagelink surah-pagelink--next"
+            :disabled="surah.number === 114"
+            @click="handleSurahSelect(surah.number + 1)"
+          >
+            <span class="surah-pagelink__name">
+              <span class="surah-pagelink__label">Selanjutnya</span>
+              <span class="surah-pagelink__title">{{ nextSurah ? nextSurah.name_latin : '-' }}</span>
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
         </div>
       </div>
     </header>
 
     <div class="page-content container">
+
+
       <!-- Legend -->
       <div class="legend">
         <div class="legend__item"><span class="legend__dot legend__dot--fluent"></span> Lancar</div>
@@ -157,6 +193,18 @@ const filteredPickerSurahs = computed(() => {
   )
 })
 
+const prevSurah = computed(() => {
+  if (!surah.value || !surahList.value.length) return null
+  const currentNum = surah.value.number
+  return surahList.value.find(s => s.number === currentNum - 1) || null
+})
+
+const nextSurah = computed(() => {
+  if (!surah.value || !surahList.value.length) return null
+  const currentNum = surah.value.number
+  return surahList.value.find(s => s.number === currentNum + 1) || null
+})
+
 const loadData = async (id: number | string) => {
   loading.value = true
   try {
@@ -198,7 +246,14 @@ useHead({
 </script>
 
 <style scoped>
-.page-header__content {
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.page-header__top-row {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -225,6 +280,77 @@ useHead({
 .page-header__info {
   flex: 1;
   min-width: 0;
+}
+
+/* ========== SURAH PAGINATION IN HEADER ========== */
+.surah-pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  margin-bottom: 4px;
+}
+
+.surah-pagelink {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), background var(--transition-fast);
+  color: white;
+  text-align: left;
+  min-width: 0;
+}
+
+.surah-pagelink:active:not(:disabled) {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.surah-pagelink--next {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.surah-pagelink__name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.surah-pagelink__label {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  font-weight: 300; /* Light label weight */
+  letter-spacing: 0.06em;
+}
+
+.surah-pagelink__title {
+  font-size: 0.9375rem; /* Larger title */
+  font-weight: 800; /* Extra bold */
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.surah-pagelink:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.surah-pagelink:disabled .surah-pagelink__title {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .legend {

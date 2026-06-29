@@ -3,22 +3,29 @@
     <!-- Greeting Header -->
     <header class="home-header">
       <div class="container">
-        <div class="home-header__top">
-          <div class="home-header__greeting">
-            <span class="greeting-time">{{ greeting }}</span>
-            <h1>{{ user?.name || 'Kakak' }}</h1>
-          </div>
-          <NuxtLink to="/profile" class="avatar-btn" v-if="user?.avatar">
-            <img :src="user.avatar" alt="" class="avatar-img" />
-          </NuxtLink>
-          <div v-else class="avatar-placeholder">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-        </div>
-        <p class="home-header__subtitle">Jaga hafalan Qur'an, murojaah setiap hari ✨</p>
+    <div class="home-header__top">
+      <div class="home-header__greeting">
+        <span class="greeting-time">Assalamualaikum,</span>
+        <h1>{{ user?.name || 'Kakak' }}</h1>
+      </div>
+      <NuxtLink to="/profile" class="avatar-btn" v-if="user?.avatar">
+        <img :src="user.avatar" alt="" class="avatar-img" />
+      </NuxtLink>
+      <div v-else class="avatar-placeholder">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+    </div>
+    <p class="home-header__subtitle">Jaga hafalan Qur'an, murojaah setiap hari ✨</p>
+
+    <!-- Logo medallion in the center of the wave -->
+    <div class="home-header__logo-wrap">
+      <div class="home-header__logo">
+        <img src="/logo.png" alt="Murojaah" class="home-header__logo-img" />
+      </div>
+    </div>
       </div>
     </header>
 
@@ -137,27 +144,59 @@
         </div>
       </section>
 
-      <!-- Overall Stats -->
+      <!-- Overall Stats (Grid) -->
       <section class="section animate-fade-in" style="animation-delay: 0.15s" v-if="dashboard">
         <div class="section-header">
           <h2 class="section-title">Ringkasan</h2>
         </div>
-        <div class="overall-card">
-          <div class="overall-row">
-            <span class="overall-row__label">Total Surat</span>
-            <span class="overall-row__value">{{ dashboard.overall.surahs_reviewed }}</span>
+        <div class="summary-grid">
+          <div class="summary-card summary-card--surahs">
+            <div class="summary-card__icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+              </svg>
+            </div>
+            <div class="summary-card__stat">
+              <span class="summary-card__value">{{ dashboard.overall.surahs_reviewed }}</span>
+              <span class="summary-card__label">Total Surat</span>
+            </div>
           </div>
-          <div class="overall-row">
-            <span class="overall-row__label">Total Ayat</span>
-            <span class="overall-row__value">{{ dashboard.overall.total_reviewed }}</span>
+          <div class="summary-card summary-card--verses">
+            <div class="summary-card__icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </div>
+            <div class="summary-card__stat">
+              <span class="summary-card__value">{{ dashboard.overall.total_reviewed }}</span>
+              <span class="summary-card__label">Total Ayat</span>
+            </div>
           </div>
-          <div class="overall-row">
-            <span class="overall-row__label">Lancar</span>
-            <span class="overall-row__value overall-row__value--fluent">{{ dashboard.overall.fluent }}</span>
+          <div class="summary-card summary-card--fluent">
+            <div class="summary-card__icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <div class="summary-card__stat">
+              <span class="summary-card__value summary-card__value--fluent">{{ dashboard.overall.fluent }}</span>
+              <span class="summary-card__label">Lancar</span>
+            </div>
           </div>
-          <div class="overall-row">
-            <span class="overall-row__label">Belum Lancar</span>
-            <span class="overall-row__value overall-row__value--forgot">{{ dashboard.overall.doubtful + dashboard.overall.forgot }}</span>
+          <div class="summary-card summary-card--struggling">
+            <div class="summary-card__icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="summary-card__stat">
+              <span class="summary-card__value summary-card__value--struggling">{{ dashboard.overall.doubtful + dashboard.overall.forgot }}</span>
+              <span class="summary-card__label">Belum Lancar</span>
+            </div>
           </div>
         </div>
       </section>
@@ -275,33 +314,69 @@ useHead({
 <style scoped>
 /* ========== HEADER ========== */
 .home-header {
-  padding: calc(var(--safe-top) + 20px) 20px 28px;
-  background: linear-gradient(145deg, var(--color-primary-900) 0%, var(--color-primary-dark) 60%, var(--color-primary) 100%);
+  padding: calc(var(--safe-top) + 40px) 20px 76px !important;
+  background: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-dark) 60%, var(--color-primary) 100%) !important;
   color: white;
   position: relative;
-  overflow: hidden;
+  overflow: visible !important;
+  box-shadow: 0 4px 15px rgba(5, 150, 105, 0.12) !important;
 }
 
+/* Animated layered wave divider with gold gradient */
 .home-header::before {
-  content: '';
-  position: absolute;
-  top: -60%;
-  right: -25%;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 28px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 24' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23AA7C11'/%3E%3Cstop offset='25%25' stop-color='%23D4AF37'/%3E%3Cstop offset='50%25' stop-color='%23FFF8D6'/%3E%3Cstop offset='75%25' stop-color='%23D4AF37'/%3E%3Cstop offset='100%25' stop-color='%23AA7C11'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0,4 C20,20 35,6 50,12 C65,18 80,2 100,8 L100,24 L0,24 Z' fill='%23FAFAF5'/%3E%3Cpath d='M0,4 C20,20 35,6 50,12 C65,18 80,2 100,8' fill='none' stroke='url(%23g)' stroke-width='2'/%3E%3Cpath d='M0,7 C20,23 35,9 50,15 C65,21 80,5 100,11' fill='none' stroke='%23D4AF37' stroke-opacity='0.3' stroke-width='1.2'/%3E%3Cpath d='M0,2 C20,18 35,4 50,10 C65,16 80,0 100,6' fill='none' stroke='%23FFF8D6' stroke-opacity='0.2' stroke-width='0.8'/%3E%3C/svg%3E") !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  z-index: 2 !important;
+  top: auto !important;
+  right: auto !important;
+  border-radius: 0 !important;
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
 }
 
-.home-header::after {
-  content: '';
+/* Logo medallion - centered on the wave */
+.home-header__logo-wrap {
   position: absolute;
-  bottom: -50%;
-  left: -20%;
-  width: 200px;
-  height: 200px;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.3));
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+.home-header__logo {
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(135deg, #FFF8D6 0%, #FAF8F2 40%, #FAF8F2 60%, #FFF8D6 100%);
+  border: 2.5px solid #D4AF37;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 4px rgba(212, 175, 55, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.home-header__logo-img {
+  width: 65%;
+  height: 65%;
+  object-fit: contain;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
 }
 
 .home-header__top {
@@ -332,6 +407,9 @@ useHead({
   margin-top: 6px;
   position: relative;
   z-index: 1;
+  max-width: 90%;
+  padding-right: 12px;
+  line-height: 1.4;
 }
 
 .avatar-btn {
@@ -593,40 +671,84 @@ useHead({
 .mini-progress__segment--doubtful { background: var(--color-doubtful); }
 .mini-progress__segment--forgot { background: var(--color-forgot); }
 
-/* ========== OVERALL ========== */
-.overall-card {
+/* ========== SUMMARY GRID ========== */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.summary-card {
   background: var(--color-bg-card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-
-.overall-row {
+  padding: 18px 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.overall-row + .overall-row {
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
+.summary-card:active {
+  transform: scale(0.97);
 }
 
-.overall-row__label {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
+.summary-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.overall-row__value {
-  font-size: 1rem;
-  font-weight: 700;
+.summary-card--surahs .summary-card__icon {
+  background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+  color: #4F46E5;
+}
+
+.summary-card--verses .summary-card__icon {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  color: #B45309;
+}
+
+.summary-card--fluent .summary-card__icon {
+  background: var(--color-primary-50);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-100);
+}
+
+.summary-card--struggling .summary-card__icon {
+  background: #FFF1F2;
+  color: var(--color-forgot);
+  border: 1px solid #FECDD3;
+}
+
+.summary-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary-card__value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
   color: var(--color-text);
 }
 
-.overall-row__value--fluent { color: var(--color-fluent); }
-.overall-row__value--forgot { color: var(--color-forgot); }
+.summary-card__value--fluent { color: var(--color-fluent); }
+.summary-card__value--struggling { color: var(--color-forgot); }
+
+.summary-card__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
 
 /* ========== DEV INFO ========== */
 .dev-info__card {
