@@ -34,7 +34,7 @@
 
     <NuxtLink to="/profile" class="bottom-nav__item bottom-nav__item--profile" :class="{ active: route.path === '/profile' }">
       <span class="bottom-nav__avatar-wrap" v-if="user?.avatar">
-        <img :src="user.avatar" alt="" class="bottom-nav__avatar" />
+        <img :src="user.avatar" alt="" class="bottom-nav__avatar" referrerpolicy="no-referrer" />
       </span>
       <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>

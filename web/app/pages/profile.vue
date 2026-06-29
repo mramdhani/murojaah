@@ -36,7 +36,7 @@
           <template v-else>
             <div class="profile-info">
               <div class="profile-avatar">
-                <img v-if="user.avatar" :src="user.avatar" alt="Avatar" class="avatar-img" />
+                <img v-if="user.avatar" :src="user.avatar" alt="Avatar" class="avatar-img" referrerpolicy="no-referrer" />
                 <div v-else class="avatar-initials">
                   {{ user.name.charAt(0).toUpperCase() }}
                 </div>
@@ -68,15 +68,8 @@
                 </button>
               </div>
 
-              <!-- Logout Button -->
-              <button v-else class="btn btn-ghost btn-block logout-btn" @click="handleLogout">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                Keluar Akun
-              </button>
+              <!-- Logout Button moved to bottom -->
+              <div v-else style="display: none;"></div>
             </div>
           </template>
         </div>
@@ -220,7 +213,70 @@
         </div>
       </div>
       
-      <!-- App Version Info -->
+      <!-- App Settings Section -->
+      <div v-if="user && !user.is_guest" class="settings-section">
+        <div class="section-header">
+          <h2 class="section-title">Pengaturan Murojaah</h2>
+        </div>
+        <div class="settings-card">
+          <!-- Toggle 1: Reveal Mode (Tebak Hafalan vs Tampilkan Ayat) -->
+          <div class="settings-item">
+            <div class="settings-item__info">
+              <span class="settings-item__title">Tampilkan Ayat</span>
+              <span class="settings-item__desc">Otomatis tampilkan teks ayat saat berpindah.</span>
+            </div>
+            <div class="settings-item__action">
+              <label class="switch">
+                <input type="checkbox" v-model="revealMode" true-value="revealed" false-value="hidden" @change="handleRevealModeChange" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Toggle 2: Autoplay Murottal (Otomatis Play) -->
+          <div class="settings-item">
+            <div class="settings-item__info">
+              <span class="settings-item__title">Putar Otomatis</span>
+              <span class="settings-item__desc">Putar audio Qori tiap berpindah ayat.</span>
+            </div>
+            <div class="settings-item__action">
+              <label class="switch">
+                <input type="checkbox" v-model="autoplayAudio" @change="handleAutoplayChange" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Setting 3: Default Qari -->
+          <div class="settings-item">
+            <div class="settings-item__info">
+              <span class="settings-item__title">Pilihan Qori</span>
+              <span class="settings-item__desc">Pilih suara Qori default untuk murottal.</span>
+            </div>
+            <div class="settings-item__action">
+              <select v-model="selectedQari" class="settings-select" @change="handleQariChange">
+                <option v-for="qari in qariList" :key="qari.id" :value="qari.id">
+                  {{ qari.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logout Button (Moved to bottom) -->
+      <div v-if="user && !user.is_guest" style="margin-top: 24px;">
+        <button class="btn btn-danger btn-block" @click="handleLogout" style="padding: 14px; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Keluar Akun
+        </button>
+      </div>
+      
+      <!-- App Info -->
       <div class="app-info">
         <p>Murojaah App v1.2.0</p>
         <p class="app-info__desc">Didukung dengan Cloud Sync & Mode Remote Control Haptic</p>
@@ -258,6 +314,31 @@ const { user, loginWithGoogle, logout, loading: authLoading } = useAuth()
 const { apiFetch } = useApi()
 const { currentThemeId, setTheme, themesList } = useTheme()
 
+const revealMode = useCookie<string>('reveal_mode', {
+  default: () => 'hidden',
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const autoplayAudio = useCookie<boolean>('autoplay_audio', {
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const selectedQari = useCookie<string>('selected_qari', {
+  default: () => 'Maher_AlMuaiqly_64kbps',
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const qariList = [
+  { id: 'Maher_AlMuaiqly_64kbps', name: 'Maher Al-Muaiqly' },
+  { id: 'Alafasy_64kbps', name: 'Mishary Alafasy' },
+  { id: 'Ghamadi_40kbps', name: 'Saad Al-Ghamdi' },
+  { id: 'Husary_64kbps', name: 'Mahmoud Al-Husary' }
+]
+
 const showToast = inject<(message: string, type?: string) => void>('showToast')
 
 const stats = ref<any>(null)
@@ -279,6 +360,27 @@ const handleThemeChange = (themeId: any) => {
 const triggerHaptic = () => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     navigator.vibrate(30)
+  }
+}
+
+const handleRevealModeChange = () => {
+  triggerHaptic()
+  if (showToast) {
+    showToast('Pengaturan Metode Belajar disimpan!', 'fluent')
+  }
+}
+
+const handleAutoplayChange = () => {
+  triggerHaptic()
+  if (showToast) {
+    showToast('Pengaturan Putar Otomatis disimpan!', 'fluent')
+  }
+}
+
+const handleQariChange = () => {
+  triggerHaptic()
+  if (showToast) {
+    showToast('Pilihan Qori berhasil disimpan!', 'fluent')
   }
 }
 
@@ -793,5 +895,121 @@ useHead({
 
 .btn-danger:hover {
   background: #B91C1C;
+}
+
+/* ================================================
+   APP SETTINGS SECTION
+   ================================================ */
+.settings-section {
+  margin-top: 24px;
+}
+
+.settings-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  padding: 8px 16px;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1.5px solid #F3F4F6;
+  gap: 16px;
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+}
+
+.settings-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.settings-item__title {
+  font-weight: 750;
+  font-size: 0.9rem;
+  color: #1F2937;
+}
+
+.settings-item__desc {
+  font-size: 0.76rem;
+  color: #6B7280;
+  line-height: 1.4;
+  font-weight: 550;
+}
+
+.settings-item__action {
+  flex-shrink: 0;
+}
+
+.settings-select {
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.settings-select:focus {
+  border-color: var(--color-primary-light);
+}
+
+/* iOS-style toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #D1D5DB;
+  transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input:checked + .slider {
+  background-color: #10B981;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
 }
 </style>

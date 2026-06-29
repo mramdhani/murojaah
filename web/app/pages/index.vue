@@ -33,6 +33,7 @@
           :src="user.avatar"
           :alt="user.name"
           class="hdr-avatar-photo"
+          referrerpolicy="no-referrer"
         />
         <div v-else class="hdr-avatar-initials">
           {{ user?.name?.charAt(0)?.toUpperCase() || '?' }}

@@ -24,7 +24,7 @@
     </header>
 
     <!-- Qari Audio Control Bar -->
-    <div class="audio-panel" v-if="currentAyah">
+    <div class="audio-panel" v-if="currentAyah && isRevealed">
       <button class="audio-qari-selector" @click="openQariPicker">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -35,20 +35,17 @@
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
-
-      <button class="audio-play-btn" :class="{ 'audio-play-btn--playing': isPlaying }" @click="playAudio">
+      <button class="audio-play-btn" :class="{ 'audio-play-btn--playing': isPlaying }" @click="playAudio" :aria-label="isPlaying ? 'Jeda Audio' : 'Putar Audio'">
         <template v-if="isPlaying">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <rect x="6" y="4" width="4" height="16"></rect>
             <rect x="14" y="4" width="4" height="16"></rect>
           </svg>
-          <span>Jeda</span>
         </template>
         <template v-else>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
-          <span>Dengar</span>
         </template>
       </button>
     </div>
@@ -270,9 +267,21 @@ interface SurahItem {
   revelation_place: string
 }
 
+const revealMode = useCookie<string>('reveal_mode', {
+  default: () => 'hidden',
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const autoplayAudio = useCookie<boolean>('autoplay_audio', {
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
 const currentAyah = ref<AyahData | null>(null)
 const surahList = ref<SurahItem[]>([])
-const isRevealed = ref(false)
+const isRevealed = ref(revealMode.value === 'revealed')
 const submitting = ref(false)
 const flashStatus = ref<string | null>(null)
 const showSurahPicker = ref(false)
@@ -293,6 +302,8 @@ const selectedQari = useCookie<string>('selected_qari', {
 if (selectedQari.value === 'MaherAlMuaiqly_64kbps') {
   selectedQari.value = 'Maher_AlMuaiqly_64kbps'
 }
+
+
 
 const qariList = [
   { id: 'Maher_AlMuaiqly_64kbps', name: 'Maher Al-Muaiqly' },
@@ -547,9 +558,19 @@ const onTouchEnd = (e: TouchEvent) => {
 
 const fetchAyah = async (ayahNum: number) => {
   try {
+    // Start playing audio immediately (before waiting for API text) to reduce delay
+    // BUT only if the reveal mode is set to display the verse right away!
+    if (autoplayAudio.value && revealMode.value === 'revealed') {
+      setTimeout(() => {
+        playAudio()
+      }, 10) // Small delay to let UI thread breathe
+    }
+
     const res = await apiFetch<{ data: AyahData }>(`/surahs/${surahId.value}/ayahs/${ayahNum}`)
     currentAyah.value = res.data
-    isRevealed.value = false
+    
+    // Set display reveal state based on learning method setting
+    isRevealed.value = revealMode.value === 'revealed'
   } catch (e) {
     console.error('Failed to fetch ayah:', e)
   }
@@ -569,6 +590,14 @@ const toggleReveal = () => {
   if (isScrolling) return
   triggerHaptic(35)
   isRevealed.value = !isRevealed.value
+
+  // Jika auto-play aktif, putar suara Qori saat ayat mulai ditampilkan
+  if (isRevealed.value && autoplayAudio.value) {
+    playAudio()
+  } else if (!isRevealed.value) {
+    // Hentikan suara jika ayat disembunyikan kembali
+    stopAudio()
+  }
 }
 
 const hideAyah = () => {
@@ -1549,18 +1578,15 @@ useHead({
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   background: var(--color-primary-light);
   border: none;
-  border-radius: var(--radius-lg);
-  padding: 8px 16px;
+  border-radius: 50%;
   color: white;
-  font-weight: 700;
-  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
-  width: 108px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
 }
 
