@@ -54,13 +54,17 @@ const showToast = (message: string, type: ToastItem['type'] = 'info') => {
 
 provide('showToast', showToast)
 
-const { initSession, loading: authLoading, user } = useAuth()
+const { initSession, loading: authLoading, user, token } = useAuth()
 const { initTheme } = useTheme()
 
 // Safety: never show splash longer than 5 seconds
 // in case backend is unreachable on VPS
 const splashTimedOut = ref(false)
-const showSplash = computed(() => authLoading.value && !user.value && !splashTimedOut.value)
+const showSplash = computed(() => {
+  // If no auth token exists, do not show splash screen (prevents cold-start blocks for guests/new visitors)
+  if (!token.value) return false
+  return authLoading.value && !user.value && !splashTimedOut.value
+})
 
 onMounted(() => {
   initSession()

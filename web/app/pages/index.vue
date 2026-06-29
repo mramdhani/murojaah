@@ -265,7 +265,7 @@
         <div class="badge-hero-card badge-hero-card--locked">
           <div class="badge-hero-card__pattern"></div>
           <div class="badge-hero-card__img-wrap">
-            <img src="/images/badge-1.png" alt="Nur" class="badge-hero-card__img badge-hero-card__img--gs" />
+            <img :src="badges[0].image" alt="Nur" class="badge-hero-card__img badge-hero-card__img--gs" />
             <!-- Lock icon overlay -->
             <div class="badge-hero-card__lock-icon">🔒</div>
           </div>
