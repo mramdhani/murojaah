@@ -63,41 +63,40 @@
       </Transition>
     </main>
 
-    <!-- Review Buttons — 16% -->
-    <section class="remote-review">
-      <button class="review-btn review-btn--forgot" @click="submitReview('forgot')" :disabled="submitting">
-        <span class="review-btn__icon">✗</span>
-        <span class="review-btn__label">Lupa</span>
-      </button>
-      <button class="review-btn review-btn--doubtful" @click="submitReview('doubtful')" :disabled="submitting">
-        <span class="review-btn__icon">~</span>
-        <span class="review-btn__label">Ragu</span>
-      </button>
-      <button class="review-btn review-btn--fluent" @click="submitReview('fluent')" :disabled="submitting">
-        <span class="review-btn__icon">✓</span>
-        <span class="review-btn__label">Lancar</span>
-      </button>
-    </section>
-
-    <!-- Navigation — 20% -->
-    <nav class="remote-nav">
+    <!-- Unified Bottom Action Bar -->
+    <div class="remote-action-bar">
+      <!-- Secondary: Back to prev ayah (icon only) -->
       <button
-        class="nav-btn nav-btn--prev"
+        class="action-btn action-btn--back"
         @click="prevAyah"
         :disabled="currentAyahNumber <= 1"
+        aria-label="Sebelumnya"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
-        Sebelumnya
       </button>
-      <button class="nav-btn nav-btn--skip" @click="skipAyah" :disabled="currentAyahNumber >= totalAyah">
-        Selanjutnya
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"/>
+
+      <!-- Secondary: Forgot -->
+      <button class="action-btn action-btn--forgot" @click="submitReview('forgot')" :disabled="submitting">
+        <span class="action-btn__icon">&#10005;</span>
+        <span class="action-btn__label">Lupa</span>
+      </button>
+
+      <!-- Secondary: Doubtful -->
+      <button class="action-btn action-btn--doubtful" @click="submitReview('doubtful')" :disabled="submitting">
+        <span class="action-btn__icon">~</span>
+        <span class="action-btn__label">Ragu</span>
+      </button>
+
+      <!-- Primary: Fluent & Next -->
+      <button class="action-btn action-btn--fluent" @click="skipAyah" :disabled="submitting">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
         </svg>
+        <span class="action-btn__label">Lancar</span>
       </button>
-    </nav>
+    </div>
 
     <!-- iOS-style Surah Picker Sheet -->
     <Transition name="sheet">
@@ -423,11 +422,8 @@ const prevAyah = async () => {
 }
 
 const skipAyah = async () => {
-  if (currentAyahNumber.value >= totalAyah.value) return
-  triggerHaptic(45)
-  currentAyahNumber.value++
-  await fetchAyah(currentAyahNumber.value)
-  router.replace(`/remote/${surahId.value}/${currentAyahNumber.value}`)
+  // Clicking "Next" (Selanjutnya) or swiping left defaults to logging a "Lancar" (fluent) review
+  await submitReview('fluent')
 }
 
 const goBack = () => {
@@ -664,11 +660,13 @@ useHead({
 
 /* Content — 52% */
 .remote-content {
-  flex: 0 0 52%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px 10px;
+  /* Extra bottom padding so action bar doesn't cover content */
+  padding-bottom: calc(96px + var(--safe-bottom, 0px));
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
@@ -834,137 +832,125 @@ useHead({
 }
 
 /* Review Buttons — 16% */
-.remote-review {
-  flex: 0 0 16%;
+/* ===== Unified Bottom Action Bar (fixed to bottom for thumb reach) ===== */
+.remote-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 540px;
   display: flex;
-  gap: 12px;
-  padding: 8px 16px;
-  align-items: center;
+  gap: 10px;
+  align-items: stretch;
+  padding: 10px 14px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: var(--color-bg);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+  z-index: 100;
 }
 
-.review-btn {
-  flex: 1;
+/* Base for all action buttons */
+.action-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-radius: var(--radius-lg);
-  min-height: 72px;
-  font-weight: 700;
-  font-size: 0.9375rem;
-  transition: all var(--transition-fast);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-}
-
-.review-btn:active {
-  transform: scale(0.94);
-}
-
-.review-btn:disabled {
-  opacity: 0.5;
-}
-
-.review-btn__icon {
-  font-size: 1.35rem;
-  font-weight: 800;
-}
-
-.review-btn__label {
-  font-size: 0.8125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.review-btn--forgot {
-  background: var(--color-forgot-bg);
-  color: var(--color-forgot);
-  border: 2px solid var(--color-forgot);
-}
-
-.review-btn--forgot:active {
-  background: var(--color-forgot);
-  color: white;
-  box-shadow: 0 0 14px rgba(244, 63, 94, 0.4);
-}
-
-.review-btn--doubtful {
-  background: var(--color-doubtful-bg);
-  color: #B45309;
-  border: 2px solid var(--color-doubtful);
-}
-
-.review-btn--doubtful:active {
-  background: var(--color-doubtful);
-  color: white;
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
-}
-
-.review-btn--fluent {
-  background: var(--color-fluent-bg);
-  color: var(--color-fluent);
-  border: 2px solid var(--color-fluent);
-}
-
-.review-btn--fluent:active {
-  background: var(--color-fluent);
-  color: white;
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
-}
-
-/* Navigation — 20% */
-.remote-nav {
-  flex: 0 0 20%;
-  display: flex;
-  gap: 10px;
-  padding: 8px 16px;
-  padding-bottom: calc(var(--safe-bottom) + 16px);
-  align-items: stretch;
-}
-
-.nav-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 4px;
   border-radius: var(--radius-lg);
   font-weight: 700;
-  font-size: 1.15rem;
-  min-height: 60px;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.nav-btn:active {
-  transform: scale(0.97);
-}
-
-.nav-btn:disabled {
+.action-btn:disabled {
   opacity: 0.3;
   pointer-events: none;
 }
 
-.nav-btn--prev {
-  background: #FFFFFF;
+.action-btn:active {
+  transform: scale(0.93);
+}
+
+.action-btn__label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+
+.action-btn__icon {
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* Back (icon-only, small) */
+.action-btn--back {
+  width: 48px;
+  min-height: 72px;
+  background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
-  border: 2px solid rgba(0, 0, 0, 0.08);
+  border: 1.5px solid rgba(0, 0, 0, 0.07);
+  flex-shrink: 0;
 }
 
-.nav-btn--prev:active {
-  background: #F3F4F6;
+.action-btn--back:active {
+  background: var(--color-bg-card);
 }
 
-.nav-btn--skip {
-  background: var(--color-primary);
+/* Forgot — compact secondary */
+.action-btn--forgot {
+  width: 72px;
+  min-height: 72px;
+  background: var(--color-forgot-bg);
+  color: var(--color-forgot);
+  border: 1.5px solid var(--color-forgot);
+}
+
+.action-btn--forgot:active {
+  background: var(--color-forgot);
   color: white;
-  border: 2px solid var(--color-primary-dark);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.35);
 }
 
-.nav-btn--skip:active {
+/* Doubtful — compact secondary */
+.action-btn--doubtful {
+  width: 72px;
+  min-height: 72px;
+  background: var(--color-doubtful-bg);
+  color: #B45309;
+  border: 1.5px solid var(--color-doubtful);
+}
+
+.action-btn--doubtful:active {
+  background: var(--color-doubtful);
+  color: white;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+/* Fluent / Primary CTA — takes remaining space */
+.action-btn--fluent {
+  flex: 1;
+  min-height: 72px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  gap: 6px;
+}
+
+.action-btn--fluent .action-btn__label {
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+}
+
+.action-btn--fluent:active {
   background: var(--color-primary-dark);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.12);
 }
 
 /* iOS-style Sheet Picker Overlay */
