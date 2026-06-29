@@ -141,6 +141,7 @@ const STORAGE_KEY = 'murojaah_theme_id'
 export const useTheme = () => {
   const currentThemeId = useState<ThemeId>('app_theme_id', () => 'emerald')
   const { isLoggedIn } = useAuth()
+  const { apiFetch } = useApi()
 
   const currentTheme = computed<Theme>(() => themes[currentThemeId.value] || themes.emerald)
 
@@ -160,49 +161,73 @@ export const useTheme = () => {
     root.setAttribute('data-theme', theme.id)
   }
 
-  const setTheme = (themeId: ThemeId) => {
-    if (!isLoggedIn.value) return false // Prevent theme switching if not logged in
+  const setTheme = async (themeId: ThemeId) => {
+    if (!isLoggedIn.value) return false
     
     currentThemeId.value = themeId
     applyTheme(themeId)
+
+    // Save to localStorage immediately (optimistic)
     if (import.meta.client) {
       localStorage.setItem(STORAGE_KEY, themeId)
     }
+
+    // Sync to server so it's available across all devices
+    try {
+      await apiFetch('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ theme: themeId }),
+      })
+    } catch (e) {
+      console.warn('Failed to sync theme to server:', e)
+    }
+
     return true
   }
 
-  const initTheme = () => {
+  const initTheme = async () => {
     if (!import.meta.client) return
-    
-    // Check localStorage first
-    const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null
-    if (saved && themes[saved]) {
-      // Only apply if user is logged in
-      if (isLoggedIn.value) {
+
+    if (isLoggedIn.value) {
+      // Logged-in: fetch theme from server first (cross-device sync)
+      try {
+        const res = await apiFetch<{ data: { theme?: string } }>('/auth/me')
+        const serverTheme = (res?.data?.theme ?? 'emerald') as ThemeId
+        if (themes[serverTheme]) {
+          currentThemeId.value = serverTheme
+          applyTheme(serverTheme)
+          // Also update localStorage to reflect server value
+          localStorage.setItem(STORAGE_KEY, serverTheme)
+          return
+        }
+      } catch (e) {
+        // Fallback to localStorage if network is unavailable
+        console.warn('Could not fetch theme from server, using local:', e)
+      }
+
+      // Fallback: use localStorage
+      const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null
+      if (saved && themes[saved]) {
         currentThemeId.value = saved
         applyTheme(saved)
       } else {
-        // Force default emerald for guests
-        currentThemeId.value = 'emerald'
         applyTheme('emerald')
       }
     } else {
+      // Guest: always use default emerald
+      currentThemeId.value = 'emerald'
       applyTheme('emerald')
     }
   }
 
   // Watch login state: if user logs out, reset theme to emerald
-  watch(isLoggedIn, (newVal) => {
+  watch(isLoggedIn, async (newVal) => {
     if (!newVal) {
       currentThemeId.value = 'emerald'
       applyTheme('emerald')
     } else {
-      // Re-init theme if they log in
-      const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null
-      if (saved && themes[saved]) {
-        currentThemeId.value = saved
-        applyTheme(saved)
-      }
+      // On login, fetch theme from server
+      await initTheme()
     }
   })
 

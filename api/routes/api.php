@@ -25,6 +25,7 @@ Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallbac
 Route::middleware('auth:sanctum')->group(function () {
     // Current User profile
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::patch('/auth/me', [AuthController::class, 'updatePreferences']);
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);

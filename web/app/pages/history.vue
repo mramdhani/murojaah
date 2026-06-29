@@ -108,8 +108,21 @@ const groupedLogs = computed<LogGroup[]>(() => {
   }
   
   return Object.entries(groupsByDate).map(([date, surahsRecord]) => {
-    // Convert the surahs record into an array and sort by latest activity or keep order
-    const surahGroups = Object.values(surahsRecord)
+    const surahGroups = Object.values(surahsRecord).map(surahGroup => {
+      // Deduplicate: keep only the LATEST review per ayah_number within the same day & surah.
+      // This happens when a user reviews the same ayah multiple times (e.g. going back).
+      const latestPerAyah = new Map<number, ReviewLogItem>()
+      for (const item of surahGroup.items) {
+        const existing = latestPerAyah.get(item.ayah_number)
+        if (!existing || item.reviewed_at > existing.reviewed_at) {
+          latestPerAyah.set(item.ayah_number, item)
+        }
+      }
+      // Sort by ayah number descending (most recent ayah first)
+      const dedupedItems = Array.from(latestPerAyah.values())
+        .sort((a, b) => b.ayah_number - a.ayah_number)
+      return { ...surahGroup, items: dedupedItems }
+    })
     return { date, surahGroups }
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 })

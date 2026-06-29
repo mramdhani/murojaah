@@ -165,7 +165,28 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'avatar' => $user->avatar,
+                'theme' => $user->theme ?? 'emerald',
                 'is_guest' => str_contains($user->email, 'guest_'),
+            ]
+        ]);
+    }
+
+    /**
+     * PATCH /api/auth/me — Update user preferences (e.g. theme)
+     */
+    public function updatePreferences(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'theme' => 'sometimes|string|in:emerald,pink,lavender,ocean,sunset,forest,kabah,madinah,alaqsa',
+        ]);
+
+        $user = $request->user();
+        $user->update($validated);
+
+        return response()->json([
+            'data' => [
+                'id' => $user->id,
+                'theme' => $user->theme,
             ]
         ]);
     }
