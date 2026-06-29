@@ -2,14 +2,44 @@
   <div class="page">
     <header class="page-header">
       <div class="container page-header__content">
-        <NuxtLink to="/progress" class="page-header__back" aria-label="Kembali">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </NuxtLink>
-        <div class="page-header__info" v-if="data">
-          <h1>{{ data.surah_name }}</h1>
-          <p>{{ data.surah_name_arabic }} · {{ data.total_ayah }} ayat</p>
+        <!-- Left: Back Button & Title Info (Aligned Left) -->
+        <div class="page-header__left-group">
+          <NuxtLink to="/progress" class="page-header__back" aria-label="Kembali">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </NuxtLink>
+          <div class="page-header__info" v-if="data">
+            <h1>{{ data.surah_name }}</h1>
+            <p>{{ data.surah_name_arabic }} · {{ data.total_ayah }} ayat</p>
+          </div>
+        </div>
+
+        <!-- Right: Navigation Chevrons Group -->
+        <div class="page-header__right-nav" v-if="data">
+          <!-- Previous Surah Arrow -->
+          <NuxtLink
+            v-if="currentSurahId > 1"
+            :to="`/progress/${currentSurahId - 1}`"
+            class="page-header__nav-btn"
+            aria-label="Surat Sebelumnya"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </NuxtLink>
+
+          <!-- Next Surah Arrow (hidden if completed) -->
+          <NuxtLink
+            v-if="currentSurahId < 114 && !isCompleted"
+            :to="`/progress/${currentSurahId + 1}`"
+            class="page-header__nav-btn"
+            aria-label="Surat Selanjutnya"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </NuxtLink>
         </div>
       </div>
     </header>
@@ -40,6 +70,22 @@
         <div class="progress-bar__segment progress-bar__segment--fluent" :style="{ width: pct('fluent') }"></div>
         <div class="progress-bar__segment progress-bar__segment--doubtful" :style="{ width: pct('doubtful') }"></div>
         <div class="progress-bar__segment progress-bar__segment--forgot" :style="{ width: pct('forgot') }"></div>
+      </div>
+
+      <!-- Completion Congratulatory Card -->
+      <div class="completion-banner animate-fade-in" v-if="isCompleted" style="margin-bottom: 24px;">
+        <div class="completion-banner__decor">🎉</div>
+        <div class="completion-banner__text-wrap">
+          <h4 class="completion-banner__title">Maa Syaa Allah, Selesai!</h4>
+          <p class="completion-banner__desc">Kakak telah menyelesaikan murojaah surat {{ data.surah_name }} dengan lancar.</p>
+        </div>
+        <NuxtLink
+          v-if="currentSurahId < 114"
+          :to="`/remote/${currentSurahId + 1}/1`"
+          class="btn btn-primary completion-banner__btn"
+        >
+          Mulai Murojaah Selanjutnya
+        </NuxtLink>
       </div>
 
       <!-- Action: Murajaah Weak Ayahs -->
@@ -129,18 +175,38 @@ const statusLabel = (status: string) => {
   return labels[status] || status
 }
 
-onMounted(async () => {
-  try {
-    const res = await apiFetch<{ data: ProgressDetail }>(`/progress/surahs/${route.params.surahId}`)
-    data.value = res.data
-  } catch (e) {
-    console.error('Failed to load progress:', e)
-  }
-})
+  const currentSurahId = computed(() => Number(route.params.surahId))
 
-useHead({
-  title: computed(() => data.value ? `${data.value.surah_name} Progress — Murojaah` : 'Progress'),
-})
+  const isCompleted = computed(() => {
+    if (!data.value) return false
+    return data.value.summary.fluent === data.value.total_ayah
+  })
+
+  const fetchProgressDetail = async (id: number) => {
+    try {
+      const res = await apiFetch<{ data: ProgressDetail }>(`/progress/surahs/${id}`)
+      data.value = res.data
+    } catch (e) {
+      console.error('Failed to load progress:', e)
+    }
+  }
+
+  watch(
+    () => route.params.surahId,
+    (newId) => {
+      if (newId) {
+        fetchProgressDetail(Number(newId))
+      }
+    }
+  )
+
+  onMounted(() => {
+    fetchProgressDetail(currentSurahId.value)
+  })
+
+  useHead({
+    title: computed(() => data.value ? `${data.value.surah_name} Progress — Murojaah` : 'Progress'),
+  })
 </script>
 
 <style scoped>
@@ -239,5 +305,111 @@ useHead({
   font-size: 0.75rem;
   color: var(--color-text-muted);
   font-weight: 500;
+}
+
+/* ================================================
+   PAGE HEADER DYNAMIC SURAH NAVIGATION
+   ================================================ */
+.page-header__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-header__left-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 1;
+}
+
+.page-header__right-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.page-header__nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.page-header__nav-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+}
+
+.page-header__nav-btn:active {
+  transform: scale(0.9);
+}
+
+/* ================================================
+   SURAH COMPLETION BANNER
+   ================================================ */
+.completion-banner {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  border: 1.5px solid #A7F3D0;
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 24px;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.05);
+}
+
+.completion-banner__decor {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+  animation: bounce 2s infinite;
+}
+
+.completion-banner__text-wrap {
+  margin-bottom: 16px;
+}
+
+.completion-banner__title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #065F46;
+  margin: 0 0 4px;
+}
+
+.completion-banner__desc {
+  font-size: 0.8rem;
+  color: #047857;
+  font-weight: 600;
+  line-height: 1.4;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.completion-banner__btn {
+  width: 100%;
+  max-width: 260px;
+  background: #10B981 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+}
+
+.completion-banner__btn:hover {
+  background: #059669 !important;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 </style>
