@@ -447,11 +447,12 @@ const formatArabicText = (text: string) => {
   cleanText = cleanText.replace(/\u0672/g, '\u0670')
 
   // Strip all known Quranic annotation/waqf marks that render as black dots/blocks
-  // in browsers with Uthmanic Hafs font. Covers Arabic Supplement + Extended-A:
+  // in browsers with Uthmanic Hafs font. Covers Arabic Supplement + Extended-A.
+  // Exclude \u06E5 (small waw) and \u06E6 (small ya) as they are critical pronunciation marks.
   //   U+0610–U+061A — Arabic Annotation Signs
-  //   U+06D6–U+06ED — Small High/Low signs (waqf, saktah, mushaf marks)
+  //   U+06D6–U+06E4, U+06E7–U+06ED — Small High/Low signs (excluding small waw & small ya)
   //   U+08A0–U+08FF — Arabic Extended-A small high marks for Quran
-  cleanText = cleanText.replace(/[\u0610-\u061A\u06D6-\u06ED\u08A0-\u08FF]/g, '')
+  cleanText = cleanText.replace(/[\u0610-\u061A\u06D6-\u06E4\u06E7-\u06ED\u08A0-\u08FF]/g, '')
 
   // DEBUG: log remaining non-standard chars to console for identification
   const remainingChars = [...cleanText].filter(c => {
@@ -462,8 +463,8 @@ const formatArabicText = (text: string) => {
     console.log('⚠️ Non-standard Arabic chars found:', [...new Set(remainingChars)].map(c => c + ' U+' + c.charCodeAt(0).toString(16).toUpperCase()).join(', '))
   }
 
-  // Regex to match: [rule[text] or [rule:meta[text]
-  const regex = /\[([a-z0-9:]+)\[([^\]]+)\]/g
+  // Regex to match: [rule[text] or [rule:meta[text] (allowing empty text using *)
+  const regex = /\[([a-z0-9:]+)\[([^\]]*)\]/g
 
   // WebKit (Safari dan semua browser di iOS seperti Chrome/Firefox) merusak sambungan huruf Arab
   // jika dibungkus dalam tag span. Di iOS/Safari, kita hapus tag tajwid sepenuhnya (fallback ke teks polos)
@@ -478,6 +479,7 @@ const formatArabicText = (text: string) => {
     cleanText = cleanText.replace(regex, '$2')
   } else {
     cleanText = cleanText.replace(regex, (match, ruleInfo, char) => {
+      if (!char) return '' // Remove empty tags entirely instead of rendering broken brackets
       const rule = ruleInfo.split(':')[0]
       return `<span class="tajweed-${rule}">${char}</span>`
     })
