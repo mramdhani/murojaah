@@ -11,7 +11,7 @@
       <span class="hdr-dot hdr-dot--1"></span>
       <span class="hdr-dot hdr-dot--2"></span>
 
-      <div class="container" style="position: relative; z-index: 2; padding-bottom: 24px;">
+      <div class="container" style="position: relative; z-index: 2;">
         <div class="surah-header__text">
           <h1 class="surah-title">Pilih Surat</h1>
           <p class="surah-subtitle">
@@ -20,76 +20,85 @@
           </p>
         </div>
       </div>
+      <!-- Smooth premium wave -->
+      <div class="surah-header__divider" aria-hidden="true">
+    <svg
+      class="surah-header__divider-svg"
+      viewBox="0 0 390 96"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="waveCream" x1="0" y1="0" x2="0" y2="96">
+          <stop offset="0%" stop-color="#FFFDF6" />
+          <stop offset="100%" stop-color="#FAFAF2" />
+        </linearGradient>
 
-      <!-- Elegant curved divider -->
-      <div class="surah-header__divider">
-        <svg
-          class="surah-header__divider-svg"
-          viewBox="0 0 390 70"
-          preserveAspectRatio="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <linearGradient id="waveGold" x1="0" y1="0" x2="390" y2="0" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#B8891D" />
-              <stop offset="50%" stop-color="#F7E7A2" />
-              <stop offset="100%" stop-color="#D4AF37" />
-            </linearGradient>
+        <linearGradient id="waveGold" x1="0" y1="0" x2="390" y2="0">
+          <stop offset="0%" stop-color="#A87518" />
+          <stop offset="32%" stop-color="#F7D979" />
+          <stop offset="62%" stop-color="#FFF3B8" />
+          <stop offset="100%" stop-color="#C6952B" />
+        </linearGradient>
 
-            <linearGradient id="waveCream" x1="0" y1="0" x2="0" y2="70" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#FFFDF7" />
-              <stop offset="100%" stop-color="#FAFAF5" />
-            </linearGradient>
-          </defs>
-
-          <!-- area putih / cream -->
-          <path
-            d="M0,40
-               C45,26 92,22 132,28
-               C165,33 185,43 220,46
-               C272,50 320,43 390,22
-               L390,70
-               L0,70
-               Z"
-            fill="url(#waveCream)"
+        <filter id="softWaveShadow" x="-20%" y="-50%" width="140%" height="180%">
+          <feDropShadow
+            dx="0"
+            dy="5"
+            stdDeviation="5"
+            flood-color="#04251A"
+            flood-opacity="0.14"
           />
+        </filter>
+      </defs>
 
-          <!-- bayangan emas lembut -->
-          <path
-            d="M0,40
-               C45,26 92,22 132,28
-               C165,33 185,43 220,46
-               C272,50 320,43 390,22"
-            fill="none"
-            stroke="#D4AF37"
-            stroke-width="5"
-            opacity="0.22"
-          />
+      <!-- Cream area -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37
+           L390,96
+           L0,96
+           Z"
+        fill="url(#waveCream)"
+        filter="url(#softWaveShadow)"
+      />
 
-          <!-- garis emas utama -->
-          <path
-            d="M0,40
-               C45,26 92,22 132,28
-               C165,33 185,43 220,46
-               C272,50 320,43 390,22"
-            fill="none"
-            stroke="url(#waveGold)"
-            stroke-width="2.2"
-            stroke-linecap="round"
-          />
+      <!-- Soft gold glow -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37"
+        fill="none"
+        stroke="#E7C765"
+        stroke-width="6"
+        stroke-linecap="round"
+        opacity="0.2"
+      />
 
-          <!-- highlight putih tipis -->
-          <path
-            d="M0,37
-               C45,23 92,19 132,25
-               C165,30 185,40 220,43
-               C272,47 320,40 390,19"
-            fill="none"
-            stroke="rgba(255,255,255,0.65)"
-            stroke-width="1"
-            stroke-linecap="round"
-          />
-        </svg>
+      <!-- Main gold line -->
+      <path
+        d="M0,55
+           C58,39 118,37 174,46
+           C242,57 304,60 390,37"
+        fill="none"
+        stroke="url(#waveGold)"
+        stroke-width="2.2"
+        stroke-linecap="round"
+      />
+
+      <!-- White highlight -->
+      <path
+        d="M0,51
+           C58,35 118,33 174,42
+           C242,53 304,56 390,33"
+        fill="none"
+        stroke="rgba(255,255,255,0.75)"
+        stroke-width="1"
+        stroke-linecap="round"
+      />
+    </svg>
+  </div>
 
         <!-- <div class="hdr-diamond-ornament">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -105,7 +114,6 @@
             <circle cx="12" cy="12" r="1.8" fill="#FFF8D6"/>
           </svg>
         </div> -->
-      </div>
     </header>
 
     <div class="page-content container">
@@ -397,8 +405,9 @@ useHead({ title: 'Pilih Surat — Murojaah' })
 
 .surah-card__arabic {
   font-family: var(--font-arabic);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   color: var(--color-primary-dark);
+  direction: rtl;
 }
 
 .surah-card__meta {
@@ -426,6 +435,9 @@ useHead({ title: 'Pilih Surat — Murojaah' })
   color: white;
   position: relative;
   overflow: hidden;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 /* Subtle arabesque/geometric overlay */
@@ -499,17 +511,12 @@ useHead({ title: 'Pilih Surat — Murojaah' })
 /* Elegant curved divider */
 .surah-header__divider {
   position: relative;
-  z-index: 1;
-  line-height: 0;
-  margin-top: 4px;
-}
-
-/* Elegant curved divider */
-.surah-header__divider {
-  position: relative;
   z-index: 2;
   line-height: 0;
-  margin-top: 0;
+  margin-top: -8px;
+  transform: translateY(1px);
+  border: none !important;
+  border-bottom: none !important;
 }
 
 .surah-header__divider-fill {
@@ -518,8 +525,10 @@ useHead({ title: 'Pilih Surat — Murojaah' })
 
 .surah-header__divider-svg {
   width: 100%;
-  height: 44px;
+  height: 72px;
   display: block;
+  border: none !important;
+  outline: none !important;
 }
 
 .hdr-diamond-ornament {

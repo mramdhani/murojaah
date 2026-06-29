@@ -125,7 +125,8 @@
     <div class="page-content container">
 
       <!-- ===== BADGE HERO + PROGRESS (hanya jika sudah login) ===== -->
-      <section class="section section--badge animate-fade-in" v-if="dashboard && isLoggedIn">
+      <!-- Klik badge untuk lihat progress lengkap -->
+      <NuxtLink to="/progress" class="section section--badge animate-fade-in section--badge-link" v-if="dashboard && isLoggedIn">
 
         <!-- Dark Green Hero Card -->
         <div class="badge-hero-card">
@@ -232,7 +233,7 @@
             >{{ badge.name }}</span>
           </div>
         </div>
-      </section>
+      </NuxtLink>
 
       <!-- ===== BADGE PREVIEW (greyscale, untuk tamu/belum login) ===== -->
       <section v-else-if="!isLoggedIn" class="section section--badge animate-fade-in">
@@ -342,7 +343,7 @@
       <!-- ===== QUICK ACTIONS ===== -->
       <section class="section animate-fade-in" style="animation-delay: 0.1s">
         <div class="quick-actions">
-          <NuxtLink to="/surahs" class="quick-action quick-action--primary">
+          <div @click="openDrawer" class="quick-action quick-action--primary" style="cursor: pointer;">
             <div class="qa-icon-wrap">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="5 3 19 12 5 21 5 3"/>
@@ -350,7 +351,7 @@
             </div>
             <span>Mulai Murojaah</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
-          </NuxtLink>
+          </div>
           <NuxtLink
             v-if="dashboard?.last_session"
             :to="`/remote/${dashboard.last_session.surah_id}/${dashboard.last_session.current_ayah_number}`"
@@ -467,6 +468,7 @@
 const router = useRouter()
 const { apiFetch } = useApi()
 const { user, isLoggedIn } = useAuth()
+const { open: openDrawer } = useMurojaahDrawer()
 
 interface SurahProgress {
   id: number
@@ -699,976 +701,41 @@ useHead({
   color: #D4AF37;
   opacity: 0.8;
   font-size: 0.6rem;
-  margin-top: 3px;
-  flex-shrink: 0;
+  line-height: 1.6;
 }
 
-/* Avatar/Badge button */
-/* Avatar button (logged in) */
+/* Avatar button */
 .hdr-avatar-btn {
-  width: 52px;
-  height: 52px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  border: 2.5px solid rgba(212, 175, 55, 0.6);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12), 0 6px 16px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  transition: border-color 0.2s, transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-  text-decoration: none;
-  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hdr-avatar-btn:active {
+  transform: scale(0.93);
 }
 
 .hdr-avatar-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 50%;
 }
 
 .hdr-avatar-initials {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: white;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.4) 0%, rgba(255, 255, 255, 0.15) 100%);
-  letter-spacing: 0;
-}
-
-/* Elegant curved divider */
-.home-header__divider {
-  position: relative;
-  z-index: 2;
-  line-height: 0;
-  margin-top: 4px;
-}
-
-.home-header__divider-fill {
-  height: 0;
-}
-
-.home-header__divider-svg {
-  width: 100%;
-  height: 28px;
-  display: block;
-}
-
-.hdr-diamond-ornament {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.85rem;
-  color: #D4AF37;
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.6), 0 0 20px rgba(212, 175, 55, 0.3);
-  z-index: 3;
-  line-height: 1;
-}
-
-/* ================================================
-   SECTIONS
-   ================================================ */
-.section {
-  margin-bottom: 20px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.section-title {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.section-link {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-/* ================================================
-   BADGE HERO CARD (dark green)
-   ================================================ */
-.badge-hero-card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 22px 20px;
-  border-radius: 20px 20px 0 0;
-  background: linear-gradient(135deg, #064E3B 0%, #065f46 50%, #047857 100%);
-  border: 1.5px solid rgba(212, 175, 55, 0.3);
-  border-bottom: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.badge-hero-card__pattern {
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(ellipse at 5% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='20' cy='20' r='12' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/svg%3E");
-  background-size: auto, 40px 40px;
-  pointer-events: none;
-}
-
-.badge-hero-card__img-wrap {
-  position: relative;
-  flex-shrink: 0;
-  z-index: 1;
-}
-
-.badge-hero-card__img {
-  width: 90px;
-  height: 90px;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35));
-  animation: heroFloat 3s ease-in-out infinite;
-}
-
-@keyframes heroFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-.badge-hero-card__info {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  z-index: 1;
-  color: white;
-}
-
-.badge-hero-card__label {
-  display: block;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #D4AF37; /* Yellow gold */
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.badge-hero-card__name {
-  display: block;
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  color: #fff; /* White */
-  margin-bottom: 4px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.25);
-}
-
-.badge-hero-card__arabic {
-  display: block;
-  font-size: 0.8rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #FDE68A; /* Light warm gold for contrast and readability */
-}
-
-.badge-hero-card__juz {
-  font-weight: 800;
-  color: #FFF8D6; /* Bright gold-white for emphasis */
-  margin-left: 6px;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-}
-
-/* ================================================
-   BADGE PROGRESS CARD (white, rounded bottom)
-   ================================================ */
-.badge-progress-card {
-  background: var(--color-bg-card);
-  border-radius: 0 0 20px 20px;
-  border: 1.5px solid rgba(212, 175, 55, 0.2);
-  border-top: none;
-  padding: 18px 20px 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  margin-bottom: 12px;
-}
-
-.badge-progress-card--done {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px;
-}
-
-.bpc-done-icon { font-size: 1.5rem; }
-.bpc-done-text { font-size: 0.875rem; font-weight: 600; color: var(--color-text-secondary); }
-
-/* Top row: percent + ayat */
-.bpc-top {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 14px;
-}
-
-.bpc-pct-block {
-  flex: 1;
-  padding-right: 20px;
-}
-
-.bpc-pct {
-  display: block;
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  color: var(--color-text);
-  margin-bottom: 2px;
-}
-
-.bpc-pct-label {
-  display: block;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.bpc-divider {
-  width: 1px;
-  height: 44px;
-  background: rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
-  margin-right: 20px;
-}
-
-.bpc-ayah-block {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1.2;
-}
-
-.bpc-book-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #FEF3C7;
-  border: 1.5px solid #FDE68A;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #B45309;
-  flex-shrink: 0;
-}
-
-.bpc-ayah-count {
-  display: block;
-  font-size: 2rem;
-  font-weight: 900;
-  color: var(--color-text);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin-bottom: 2px;
-}
-
-.bpc-ayah-sub {
-  display: block;
-  font-size: 0.7rem;
-  color: var(--color-text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 2px;
-  white-space: nowrap;
-}
-
-/* Progress bar */
-.bpc-bar-wrap {
-  margin-bottom: 14px;
-}
-
-.bpc-bar {
-  height: 8px;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.bpc-bar-fill {
-  height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-
-.bpc-bar-fill::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 8px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 99px;
-  filter: blur(2px);
-}
-
-/* Next badge preview */
-.bpc-next {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.bpc-next-img {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  opacity: 0.55;
-  filter: grayscale(0.3);
-}
-
-.bpc-next-name {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--color-text-secondary);
-}
-
-/* ================================================
-   BADGE ROADMAP
-   ================================================ */
-.badge-roadmap {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: var(--color-bg-card);
-  border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.04);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  padding: 16px 8px 12px;
-}
-
-.badge-roadmap__line {
-  position: absolute;
-  top: 40px; /* Perfectly centered with 48px dot-wrap height (16px padding-top + 24px half height) */
-  left: 30px;
-  right: 30px;
-  height: 2px;
-  background: linear-gradient(90deg, var(--color-primary-100) 0%, #E5E7EB 100%);
-  z-index: 0;
-  border-radius: 99px;
-}
-
-.badge-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-  z-index: 1;
-  flex: 1;
-}
-
-.badge-step__dot-wrap {
-  height: 48px; /* Fixed height for alignment */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.badge-step__dot {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #E5E7EB;
-  background: white;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-  overflow: hidden;
-}
-
-.badge-step__img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  transition: all 0.3s ease;
-}
-
-.badge-step__img--active {
-  animation: imgPulse 2.5s ease-in-out infinite;
-}
-
-@keyframes imgPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-}
-
-.badge-step__img--locked {
-  opacity: 0.22;
-  filter: grayscale(1);
-}
-
-.badge-step__name {
-  font-size: 0.58rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  text-align: center;
-  color: var(--color-text-secondary);
-}
-
-.badge-step__name--active {
-  color: var(--color-primary-dark);
-  font-weight: 800;
-}
-
-.badge-step__name--locked {
-  color: #D1D5DB;
-}
-
-.badge-step--active .badge-step__dot {
-  width: 46px;
-  height: 46px;
-  border-width: 2.5px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-.badge-step--active .badge-step__img {
-  width: 30px;
-  height: 30px;
-}
-
-/* ================================================
-   TODAY STATS
-   ================================================ */
-.today-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.today-stat {
-  background: var(--color-bg-card);
-  border-radius: 16px;
-  padding: 16px 10px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  position: relative;
-  overflow: hidden;
-}
-
-.today-stat::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  border-radius: 99px 99px 0 0;
-}
-
-.today-stat--fluent::before { background: var(--color-fluent); }
-.today-stat--doubtful::before { background: var(--color-doubtful); }
-.today-stat--forgot::before { background: var(--color-forgot); }
-
-.today-stat__icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 10px;
-}
-
-.today-stat__icon-wrap--fluent { background: var(--color-fluent-bg); color: var(--color-fluent); border: 1px solid var(--color-fluent-border); }
-.today-stat__icon-wrap--doubtful { background: var(--color-doubtful-bg); color: var(--color-doubtful); border: 1px solid var(--color-doubtful-border); }
-.today-stat__icon-wrap--forgot { background: var(--color-forgot-bg); color: var(--color-forgot); border: 1px solid var(--color-forgot-border); }
-
-.today-stat__value {
-  display: block;
-  font-size: 2rem;
-  font-weight: 900;
-  line-height: 1;
-  margin-bottom: 4px;
-  letter-spacing: -0.03em;
-}
-
-.today-stat__label {
-  font-size: 0.67rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.today-stat--fluent .today-stat__value { color: var(--color-fluent); }
-.today-stat--doubtful .today-stat__value { color: var(--color-doubtful); }
-.today-stat--forgot .today-stat__value { color: var(--color-forgot); }
-
-.empty-today {
-  background: var(--color-bg-card);
-  border-radius: 16px;
-  padding: 28px 20px;
-  text-align: center;
-  border: 1.5px dashed rgba(5, 150, 105, 0.15);
-}
-
-.empty-today__icon { font-size: 2rem; margin-bottom: 8px; }
-.empty-today__title { font-weight: 700; font-size: 0.9375rem; color: var(--color-text); margin-bottom: 3px; }
-.empty-today__sub { font-size: 0.8125rem; color: var(--color-text-muted); }
-
-.stat-skeleton { height: 100px; border-radius: 16px; }
-
-/* ================================================
-   QUICK ACTIONS
-   ================================================ */
-.quick-actions { display: flex; flex-direction: column; gap: 10px; }
-
-.quick-action {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  font-weight: 700;
-  font-size: 0.9375rem;
-  text-decoration: none;
-  transition: transform var(--transition-fast), opacity var(--transition-fast);
-}
-
-.quick-action span { flex: 1; }
-.quick-action:active { transform: scale(0.98); opacity: 0.9; }
-
-.qa-icon-wrap {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  flex-shrink: 0;
-}
-
-.qa-icon-wrap--outline {
-  background: var(--color-primary-50);
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary-100);
-}
-
-.quick-action--primary {
-  background: linear-gradient(135deg, #059669 0%, #047857 60%, #065f46 100%) !important;
-  color: white !important;
-  border: none !important;
-  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.28), inset 0 1px 0 rgba(255,255,255,0.15);
-}
-
-.quick-action--outline {
-  background: var(--color-bg-card);
-  color: var(--color-text);
-  border: 1.5px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-/* ================================================
-   SURAH LIST
-   ================================================ */
-.surah-list { display: flex; flex-direction: column; gap: 8px; }
-
-.surah-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  background: var(--color-bg-card);
-  border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.04);
-  cursor: pointer;
-  transition: transform var(--transition-fast);
-}
-
-.surah-card:active { transform: scale(0.99); }
-
-.surah-card__left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-
-.surah-card__number {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--color-primary-50);
-  color: var(--color-primary-dark);
-  font-size: 0.8rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid var(--color-primary-100);
-}
-
-.surah-card__name { display: block; font-weight: 700; font-size: 0.9375rem; }
-.surah-card__arabic { display: block; font-family: var(--font-arabic); font-size: 0.85rem; color: var(--color-text-muted); margin-top: 1px; }
-.surah-card__right { text-align: right; flex-shrink: 0; min-width: 72px; }
-.surah-card__pct { font-size: 0.75rem; font-weight: 700; color: var(--color-text-secondary); margin-bottom: 5px; }
-
-.mini-progress { height: 5px; }
-.mini-progress__bar { display: flex; height: 100%; border-radius: 99px; overflow: hidden; background: var(--color-unreviewed-bg); }
-.mini-progress__seg { height: 100%; transition: width 0.3s ease; }
-.mini-progress__seg--fluent { background: var(--color-fluent); }
-.mini-progress__seg--doubtful { background: var(--color-doubtful); }
-.mini-progress__seg--forgot { background: var(--color-forgot); }
-
-/* ================================================
-   SUMMARY GRID
-   ================================================ */
-.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-.summary-card {
-  background: var(--color-bg-card);
-  border-radius: 16px;
-  padding: 16px 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.04);
-  transition: transform var(--transition-fast);
-}
-
-.summary-card:active { transform: scale(0.97); }
-
-.summary-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.summary-card--surahs .summary-card__icon { background: linear-gradient(135deg, #EEF2FF, #E0E7FF); color: #4F46E5; }
-.summary-card--verses .summary-card__icon { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #B45309; }
-.summary-card--fluent .summary-card__icon { background: var(--color-primary-50); color: var(--color-primary); border: 1px solid var(--color-primary-100); }
-.summary-card--struggling .summary-card__icon { background: #FFF1F2; color: var(--color-forgot); border: 1px solid #FECDD3; }
-
-.summary-card__stat { display: flex; flex-direction: column; gap: 2px; }
-.summary-card__value { font-size: 1.4rem; font-weight: 900; line-height: 1; color: var(--color-text); letter-spacing: -0.02em; }
-.summary-card__value--fluent { color: var(--color-fluent); }
-.summary-card__value--struggling { color: var(--color-forgot); }
-.summary-card__label { font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-
-/* ================================================
-   DEV INFO
-   ================================================ */
-.dev-info__card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  background: var(--color-bg-card);
-  border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  text-decoration: none;
-  transition: transform var(--transition-fast);
-}
-
-.dev-info__card:active { transform: scale(0.98); }
-.dev-info__left { display: flex; align-items: center; gap: 12px; }
-
-.dev-info__icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--color-primary-50);
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid var(--color-primary-100);
-}
-
-.dev-info__text strong { display: block; font-size: 0.875rem; font-weight: 700; color: var(--color-text); margin-bottom: 1px; }
-.dev-info__text p { font-size: 0.75rem; color: var(--color-text-muted); }
-
-/* ================================================
-   BADGE GUEST / LOCKED PREVIEW (greyscale)
-   ================================================ */
-.badge-hero-card--locked {
-  background: linear-gradient(135deg, #9CA3AF 0%, #9CA3AF 100%) !important;
-  border-color: rgba(156, 163, 175, 0.35) !important;
-}
-
-.badge-hero-card--locked .badge-hero-card__pattern {
-  opacity: 0.35;
-}
-
-.badge-hero-card__img--gs {
-  filter: grayscale(1) brightness(0.7) drop-shadow(0 8px 16px rgba(0,0,0,0.35)) !important;
-  animation: none !important;
-}
-
-.badge-hero-card__lock-icon {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(31, 41, 55, 0.9);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  z-index: 3;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-.badge-hero-card__label--gs {
-  color: rgba(255, 255, 255, 0.4) !important;
-}
-
-.badge-hero-card__name--gs {
-  color: rgba(255, 255, 255, 0.5) !important;
-  text-shadow: none !important;
-}
-
-.badge-hero-card__arabic--gs {
-  color: rgba(255, 255, 255, 0.35) !important;
-}
-
-/* CTA card between hero and roadmap */
-.badge-cta-card {
-  background: var(--color-bg-card);
-  border: 1.5px dashed rgba(107, 114, 128, 0.3);
-  border-top: none;
-  border-bottom: none;
-  padding: 18px 20px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-.badge-cta-card__icon {
-  font-size: 1.8rem;
-  margin-bottom: 8px;
-}
-
-.badge-cta-card__text {
-  font-size: 0.8125rem;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-  margin-bottom: 14px;
-}
-
-.badge-cta-card__text strong {
-  display: block;
-  margin-top: 4px;
-  color: var(--color-primary-dark);
-  font-weight: 700;
-}
-
-.badge-cta-card__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #059669 0%, #047857 60%, #065f46 100%);
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
-  transition: transform var(--transition-fast), opacity var(--transition-fast);
-}
-
-.badge-cta-card__btn:active {
-  transform: scale(0.97);
-  opacity: 0.9;
-}
-
-/* Greyscale roadmap */
-.badge-roadmap--gs {
-  background: rgba(243, 244, 246, 0.5);
-  border-color: rgba(0, 0, 0, 0.04);
-}
-
-.badge-roadmap--gs .badge-roadmap__line {
-  background: linear-gradient(90deg, #D1D5DB 0%, #E5E7EB 100%);
-}
-
-.badge-step__dot--gs {
-  border-color: #D1D5DB !important;
-  background: #F3F4F6 !important;
-}
-.home-header__divider {
-  position: relative;
-  z-index: 2;
-  line-height: 0;
-  margin-top: 0;
-}
-
-.home-header {
-  padding: calc(var(--safe-top) + 40px) 0 0 !important;
-  background:
-    radial-gradient(circle at 84% 18%, rgba(246, 215, 120, 0.14) 0%, rgba(246, 215, 120, 0.04) 28%, transparent 46%),
-    radial-gradient(circle at 22% 82%, rgba(255, 255, 255, 0.08) 0%, transparent 42%),
-    linear-gradient(155deg, #042719 0%, #064431 42%, #087052 100%) !important;
-  color: white;
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-.home-header::before {
-  content: '';
-  position: absolute;
-  width: 230px;
-  height: 230px;
-  right: -82px;
-  top: -84px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle, rgba(255, 244, 198, 0.18) 0%, rgba(212, 175, 55, 0.06) 42%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.home-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, transparent 42%, rgba(0, 0, 0, 0.06) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Ornament background lebih premium dan halus */
-.home-header__arabesque {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.46;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='rgba(255,248,214,0.18)' stroke-width='1'%3E%3Cpath d='M48 4 56 32 92 48 56 64 48 92 40 64 4 48 40 32Z'/%3E%3Cpath d='M48 18 60 36 78 48 60 60 48 78 36 60 18 48 36 36Z'/%3E%3Ccircle cx='48' cy='48' r='18'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(circle at 16% 30%, rgba(255, 232, 163, 0.10) 0%, transparent 34%),
-    radial-gradient(circle at 78% 72%, rgba(255, 255, 255, 0.08) 0%, transparent 32%);
-  background-size: 96px 96px, auto, auto;
-  background-position: center top, left center, right bottom;
-  mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 0.8) 58%,
-    rgba(0, 0, 0, 0.22) 100%
-  );
-}
-
-.home-header .container {
-  padding: 0 22px 38px;
-  position: relative;
-  z-index: 2;
-}
-
-.home-header__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.greeting-label {
-  display: block;
-  font-size: 0.86rem;
-  font-weight: 800;
-  color: #F6D978;
-  margin-bottom: 5px;
-  letter-spacing: 0.01em;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-}
-
-.home-header__top h1 {
-  font-size: 1.62rem;
-  font-weight: 900;
-  letter-spacing: -0.045em;
-  line-height: 1.05;
-  margin-bottom: 10px;
   color: #fff;
-  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
 }
 
-.home-header__sub {
-  font-size: 0.86rem;
-  opacity: 0.74;
-  line-height: 1.45;
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-}
-
-.hdr-diamond {
-  color: #D4AF37;
-  opacity: 0.95;
-  font-size: 0.62rem;
-  margin-top: 4px;
-  flex-shrink: 0;
-}
-
-/* Avatar dibuat lebih nyatu dengan header */
-.hdr-avatar-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 2.5px solid rgba(255, 230, 150, 0.75);
-  background: rgba(255, 255, 255, 0.10);
-  box-shadow:
-    0 0 0 5px rgba(212, 175, 55, 0.14),
-    0 10px 22px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-  text-decoration: none;
-  position: relative;
-}
-
-.hdr-avatar-btn::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  pointer-events: none;
-}
-
+/* Wave divider */
 .home-header__divider {
   position: relative;
   z-index: 2;
@@ -1681,5 +748,835 @@ useHead({
   width: 100%;
   height: 72px;
   display: block;
+}
+
+/* ================================================
+   BADGE SECTION
+   ================================================ */
+.section--badge-link {
+  text-decoration: none;
+  display: block;
+  color: inherit;
+}
+
+/* Dark green hero card */
+.badge-hero-card {
+  background: linear-gradient(145deg, #064E3B, #0A5D44);
+  border-radius: 20px 20px 0 0;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-hero-card__pattern {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M20 0 L23 17 L40 20 L23 23 L20 40 L17 23 L0 20 L17 17 Z' fill='none' stroke='rgba(212,175,55,0.05)' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.badge-hero-card__img-wrap {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.badge-hero-card__img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.badge-hero-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.badge-hero-card__label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #D4AF37;
+  margin-bottom: 2px;
+}
+
+.badge-hero-card__name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.badge-hero-card__arabic {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.3;
+}
+
+.badge-hero-card__juz {
+  opacity: 0.6;
+}
+
+/* Locked state (greyscale) */
+.badge-hero-card--locked {
+  filter: grayscale(1);
+  opacity: 0.85;
+}
+
+.badge-hero-card__img--gs {
+  filter: grayscale(1);
+}
+
+.badge-hero-card__label--gs,
+.badge-hero-card__name--gs,
+.badge-hero-card__arabic--gs {
+  opacity: 0.6;
+}
+
+.badge-hero-card__lock-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.6rem;
+  filter: none;
+  z-index: 2;
+}
+
+/* White progress sub-card */
+.badge-progress-card {
+  background: #fff;
+  padding: 16px 20px 18px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
+}
+
+.bpc-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.bpc-pct-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.bpc-pct {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #064E3B;
+  line-height: 1;
+}
+
+.bpc-pct-label {
+  font-size: 0.65rem;
+  color: #6B7280;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.bpc-divider {
+  width: 1px;
+  height: 36px;
+  background: #E5E7EB;
+}
+
+.bpc-ayah-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bpc-book-icon {
+  color: #D4AF37;
+  flex-shrink: 0;
+}
+
+.bpc-ayah-count {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1F2937;
+  line-height: 1.1;
+}
+
+.bpc-ayah-sub {
+  font-size: 0.65rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+/* Progress bar */
+.bpc-bar-wrap {
+  margin-bottom: 12px;
+}
+
+.bpc-bar {
+  height: 6px;
+  background: #E5E7EB;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.bpc-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D4AF37, #F7D979);
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+/* Next badge preview */
+.bpc-next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.bpc-next-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+.bpc-next-name {
+  font-size: 0.75rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+/* Completed state */
+.badge-progress-card--done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+.bpc-done-icon {
+  font-size: 1.5rem;
+}
+
+.bpc-done-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #064E3B;
+}
+
+/* CTA card for guests */
+.badge-cta-card {
+  background: #fff;
+  border-radius: 0 0 20px 20px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
+}
+
+.badge-cta-card__icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.badge-cta-card__text {
+  font-size: 0.85rem;
+  color: #4B5563;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.badge-cta-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #064E3B;
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.badge-cta-card__btn:active {
+  background: #052e1c;
+  transform: scale(0.96);
+}
+
+/* Badge roadmap */
+.badge-roadmap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  padding: 16px 0 4px;
+}
+
+.badge-roadmap__line {
+  position: absolute;
+  top: 32px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: #E5E7EB;
+  z-index: 0;
+}
+
+.badge-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.badge-step__dot-wrap {
+  position: relative;
+}
+
+.badge-step__dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #D1D5DB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.badge-step__dot--gs {
+  border-color: #D1D5DB !important;
+}
+
+.badge-step__img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.badge-step__img--active {
+  filter: none;
+}
+
+.badge-step__img--locked {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+.badge-step__name {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #6B7280;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 56px;
+}
+
+.badge-step__name--active {
+  color: #D4AF37;
+  font-weight: 700;
+}
+
+.badge-step__name--locked {
+  color: #9CA3AF;
+}
+
+/* ================================================
+   TODAY STATS
+   ================================================ */
+.today-stats {
+  display: flex;
+  gap: 10px;
+}
+
+.today-stat {
+  flex: 1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 10px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.today-stat__icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.today-stat__icon-wrap--fluent {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.today-stat__icon-wrap--doubtful {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.today-stat__icon-wrap--forgot {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.today-stat__value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1F2937;
+  line-height: 1.1;
+}
+
+.today-stat__label {
+  font-size: 0.65rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+.empty-today {
+  text-align: center;
+  padding: 24px 16px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.empty-today__icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.empty-today__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 4px;
+}
+
+.empty-today__sub {
+  font-size: 0.8rem;
+  color: #6B7280;
+}
+
+/* ================================================
+   QUICK ACTIONS
+   ================================================ */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.quick-action:active {
+  transform: scale(0.98);
+}
+
+.quick-action--primary {
+  background: linear-gradient(135deg, #064E3B, #0A5D44);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(6, 78, 59, 0.25);
+}
+
+.quick-action--outline {
+  background: #fff;
+  color: #1F2937;
+  border: 1.5px solid #E5E7EB;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.qa-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.qa-icon-wrap--outline {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+/* ================================================
+   SURAH LIST
+   ================================================ */
+.surah-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.surah-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.surah-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.surah-card__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.surah-card__number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.surah-card__name {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1F2937;
+  line-height: 1.2;
+}
+
+.surah-card__arabic {
+  display: block;
+  font-size: 0.75rem;
+  color: #6B7280;
+  font-family: var(--font-arabic);
+  direction: rtl;
+}
+
+.surah-card__right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.surah-card__pct {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6B7280;
+  margin-bottom: 4px;
+}
+
+.mini-progress {
+  width: 72px;
+}
+
+.mini-progress__bar {
+  height: 4px;
+  background: #E5E7EB;
+  border-radius: 99px;
+  display: flex;
+  overflow: hidden;
+}
+
+.mini-progress__seg {
+  height: 100%;
+}
+
+.mini-progress__seg--fluent {
+  background: #10B981;
+}
+
+.mini-progress__seg--doubtful {
+  background: #F59E0B;
+}
+
+.mini-progress__seg--forgot {
+  background: #EF4444;
+}
+
+/* ================================================
+   SUMMARY GRID
+   ================================================ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.summary-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.summary-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.summary-card--surahs .summary-card__icon {
+  background: #DBEAFE;
+  color: #2563EB;
+}
+
+.summary-card--verses .summary-card__icon {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.summary-card--fluent .summary-card__icon {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.summary-card--struggling .summary-card__icon {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.summary-card__stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-card__value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1F2937;
+  line-height: 1.1;
+}
+
+.summary-card__value--fluent {
+  color: #059669;
+}
+
+.summary-card__value--struggling {
+  color: #DC2626;
+}
+
+.summary-card__label {
+  font-size: 0.65rem;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+/* ================================================
+   DEV INFO
+   ================================================ */
+.dev-info__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s;
+}
+
+.dev-info__card:active {
+  transform: scale(0.98);
+}
+
+.dev-info__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dev-info__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.dev-info__text strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #1F2937;
+  margin-bottom: 1px;
+}
+
+.dev-info__text p {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+/* ================================================
+   SKELETON
+   ================================================ */
+.skeleton {
+  background: linear-gradient(90deg, #E5E7EB 25%, #F3F4F6 50%, #E5E7EB 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.stat-skeleton {
+  height: 80px;
+  flex: 1;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ================================================
+   ANIMATIONS
+   ================================================ */
+.animate-fade-in {
+  animation: fadeInUp 0.5s ease both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ================================================
+   SECTION HEADERS
+   ================================================ */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1F2937;
+}
+
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #064E3B;
+  text-decoration: none;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+/* ================================================
+   RESPONSIVE
+   ================================================ */
+@media (max-width: 374px) {
+  .badge-hero-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .badge-hero-card__info {
+    align-items: center;
+  }
+
+  .today-stats {
+    flex-direction: column;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 500px) {
+  .summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ================================================
+   BADGE GUEST PREVIEW
+   ================================================ */
+.badge-roadmap--gs .badge-step__dot {
+  border-color: #D1D5DB !important;
+}
+
+/* ================================================
+   BADGE SECTION LINK (hilangkan underline NuxtLink)
+   ================================================ */
+.section--badge-link {
+  text-decoration: none;
+  display: block;
+  color: inherit;
 }
 </style>

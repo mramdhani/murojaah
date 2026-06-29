@@ -615,6 +615,7 @@ useHead({
   font-family: var(--font-arabic);
   font-size: 1.35rem;
   color: var(--color-primary-dark);
+  direction: rtl;
 }
 
 /* Sheet slide-up transition */

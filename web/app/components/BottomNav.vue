@@ -16,14 +16,13 @@
       <span>Surat</span>
     </NuxtLink>
 
-    <NuxtLink to="/progress" class="bottom-nav__item" :class="{ active: route.path.startsWith('/progress') }">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6" y1="20" x2="6" y2="14"/>
-      </svg>
-      <span>Progress</span>
-    </NuxtLink>
+    <!-- Murojaah Highlight Button -->
+    <button type="button" class="bottom-nav__murojaah" @click="open">
+      <div class="bottom-nav__murojaah-inner">
+        <img src="/logo-white.png" alt="Murojaah" class="bottom-nav__murojaah-logo" />
+      </div>
+      <span>Murojaah</span>
+    </button>
 
     <NuxtLink to="/history" class="bottom-nav__item" :class="{ active: route.path === '/history' }">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -49,6 +48,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const { user } = useAuth()
+const { open } = useMurojaahDrawer()
 
 const showNav = computed(() => {
   return !route.path.startsWith('/remote')
@@ -94,6 +94,60 @@ const showNav = computed(() => {
 .bottom-nav__item svg {
   width: 22px;
   height: 22px;
+}
+
+/* --- Murojaah Highlight Button --- */
+.bottom-nav__murojaah {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  margin-top: -16px;
+  position: relative;
+  padding: 0;
+}
+
+.bottom-nav__murojaah-inner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #064E3B 0%, #047857 100%);
+  box-shadow: 0 4px 16px rgba(6, 78, 59, 0.4), 0 0 0 4px rgba(6, 78, 59, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.bottom-nav__murojaah:hover .bottom-nav__murojaah-inner {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(6, 78, 59, 0.5), 0 0 0 4px rgba(6, 78, 59, 0.18);
+}
+
+.bottom-nav__murojaah:active .bottom-nav__murojaah-inner {
+  transform: scale(0.96);
+}
+
+.bottom-nav__murojaah span {
+  margin-top: 2px;
+  color: #064E3B;
+  font-weight: 700;
+}
+
+.bottom-nav__murojaah-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
 }
 
 /* Avatar photo in bottom nav */

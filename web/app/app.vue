@@ -14,6 +14,7 @@
     <template v-else>
       <NuxtPage />
       <BottomNav />
+      <MurojaahDrawer />
     </template>
 
     <Teleport to="body">
