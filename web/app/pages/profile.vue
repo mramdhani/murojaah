@@ -264,6 +264,33 @@
         </div>
       </div>
 
+      <!-- Infaq Section -->
+      <div class="infaq-section">
+        <div class="infaq-card">
+          <div class="infaq-card__bg"></div>
+          <div class="infaq-card__content">
+            <div class="infaq-card__header">
+              <div class="infaq-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="infaq-title">Dukung Aplikasi</h3>
+                <p class="infaq-desc">Bantu patungan biaya server agar terus gratis & tanpa iklan.</p>
+              </div>
+            </div>
+            <button class="btn infaq-btn" @click="handleInfaq">
+              <span>Salurkan Infaq</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Logout Button (Moved to bottom) -->
       <div v-if="user && !user.is_guest" style="margin-top: 24px;">
         <button class="btn btn-danger btn-block" @click="handleLogout" style="padding: 14px; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px;">
@@ -282,6 +309,46 @@
         <p class="app-info__desc">Didukung dengan Cloud Sync & Mode Remote Control Haptic</p>
       </div>
       <div style="height: 32px"></div>
+    </div>
+
+    <!-- Infaq Modal -->
+    <div v-if="showInfaqModal" class="infaq-modal-overlay" @click="showInfaqModal = false">
+      <div class="infaq-modal-content animate-slide-up" @click.stop>
+        <div class="infaq-modal-header">
+          <h3>Penyaluran Infaq</h3>
+          <button class="infaq-modal-close" @click="showInfaqModal = false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="infaq-modal-body">
+          <p class="infaq-modal-desc">Semoga infaq yang Anda berikan menjadi amal jariyah dan membantu kelangsungan aplikasi ini. Aamiin.</p>
+          
+          <div class="infaq-bank-card">
+            <div class="infaq-bank-header">
+              <span class="infaq-bank-name">Bank Syariah Indonesia (BSI)</span>
+              <span class="infaq-bank-code">Kode: 451</span>
+            </div>
+            <div class="infaq-bank-body">
+              <div class="infaq-bank-details">
+                <span class="infaq-bank-acc">7265658738</span>
+                <span class="infaq-bank-owner">a.n MUHAMAD RAMDANI</span>
+              </div>
+              <button class="infaq-btn-copy" @click="copyToClipboard('7265658738')">
+                Salin
+              </button>
+            </div>
+          </div>
+          
+          <!-- Hidden for now until user has a permanent QRIS -->
+          <div v-if="false" class="infaq-qris-card">
+            <div class="infaq-qris-title">Atau Scan QRIS</div>
+            <div class="infaq-qris-placeholder">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
+              <span>(Gambar QRIS belum tersedia)</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Custom Logout Confirmation Modal -->
@@ -332,6 +399,8 @@ const selectedQari = useCookie<string>('selected_qari', {
   path: '/'
 })
 
+const showInfaqModal = ref(false)
+
 const qariList = [
   { id: 'Maher_AlMuaiqly_64kbps', name: 'Maher Al-Muaiqly' },
   { id: 'Alafasy_64kbps', name: 'Mishary Alafasy' },
@@ -381,6 +450,36 @@ const handleQariChange = () => {
   triggerHaptic()
   if (showToast) {
     showToast('Pilihan Qori berhasil disimpan!', 'fluent')
+  }
+}
+
+const handleInfaq = () => {
+  triggerHaptic()
+  showInfaqModal.value = true
+}
+
+const copyToClipboard = (text: string) => {
+  triggerHaptic()
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (showToast) showToast('Nomor rekening berhasil disalin!', 'fluent')
+    }).catch(err => {
+      console.error('Failed to copy', err)
+      if (showToast) showToast('Gagal menyalin', 'forgot')
+    })
+  } else {
+    // Fallback if clipboard API not available
+    const textArea = document.createElement("textarea")
+    textArea.value = text
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand('copy')
+      if (showToast) showToast('Nomor rekening berhasil disalin!', 'fluent')
+    } catch (err) {
+      if (showToast) showToast('Gagal menyalin', 'forgot')
+    }
+    document.body.removeChild(textArea)
   }
 }
 
@@ -1011,5 +1110,240 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(20px);
+}
+
+/* ================================================
+   INFAQ SECTION
+   ================================================ */
+.infaq-section {
+  margin-top: 24px;
+}
+
+.infaq-card {
+  position: relative;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+}
+
+.infaq-card__bg {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.infaq-card__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infaq-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.infaq-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.infaq-title {
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.infaq-desc {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.infaq-btn {
+  background: white;
+  color: #059669;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  width: 100%;
+}
+
+.infaq-btn:active {
+  transform: scale(0.96);
+}
+
+/* ================================================
+   INFAQ MODAL
+   ================================================ */
+.infaq-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.infaq-modal-content {
+  background: white;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 20px 20px 0 0;
+  padding: 24px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+.infaq-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.infaq-modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.infaq-modal-close {
+  background: #F3F4F6;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  cursor: pointer;
+}
+
+.infaq-modal-desc {
+  font-size: 0.9rem;
+  color: #4B5563;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.infaq-bank-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.infaq-bank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.infaq-bank-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.infaq-bank-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.infaq-bank-acc {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: 1px;
+}
+
+.infaq-bank-owner {
+  font-size: 0.8rem;
+  color: #64748B;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.infaq-btn-copy {
+  background: #E2E8F0;
+  color: #334155;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.infaq-btn-copy:active {
+  background: #CBD5E1;
+}
+
+.infaq-qris-card {
+  background: #F8FAFC;
+  border: 1px dashed #CBD5E1;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.infaq-qris-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 12px;
+}
+
+.infaq-qris-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #94A3B8;
+  padding: 16px 0;
+}
+
+.infaq-qris-placeholder span {
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 </style>
