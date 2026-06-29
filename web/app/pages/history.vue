@@ -362,6 +362,9 @@ useHead({ title: 'Riwayat Murojaah — Murojaah' })
   color: white;
   position: relative;
   overflow: hidden;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 /* Subtle arabesque/geometric overlay */
@@ -439,6 +442,8 @@ useHead({ title: 'Riwayat Murojaah — Murojaah' })
   line-height: 0;
   margin-top: -8px;
   transform: translateY(1px);
+  border: none !important;
+  border-bottom: none !important;
 }
 
 .history-header__divider-fill {
@@ -449,6 +454,8 @@ useHead({ title: 'Riwayat Murojaah — Murojaah' })
   width: 100%;
   height: 72px;
   display: block;
+  border: none !important;
+  outline: none !important;
 }
 
 .hdr-diamond-ornament {

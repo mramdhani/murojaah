@@ -20,7 +20,7 @@
           </p>
         </div>
 
-        <div class="progress-header__badge-card" v-if="userBadge">
+        <div class="progress-header__badge-card" v-if="userBadge" @click="openBadgeDetail(userBadge)" style="cursor: pointer;" title="Klik untuk info detail level & badge">
           <div class="ph-badge-left">
             <span class="ph-badge-label">LEVEL HAFALAN</span>
             <div class="ph-badge-name-row">
@@ -242,11 +242,127 @@
       </div>
     </div>
   </div>
+
+  <!-- Badge Details Drawer -->
+  <Transition name="drawer-fade">
+    <div class="badge-drawer-wrapper" v-if="isBadgeDrawerOpen">
+      <!-- Backdrop overlay -->
+      <div class="drawer-backdrop" @click="closeBadgeDrawer"></div>
+
+      <!-- Drawer Panel -->
+      <div class="drawer-panel animate-slide-up">
+        <!-- Drag handle indicator -->
+        <div class="drawer-handle-bar">
+          <div class="drawer-handle"></div>
+        </div>
+
+        <!-- Header -->
+        <div class="drawer-header">
+          <div class="drawer-title-wrap">
+            <span class="drawer-icon">🏆</span>
+            <div>
+              <h2 class="drawer-title">Level & Badge Hafalan</h2>
+              <p class="drawer-subtitle">Klik badge untuk melihat detail persyaratan</p>
+            </div>
+          </div>
+          <button class="drawer-close" @click="closeBadgeDrawer" aria-label="Tutup">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Scrollable content -->
+        <div class="drawer-body">
+          <!-- Horizontal selector row -->
+          <div class="badge-selector-row">
+            <button
+              v-for="b in badges"
+              :key="b.level"
+              class="badge-selector-item"
+              :class="{
+                active: selectedBadge?.level === b.level,
+                current: userBadge?.level === b.level,
+                locked: totalAyah < b.minAyah
+              }"
+              @click="selectedBadge = b"
+            >
+              <div class="selector-badge-img-wrap">
+                <img :src="b.image" :alt="b.name" class="selector-badge-img" />
+                <span class="current-indicator" v-if="userBadge?.level === b.level">✔</span>
+                <span class="lock-indicator" v-if="totalAyah < b.minAyah">🔒</span>
+              </div>
+              <span class="selector-badge-lbl">{{ b.name }}</span>
+            </button>
+          </div>
+
+          <!-- Central Details Card -->
+          <div class="badge-detail-card" v-if="selectedBadge">
+            <!-- Glow background overlay behind the badge -->
+            <div class="badge-glow-bg" :style="{ background: `radial-gradient(circle, ${selectedBadge.color}25 0%, transparent 70%)` }"></div>
+
+            <div class="badge-img-preview-wrap">
+              <img :src="selectedBadge.image" :alt="selectedBadge.name" class="detail-badge-img animate-badge-float" />
+            </div>
+
+            <div class="badge-info-block">
+              <span class="badge-juz-tag" :style="{ color: selectedBadge.color, borderColor: `${selectedBadge.color}30` }">{{ selectedBadge.juzRange }}</span>
+              <h3 class="badge-name-large">{{ selectedBadge.name }}</h3>
+              <span class="badge-arabic-large">{{ selectedBadge.arabic }}</span>
+              <p class="badge-meaning-label">Artinya: {{ selectedBadge.meaning }}</p>
+            </div>
+
+            <p class="badge-desc-text">
+              {{ selectedBadge.description }}
+            </p>
+
+            <!-- Status Indicator Panel -->
+            <div class="badge-status-panel">
+              <div class="status-metric">
+                <span class="status-metric-lbl">Syarat Minimal</span>
+                <span class="status-metric-val">{{ selectedBadge.minAyah }} Ayat</span>
+              </div>
+              <div class="status-metric">
+                <span class="status-metric-lbl">Status</span>
+                <span
+                  class="status-tag"
+                  :class="{
+                    active: userBadge?.level === selectedBadge.level,
+                    unlocked: totalAyah >= selectedBadge.minAyah && userBadge?.level !== selectedBadge.level,
+                    locked: totalAyah < selectedBadge.minAyah
+                  }"
+                >
+                  {{ userBadge?.level === selectedBadge.level ? 'Aktif' : (totalAyah >= selectedBadge.minAyah ? 'Terbuka' : 'Terkunci') }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
+import type { Badge } from '~/composables/useBadge'
 const { apiFetch } = useApi()
-const { getBadge, getNextBadge, getAyahsToNext, getProgressToNext } = useBadge()
+const { getBadge, getNextBadge, getAyahsToNext, getProgressToNext, badges } = useBadge()
+
+const isBadgeDrawerOpen = ref(false)
+const selectedBadge = ref<Badge | null>(null)
+
+const openBadgeDetail = (badge: Badge) => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(60)
+  }
+  selectedBadge.value = badge
+  isBadgeDrawerOpen.value = true
+}
+
+const closeBadgeDrawer = () => {
+  isBadgeDrawerOpen.value = false
+}
 
 interface SurahProgress {
   id: number
@@ -341,6 +457,9 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
   color: white;
   position: relative;
   overflow: hidden;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 /* Subtle arabesque/geometric overlay */
@@ -554,6 +673,8 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
   line-height: 0;
   margin-top: -8px;
   transform: translateY(1px);
+  border: none !important;
+  border-bottom: none !important;
 }
 
 .progress-header__divider-fill {
@@ -564,6 +685,8 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
   width: 100%;
   height: 72px;
   display: block;
+  border: none !important;
+  outline: none !important;
 }
 
 .hdr-diamond-ornament {
@@ -920,5 +1043,428 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
 .btn-danger:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* ================================================
+   BADGE DETAIL DRAWER (Slide Up bottom sheet)
+   ================================================ */
+.badge-drawer-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.badge-drawer-wrapper .drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 39, 25, 0.55);
+  backdrop-filter: blur(10px);
+  z-index: 1001;
+}
+
+.badge-drawer-wrapper .drawer-panel {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #FFFDF8;
+  border-radius: 28px 28px 0 0;
+  z-index: 1002;
+  box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  border-top: 2px solid rgba(212, 175, 55, 0.3);
+  overflow: hidden;
+}
+
+.badge-drawer-wrapper .drawer-handle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 8px;
+}
+
+.badge-drawer-wrapper .drawer-handle {
+  width: 38px;
+  height: 5px;
+  border-radius: 99px;
+  background: #E5E7EB;
+}
+
+.badge-drawer-wrapper .drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 20px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.badge-drawer-wrapper .drawer-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge-drawer-wrapper .drawer-icon {
+  font-size: 1.5rem;
+}
+
+.badge-drawer-wrapper .drawer-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #042719;
+  margin: 0;
+}
+
+.badge-drawer-wrapper .drawer-subtitle {
+  font-size: 0.76rem;
+  color: #6B7280;
+  margin: 2px 0 0;
+}
+
+.badge-drawer-wrapper .drawer-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #F3F4F6;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.badge-drawer-wrapper .drawer-close:hover {
+  background: #E5E7EB;
+  color: #1F2937;
+  transform: rotate(90deg);
+}
+
+.badge-drawer-wrapper .drawer-body {
+  padding: 16px 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Selector Row */
+.badge-selector-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.badge-selector-row::-webkit-scrollbar {
+  display: none;
+}
+
+.badge-selector-row {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.badge-selector-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 68px;
+  transition: transform 0.2s ease;
+}
+
+.badge-selector-item:active {
+  transform: scale(0.92);
+}
+
+.badge-selector-item.active {
+  transform: scale(1.05);
+}
+
+.selector-badge-img-wrap {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  background: #FFF;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.badge-selector-item.active .selector-badge-img-wrap {
+  border-color: #D4AF37;
+  box-shadow: 0 8px 18px rgba(212, 175, 55, 0.25);
+  background: #FFFDF5;
+}
+
+.badge-selector-item.locked .selector-badge-img {
+  filter: grayscale(1) opacity(0.5);
+}
+
+.selector-badge-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.current-indicator {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #10B981;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.lock-indicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #9CA3AF;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.62rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid white;
+}
+
+.selector-badge-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #4B5563;
+  transition: color 0.2s;
+}
+
+.badge-selector-item.active .selector-badge-lbl {
+  color: #042719;
+}
+
+/* Detail Card */
+.badge-detail-card {
+  position: relative;
+  background: #FFF;
+  border-radius: 24px;
+  padding: 24px 20px;
+  border: 1.5px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.badge-glow-bg {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 260px;
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.badge-img-preview-wrap {
+  position: relative;
+  z-index: 1;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.detail-badge-img {
+  width: 125px;
+  height: 125px;
+  object-fit: contain;
+}
+
+.animate-badge-float {
+  animation: floatBadge 4s ease-in-out infinite;
+}
+
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.badge-info-block {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.badge-juz-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+}
+
+.badge-name-large {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #1F2937;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.badge-arabic-large {
+  font-family: var(--font-arabic);
+  font-size: 1.85rem;
+  color: #042719;
+  margin: 6px 0;
+}
+
+.badge-meaning-label {
+  font-size: 0.78rem;
+  color: #6B7280;
+  font-weight: 550;
+  margin: 0;
+}
+
+.badge-desc-text {
+  position: relative;
+  z-index: 1;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #4B5563;
+  margin: 0 0 22px;
+  max-width: 320px;
+  font-weight: 500;
+}
+
+/* Status Panel */
+.badge-status-panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  background: #F9FAF7;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.status-metric {
+  flex: 1;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.status-metric:first-child {
+  border-right: 1px solid rgba(0,0,0,0.04);
+}
+
+.status-metric-lbl {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.status-metric-val {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #374151;
+}
+
+.status-tag {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+
+.status-tag.active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.status-tag.unlocked {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563EB;
+}
+
+.status-tag.locked {
+  background: rgba(156, 163, 175, 0.1);
+  color: #6B7280;
+}
+
+/* Hover effects for main card */
+.progress-header__badge-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-header__badge-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(4, 37, 25, 0.3) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.progress-header__badge-card:active {
+  transform: translateY(-1px);
+}
+
+/* Transitions */
+.drawer-fade-enter-active,
+.drawer-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.drawer-fade-enter-from,
+.drawer-fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 </style>

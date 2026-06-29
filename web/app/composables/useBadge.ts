@@ -10,6 +10,7 @@ export interface Badge {
   minAyah: number
   maxAyah: number
   juzRange: string
+  description: string
 }
 
 const badges: Badge[] = [
@@ -25,6 +26,7 @@ const badges: Badge[] = [
     minAyah: 0,
     maxAyah: 1039,
     juzRange: '1 - 5 Juz',
+    description: 'Tahap awal hafalan. Melambangkan awal perjalanan saat cahaya Al-Qur\'an mulai menerangi hati dan membangun semangat.',
   },
   {
     level: '2',
@@ -38,6 +40,7 @@ const badges: Badge[] = [
     minAyah: 1040,
     maxAyah: 2079,
     juzRange: '6 - 10 Juz',
+    description: 'Tahap konsistensi. Menunjukkan hafalan yang mulai membentuk kedisiplinan diri dan kedekatan dengan Al-Qur’an.',
   },
   {
     level: '3',
@@ -51,6 +54,7 @@ const badges: Badge[] = [
     minAyah: 2080,
     maxAyah: 3119,
     juzRange: '11 - 15 Juz',
+    description: 'Tahap keteguhan. Butuh konsistensi dan murojaah yang lebih kuat karena jumlah hafalan sudah semakin bertambah.',
   },
   {
     level: '4',
@@ -64,6 +68,7 @@ const badges: Badge[] = [
     minAyah: 3120,
     maxAyah: 4159,
     juzRange: '16 - 20 Juz',
+    description: 'Tahap pematangan. Fokus pada kualitas hafalan agar lancar, mantap, dan berkualitas, bukan sekadar kuantitas.',
   },
   {
     level: '5',
@@ -77,6 +82,7 @@ const badges: Badge[] = [
     minAyah: 4160,
     maxAyah: 5199,
     juzRange: '21 - 25 Juz',
+    description: 'Tahap kualitas terbaik. Fokus lebih dalam pada penyempurnaan bacaan, adab, dan penghayatan Al-Qur\'an.',
   },
   {
     level: '6',
@@ -90,6 +96,7 @@ const badges: Badge[] = [
     minAyah: 5200,
     maxAyah: Infinity,
     juzRange: '26 - 30 Juz',
+    description: 'Tahap penyempurna. Tingkat akhir bagi penjaga Al-Qur\'an secara utuh yang telah menyelesaikan seluruh 30 juz.',
   },
 ]
 
