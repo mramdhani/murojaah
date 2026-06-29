@@ -177,7 +177,7 @@ class AuthController extends Controller
     public function updatePreferences(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'theme' => 'sometimes|string|in:emerald,pink,lavender,ocean,sunset,forest,kabah,madinah,alaqsa',
+            'theme' => 'sometimes|string|in:default,mecca,madinah',
         ]);
 
         $user = $request->user();

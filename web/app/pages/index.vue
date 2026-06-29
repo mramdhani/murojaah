@@ -164,19 +164,25 @@
 
       <!-- Developer Info -->
       <section class="section dev-info animate-fade-in" style="animation-delay: 0.2s">
-        <div class="dev-info__card">
-          <div class="dev-info__icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="16 18 22 12 16 6"/>
-              <polyline points="8 6 2 12 8 18"/>
+        <a href="mailto:tuan.ramdhani@gmail.com" class="dev-info__card">
+          <div class="dev-info__left">
+            <div class="dev-info__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <div class="dev-info__text">
+              <strong>Ada saran atau masukan?</strong>
+              <p>Hubungi developer via email</p>
+            </div>
+          </div>
+          <div class="dev-info__chevron">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
             </svg>
           </div>
-          <div class="dev-info__text">
-            <strong>Ada saran atau masukan?</strong>
-            <p>Hubungi developer via email</p>
-            <a href="mailto:tuan.ramdhani@gmail.com" class="dev-info__email">tuan.ramdhani@gmail.com</a>
-          </div>
-        </div>
+        </a>
       </section>
 
       <!-- Bottom spacing -->
@@ -388,21 +394,22 @@ useHead({
 .today-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
 .today-stat {
   background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  padding: 16px 12px;
+  border-radius: var(--radius-lg);
+  padding: 18px 12px;
   text-align: center;
-  box-shadow: var(--shadow-sm);
-  border: 1.5px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
 }
 
 .today-stat__icon {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   line-height: 0;
 }
 
@@ -412,16 +419,18 @@ useHead({
 
 .today-stat__value {
   display: block;
-  font-size: 1.75rem;
+  font-size: 1.85rem;
   font-weight: 800;
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .today-stat__label {
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .today-stat--fluent .today-stat__value { color: var(--color-fluent); }
@@ -429,25 +438,29 @@ useHead({
 .today-stat--forgot .today-stat__value { color: var(--color-forgot); }
 
 .empty-today {
-  margin-top: 12px;
+  margin-top: 16px;
   text-align: center;
+  padding: 20px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px dashed rgba(0, 0, 0, 0.05);
 }
 
 .empty-today p {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
 }
 
 .stat-skeleton {
-  height: 78px;
-  border-radius: var(--radius-md);
+  height: 90px;
+  border-radius: var(--radius-lg);
 }
 
 /* ========== QUICK ACTIONS ========== */
 .quick-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .quick-action {
@@ -456,11 +469,11 @@ useHead({
   justify-content: center;
   gap: 10px;
   padding: 16px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-weight: 700;
   font-size: 1rem;
   text-decoration: none;
-  transition: transform 0.12s;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .quick-action:active {
@@ -468,9 +481,14 @@ useHead({
 }
 
 .quick-action--primary {
-  background: var(--color-primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)) !important;
+  color: white !important;
+  border: 1.5px solid var(--color-primary-dark) !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.2);
+}
+
+.quick-action--primary:active {
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.1);
 }
 
 .quick-action--outline {
@@ -484,60 +502,61 @@ useHead({
 .surah-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .surah-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 16px;
+  padding: 16px 18px;
   background: var(--color-bg-card);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
 }
 
 .surah-card:active {
-  opacity: 0.7;
+  transform: scale(0.99);
 }
 
 .surah-card__left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
 .surah-card__number {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--color-primary-50);
   color: var(--color-primary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: 1.5px solid rgba(5, 150, 105, 0.08);
 }
 
 .surah-card__name {
   display: block;
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 0.95rem;
   color: var(--color-text);
 }
 
 .surah-card__arabic {
   display: block;
   font-family: var(--font-arabic);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .surah-card__right {
@@ -547,7 +566,7 @@ useHead({
 }
 
 .surah-card__progress-text {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-secondary);
   margin-bottom: 6px;
@@ -577,7 +596,7 @@ useHead({
 /* ========== OVERALL ========== */
 .overall-card {
   background: var(--color-bg-card);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid rgba(0, 0, 0, 0.04);
   overflow: hidden;
@@ -587,7 +606,7 @@ useHead({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 16px;
+  padding: 14px 18px;
 }
 
 .overall-row + .overall-row {
@@ -613,16 +632,29 @@ useHead({
 .dev-info__card {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.dev-info__card:active {
+  transform: scale(0.98);
+}
+
+.dev-info__left {
+  display: flex;
+  align-items: center;
   gap: 14px;
-  padding: 16px;
-  background: var(--color-bg-subtle);
-  border-radius: var(--radius-md);
-  border: 1px dashed rgba(5, 150, 105, 0.2);
 }
 
 .dev-info__icon {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--color-primary-50);
   color: var(--color-primary);
@@ -630,25 +662,27 @@ useHead({
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: 1.5px solid rgba(5, 150, 105, 0.15);
 }
 
 .dev-info__text strong {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--color-text);
   margin-bottom: 2px;
 }
 
 .dev-info__text p {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
-.dev-info__email {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  text-decoration: none;
+.dev-info__chevron {
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  opacity: 0.8;
 }
 </style>
