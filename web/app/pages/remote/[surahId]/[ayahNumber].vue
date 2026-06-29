@@ -23,6 +23,36 @@
       </div>
     </header>
 
+    <!-- Qari Audio Control Bar -->
+    <div class="audio-panel" v-if="currentAyah">
+      <button class="audio-qari-selector" @click="openQariPicker">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>{{ activeQariName }}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      <button class="audio-play-btn" :class="{ 'audio-play-btn--playing': isPlaying }" @click="playAudio">
+        <template v-if="isPlaying">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+          <span>Jeda</span>
+        </template>
+        <template v-else>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Dengar</span>
+        </template>
+      </button>
+    </div>
+
     <!-- Content — 52% -->
     <main class="remote-content" @click="toggleReveal">
       <Transition name="ayah" mode="out-in">
@@ -169,6 +199,38 @@
       </div>
     </Transition>
 
+    <!-- iOS-style Qari Picker Sheet -->
+    <Transition name="sheet">
+      <div v-if="showQariPicker" class="picker-overlay" @click="closeQariPicker">
+        <div class="picker-sheet animate-slide-up" @click.stop>
+          <div class="picker-sheet__header">
+            <div class="picker-sheet__indicator"></div>
+            <div class="picker-sheet__title-row">
+              <h3>Pilih Qori Murottal</h3>
+              <button class="picker-sheet__close" @click="closeQariPicker">Selesai</button>
+            </div>
+          </div>
+          <div class="picker-sheet__content">
+            <div class="qari-picker-list">
+              <button
+                v-for="q in qariList"
+                :key="q.id"
+                class="qari-picker-item"
+                :class="{ 'qari-picker-item--active': q.id === selectedQari }"
+                @click="selectQari(q.id)"
+              >
+                <div class="qari-picker-item__left">
+                  <span class="qari-picker-icon">🎙</span>
+                  <span class="qari-picker-name">{{ q.name }}</span>
+                </div>
+                <span class="qari-picker-check" v-if="q.id === selectedQari">✔</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Flash Feedback Overlay -->
     <Transition name="flash">
       <div v-if="flashStatus" class="remote-flash" :class="`remote-flash--${flashStatus}`"></div>
@@ -217,6 +279,109 @@ const showSurahPicker = ref(false)
 const showAyahPicker = ref(false)
 const isWheelDragging = ref(false)
 const pickerSearch = ref('')
+
+// Qari selection list and audio player state
+const showQariPicker = ref(false)
+const isPlaying = ref(false)
+const selectedQari = useCookie<string>('selected_qari', {
+  default: () => 'Maher_AlMuaiqly_64kbps',
+  maxAge: 60 * 60 * 24 * 365, // 1 year
+  path: '/'
+})
+
+// Auto-migrate legacy qari cookie to correct path
+if (selectedQari.value === 'MaherAlMuaiqly_64kbps') {
+  selectedQari.value = 'Maher_AlMuaiqly_64kbps'
+}
+
+const qariList = [
+  { id: 'Maher_AlMuaiqly_64kbps', name: 'Maher Al-Muaiqly' },
+  { id: 'Alafasy_64kbps', name: 'Mishary Alafasy' },
+  { id: 'Ghamadi_40kbps', name: 'Saad Al-Ghamdi' },
+  { id: 'Husary_64kbps', name: 'Mahmoud Al-Husary' }
+]
+
+const activeQariName = computed(() => {
+  return qariList.find(q => q.id === selectedQari.value)?.name || 'Maher Al-Muaiqly'
+})
+
+const openQariPicker = () => {
+  triggerHaptic(40)
+  showQariPicker.value = true
+}
+
+const closeQariPicker = () => {
+  triggerHaptic(40)
+  showQariPicker.value = false
+}
+
+const selectQari = (qariId: string) => {
+  triggerHaptic(50)
+  selectedQari.value = qariId
+  showQariPicker.value = false
+  // Stop currently playing audio and reload with new Qari
+  stopAudio()
+}
+
+// Audio Player
+let audioObj: HTMLAudioElement | null = null
+
+const stopAudio = () => {
+  if (audioObj) {
+    audioObj.onplay = null
+    audioObj.onended = null
+    audioObj.onerror = null
+    audioObj.pause()
+    audioObj.src = ''
+  }
+  isPlaying.value = false
+}
+
+const playAudio = () => {
+  if (!currentAyah.value) return
+  triggerHaptic(50)
+
+  if (isPlaying.value && audioObj) {
+    audioObj.pause()
+    isPlaying.value = false
+    return
+  }
+
+  if (!audioObj) {
+    audioObj = new Audio()
+  }
+
+  const pad = (num: number, size: number) => {
+    let s = num + ""
+    while (s.length < size) s = "0" + s
+    return s
+  }
+
+  const audioUrl = `https://everyayah.com/data/${selectedQari.value}/${pad(surahId.value, 3)}${pad(currentAyahNumber.value, 3)}.mp3`
+  
+  audioObj.src = audioUrl
+  audioObj.load()
+  
+  audioObj.onplay = () => {
+    isPlaying.value = true
+  }
+  audioObj.onended = () => {
+    isPlaying.value = false
+  }
+  audioObj.onerror = () => {
+    isPlaying.value = false
+    showToast?.('Gagal memuat suara Qori', 'forgot')
+  }
+
+  audioObj.play().catch(err => {
+    console.error('Playback error:', err)
+    isPlaying.value = false
+  })
+}
+
+onUnmounted(() => {
+  stopAudio()
+})
 
 const surahName = computed(() => currentAyah.value?.surah_name || '...')
 const surahNumber = computed(() => currentAyah.value?.surah_number || surahId.value)
@@ -434,6 +599,7 @@ const closeAyahPicker = () => {
 
 const changeSurah = (targetSurahId: number) => {
   triggerHaptic(50)
+  stopAudio()
   showSurahPicker.value = false
   router.push(`/remote/${targetSurahId}/1`)
 }
@@ -445,6 +611,7 @@ const handleSurahSelect = (id: number) => {
 
 const changeAyah = (targetAyahNum: number) => {
   triggerHaptic(50)
+  stopAudio()
   showAyahPicker.value = false
   currentAyahNumber.value = targetAyahNum
   fetchAyah(targetAyahNum)
@@ -453,6 +620,7 @@ const changeAyah = (targetAyahNum: number) => {
 
 const submitReview = async (status: 'forgot' | 'doubtful' | 'fluent') => {
   if (!currentAyah.value || submitting.value) return
+  stopAudio()
   submitting.value = true
 
   // Flash feedback
@@ -496,6 +664,7 @@ const submitReview = async (status: 'forgot' | 'doubtful' | 'fluent') => {
 const prevAyah = async () => {
   if (currentAyahNumber.value <= 1) return
   triggerHaptic(45)
+  stopAudio()
   currentAyahNumber.value--
   await fetchAyah(currentAyahNumber.value)
   router.replace(`/remote/${surahId.value}/${currentAyahNumber.value}`)
@@ -508,6 +677,7 @@ const skipAyah = async () => {
 
 const goBack = () => {
   triggerHaptic(40)
+  stopAudio()
   router.push(`/surahs/${surahId.value}`)
 }
 
@@ -1326,5 +1496,150 @@ useHead({
 
 :deep(.tajweed-u) {
   color: #169200 !important; /* Idgham without Ghunnah - Dark Green */
+}
+
+/* ================================================
+   QARI AUDIO PLAYER & SELECTOR
+   ================================================ */
+.audio-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.audio-qari-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1.5px solid rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-lg);
+  padding: 8px 14px;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0;
+}
+
+.audio-qari-selector span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+}
+
+.audio-qari-selector:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.audio-qari-selector:active {
+  transform: scale(0.95);
+}
+
+.audio-play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-primary-light);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 8px 16px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+  width: 108px;
+  flex-shrink: 0;
+}
+
+.audio-play-btn:hover {
+  background: var(--color-primary);
+  box-shadow: 0 6px 14px rgba(16, 185, 129, 0.3);
+}
+
+.audio-play-btn:active {
+  transform: scale(0.95);
+}
+
+.audio-play-btn--playing {
+  background: #EF4444 !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+  animation: pulseAudio 1.5s infinite;
+}
+
+@keyframes pulseAudio {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* Qari Picker Sheet Content */
+.qari-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 4px;
+}
+
+.qari-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F9FAF7;
+  border: 1.5px solid rgba(0, 0, 0, 0.03);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.qari-picker-item:hover {
+  background: #FFFDF8;
+  border-color: var(--color-primary-light);
+}
+
+.qari-picker-item--active {
+  background: #ECFDF5;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.05);
+}
+
+.qari-picker-item__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qari-picker-icon {
+  font-size: 1.25rem;
+}
+
+.qari-picker-name {
+  font-weight: 700;
+  color: #1F2937;
+  font-size: 0.88rem;
+}
+
+.qari-picker-item--active .qari-picker-name {
+  color: var(--color-primary);
+}
+
+.qari-picker-check {
+  color: var(--color-primary);
+  font-weight: bold;
+  font-size: 1rem;
 }
 </style>
