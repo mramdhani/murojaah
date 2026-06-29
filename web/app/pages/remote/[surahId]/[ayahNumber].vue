@@ -232,11 +232,91 @@ const dynamicFontSizeClass = computed(() => {
   return 'text-arabic-xl'
 })
 
-// Helper for haptic vibration
-const triggerHaptic = (ms = 40) => {
+// Helper for synthesized click sound (Web Audio API)
+let audioCtx: AudioContext | null = null
+const playTick = (type: 'fluent' | 'doubtful' | 'forgot' | 'normal' = 'normal') => {
+  if (typeof window === 'undefined') return
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextClass) return
+    
+    // Initialize lazily to comply with autoplay policy
+    if (!audioCtx) {
+      audioCtx = new AudioContextClass()
+    }
+    
+    // Resume context if suspended (iOS Safari requires this)
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume()
+    }
+    
+    const now = audioCtx.currentTime
+    const osc = audioCtx.createOscillator()
+    const gain = audioCtx.createGain()
+    
+    osc.connect(gain)
+    gain.connect(audioCtx.destination)
+    
+    if (type === 'fluent') {
+      // Gentle chime/pop for Lancar
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(700, now)
+      osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05)
+      
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(0.06, now + 0.015)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05)
+      
+      osc.start(now)
+      osc.stop(now + 0.05)
+    } else if (type === 'doubtful') {
+      // Soft mid tick
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(350, now)
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.04)
+      
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04)
+      
+      osc.start(now)
+      osc.stop(now + 0.04)
+    } else if (type === 'forgot') {
+      // Lower soft thud
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(180, now)
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.06)
+      
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.015)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06)
+      
+      osc.start(now)
+      osc.stop(now + 0.06)
+    } else {
+      // Standard mechanical tick
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(1400, now)
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.015)
+      
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(0.04, now + 0.003)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015)
+      
+      osc.start(now)
+      osc.stop(now + 0.015)
+    }
+  } catch (err) {
+    console.warn('Web Audio tap sound failed:', err)
+  }
+}
+
+// Helper for haptic vibration and sound
+const triggerHaptic = (ms = 40, soundType: 'fluent' | 'doubtful' | 'forgot' | 'normal' = 'normal') => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     navigator.vibrate(ms)
   }
+  playTick(soundType)
 }
 
 // Helper logic for Surah navigation list
@@ -379,8 +459,8 @@ const submitReview = async (status: 'forgot' | 'doubtful' | 'fluent') => {
   flashStatus.value = status
   setTimeout(() => { flashStatus.value = null }, 350)
 
-  // Haptic feedback
-  triggerHaptic(60)
+  // Haptic & sound feedback
+  triggerHaptic(60, status)
 
   const statusLabels = { forgot: 'Lupa', doubtful: 'Ragu', fluent: 'Lancar' }
 
