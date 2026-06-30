@@ -232,39 +232,65 @@
           <!-- Heatmap Sub-card -->
           <div class="heatmap-container">
             <div class="heatmap-header">
-              <span class="heatmap-title">Aktivitas 22 Minggu Terakhir</span>
-              <div class="heatmap-legend">
-                <span>Kurang</span>
-                <div class="legend-box legend-box--0"></div>
-                <div class="legend-box legend-box--1"></div>
-                <div class="legend-box legend-box--2"></div>
-                <div class="legend-box legend-box--3"></div>
-                <span>Banyak</span>
+              <div class="heatmap-title-row">
+                <span class="heatmap-title">Aktivitas 22 Minggu Terakhir</span>
+                <button
+                  type="button"
+                  class="heatmap-info-button"
+                  aria-label="Cara membaca aktivitas murojaah"
+                  :aria-expanded="showHeatmapInfo"
+                  @click="showHeatmapInfo = true"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <line x1="12" y1="11" x2="12" y2="16"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+              </div>
+              <div class="heatmap-legend" aria-label="Jumlah aktivitas per hari">
+                <span class="legend-key"><i class="legend-box legend-box--0"></i>0</span>
+                <span class="legend-key"><i class="legend-box legend-box--1"></i>1-5</span>
+                <span class="legend-key"><i class="legend-box legend-box--2"></i>6-15</span>
+                <span class="legend-key"><i class="legend-box legend-box--3"></i>16+</span>
               </div>
             </div>
             
             <div class="heatmap-grid-wrap">
               <div class="heatmap-y-labels">
-                <span style="grid-row: 1">S</span>
-                <span style="grid-row: 3">R</span>
-                <span style="grid-row: 5">J</span>
+                <span style="grid-row: 1">Sen</span>
+                <span style="grid-row: 3">Rab</span>
+                <span style="grid-row: 5">Jum</span>
               </div>
-               <div class="heatmap-grid">
-                <div
-                  v-for="(day, index) in heatmapDays"
+              <div class="heatmap-grid">
+                <button
+                  v-for="day in heatmapDays"
                   :key="day.dateString"
+                  type="button"
                   class="heatmap-day"
                   :class="[
                     'heatmap-day--level-' + day.level,
-                    { 'heatmap-day--future': day.isFuture }
+                    {
+                      'heatmap-day--future': day.isFuture,
+                      'heatmap-day--selected': selectedHeatmapDay?.dateString === day.dateString
+                    }
                   ]"
-                  :title="day.isFuture ? 'Mendatang' : `${day.dateString}: ${day.count} ayat murojaah`"
-                ></div>
+                  :title="heatmapDayLabel(day)"
+                  :aria-label="heatmapDayLabel(day)"
+                  :aria-pressed="selectedHeatmapDay?.dateString === day.dateString"
+                  :disabled="day.isFuture"
+                  @click="selectHeatmapDay(day)"
+                ></button>
               </div>
             </div>
             <div class="heatmap-months">
               <span>22 Minggu Lalu</span>
               <span>Hari Ini</span>
+            </div>
+
+            <div v-if="selectedHeatmapDay" class="heatmap-detail" aria-live="polite">
+              <span>{{ formatHeatmapDate(selectedHeatmapDay.dateString) }}</span>
+              <strong>{{ selectedHeatmapDay.count }} aktivitas murojaah</strong>
             </div>
           </div>
         </div>
@@ -410,6 +436,73 @@
       </div>
     </div>
 
+    <!-- Heatmap Information Bottom Sheet -->
+    <div v-if="showHeatmapInfo" class="heatmap-info-overlay animate-fade-in" @click="showHeatmapInfo = false">
+      <section
+        class="heatmap-info-sheet animate-slide-up"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="heatmap-info-title"
+        @click.stop
+      >
+        <div class="heatmap-info-handle"></div>
+        <div class="heatmap-info-header">
+          <div class="heatmap-info-heading">
+            <span class="heatmap-info-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                <circle cx="12" cy="12" r="9"></circle>
+                <line x1="12" y1="11" x2="12" y2="16"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </span>
+            <div>
+              <h3 id="heatmap-info-title">Cara Membaca Aktivitas</h3>
+              <p>Ringkasan konsistensi murojaah selama 22 minggu.</p>
+            </div>
+          </div>
+          <button type="button" class="heatmap-info-close" aria-label="Tutup informasi" @click="showHeatmapInfo = false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="heatmap-info-body">
+          <div class="heatmap-guide">
+            <div class="heatmap-guide-item">
+              <span class="heatmap-guide-number">1</span>
+              <p><strong>Satu kotak adalah satu hari.</strong> Ketuk kotak untuk melihat tanggal dan jumlah aktivitas.</p>
+            </div>
+            <div class="heatmap-guide-item">
+              <span class="heatmap-guide-number">2</span>
+              <p><strong>Satu kolom adalah satu minggu.</strong> Periode bergerak dari 22 minggu lalu menuju hari ini.</p>
+            </div>
+            <div class="heatmap-guide-item">
+              <span class="heatmap-guide-number">3</span>
+              <p><strong>Baris dimulai dari Senin.</strong> Penanda Sen, Rab, dan Jum membantu membaca posisi hari.</p>
+            </div>
+          </div>
+
+          <div class="heatmap-scale-card">
+            <h4>Intensitas aktivitas per hari</h4>
+            <div class="heatmap-scale-grid">
+              <div class="heatmap-scale-item"><i class="legend-box legend-box--0"></i><span><strong>0</strong> aktivitas</span></div>
+              <div class="heatmap-scale-item"><i class="legend-box legend-box--1"></i><span><strong>1-5</strong> aktivitas</span></div>
+              <div class="heatmap-scale-item"><i class="legend-box legend-box--2"></i><span><strong>6-15</strong> aktivitas</span></div>
+              <div class="heatmap-scale-item"><i class="legend-box legend-box--3"></i><span><strong>16+</strong> aktivitas</span></div>
+            </div>
+          </div>
+
+          <p class="heatmap-info-note">
+            Aktivitas dihitung dari setiap pencatatan review. Jika ayat yang sama diulang, setiap pengulangan tetap dihitung.
+          </p>
+        </div>
+
+        <button type="button" class="heatmap-info-action" @click="showHeatmapInfo = false">Mengerti</button>
+      </section>
+    </div>
+
     <!-- Custom Logout Confirmation Modal -->
     <div v-if="isLogoutModalOpen" class="modal-overlay animate-fade-in" @click="closeLogoutModal">
       <div class="modal-dialog animate-scale-in" @click.stop>
@@ -462,10 +555,39 @@ const showInfaqModal = ref(false)
 const streak = ref(0)
 const heatmap = ref<Record<string, number>>({})
 
-const heatmapDays = ref<Array<{ dateString: string; count: number; level: number; isFuture: boolean }>>([])
+interface HeatmapDay {
+  dateString: string
+  count: number
+  level: number
+  isFuture: boolean
+}
+
+const heatmapDays = ref<HeatmapDay[]>([])
+const selectedHeatmapDay = ref<HeatmapDay | null>(null)
+
+const formatHeatmapDate = (dateString: string) => {
+  const [year, month, day] = dateString.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(date)
+}
+
+const heatmapDayLabel = (day: HeatmapDay) => {
+  if (day.isFuture) return `${formatHeatmapDate(day.dateString)} - belum terjadi`
+  return `${formatHeatmapDate(day.dateString)} - ${day.count} aktivitas murojaah`
+}
+
+const selectHeatmapDay = (day: HeatmapDay) => {
+  if (!day.isFuture) selectedHeatmapDay.value = day
+}
 
 function generateHeatmapDays(heatmapData: Record<string, number>) {
-  const days: Array<{ dateString: string; count: number; level: number; isFuture: boolean }> = []
+  const days: HeatmapDay[] = []
   const today = new Date()
   
   // Cari hari ke-x dari minggu ini (0: Minggu, 1: Senin, ..., 6: Sabtu)
@@ -621,6 +743,7 @@ const handleGoogleLogin = () => {
   loginWithGoogle()
 }
 
+const showHeatmapInfo = ref(false)
 const isLogoutModalOpen = ref(false)
 
 const handleLogout = () => {
@@ -1576,22 +1699,62 @@ input:checked + .slider:before {
   gap: 8px;
 }
 
+.heatmap-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .heatmap-title {
   font-size: 0.8rem;
   font-weight: 750;
   color: #374151;
 }
 
+.heatmap-info-button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #D1FAE5;
+  border-radius: 50%;
+  background: #ECFDF5;
+  color: #047857;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.heatmap-info-button:active {
+  transform: scale(0.92);
+  background: #D1FAE5;
+}
+
+.heatmap-info-button:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
+}
+
 .heatmap-legend {
   display: flex;
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
   font-size: 0.65rem;
   color: #9CA3AF;
   font-weight: 600;
 }
 
+.legend-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
 .legend-box {
+  display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 2px;
@@ -1601,6 +1764,7 @@ input:checked + .slider:before {
 .legend-box--1 { background: #D1FAE5; }
 .legend-box--2 { background: #34D399; }
 .legend-box--3 { background: #047857; }
+
 
 .heatmap-grid-wrap {
   display: flex;
@@ -1623,7 +1787,7 @@ input:checked + .slider:before {
   font-size: 0.62rem;
   color: #9CA3AF;
   font-weight: 750;
-  width: 12px;
+  width: 24px;
   text-align: center;
   line-height: 11px;
 }
@@ -1638,9 +1802,13 @@ input:checked + .slider:before {
 }
 
 .heatmap-day {
+  appearance: none;
+  padding: 0;
+  border: 0;
   width: 11px;
   height: 11px;
   border-radius: 2px;
+  cursor: pointer;
   transition: transform 0.1s;
 }
 
@@ -1653,6 +1821,18 @@ input:checked + .slider:before {
 .heatmap-day--level-1 { background: #D1FAE5; }
 .heatmap-day--level-2 { background: #34D399; }
 .heatmap-day--level-3 { background: #047857; }
+
+.heatmap-day--selected {
+  outline: 2px solid #065F46;
+  outline-offset: 1px;
+  transform: scale(1.15);
+  z-index: 1;
+}
+
+.heatmap-day:focus-visible {
+  outline: 2px solid #065F46;
+  outline-offset: 2px;
+}
 
 .heatmap-day--future {
   background: #F8FAFC !important;
@@ -1667,5 +1847,238 @@ input:checked + .slider:before {
   color: #9CA3AF;
   font-weight: 600;
   margin-top: 2px;
+}
+
+.heatmap-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  border: 1px solid #D1FAE5;
+  border-radius: 10px;
+  background: #F0FDF4;
+  color: #374151;
+  font-size: 0.68rem;
+}
+
+.heatmap-detail strong {
+  color: #047857;
+  text-align: right;
+}
+
+/* Heatmap information bottom sheet */
+.heatmap-info-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.heatmap-info-sheet {
+  width: 100%;
+  max-width: 540px;
+  max-height: min(86dvh, 680px);
+  overflow-y: auto;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  border-radius: 24px 24px 0 0;
+  background: #FFFFFF;
+  box-shadow: 0 -16px 50px rgba(15, 23, 42, 0.18);
+}
+
+.heatmap-info-handle {
+  width: 42px;
+  height: 4px;
+  margin: 0 auto 18px;
+  border-radius: 99px;
+  background: #CBD5E1;
+}
+
+.heatmap-info-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.heatmap-info-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.heatmap-info-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: #ECFDF5;
+  color: #047857;
+}
+
+.heatmap-info-heading h3 {
+  margin: 0 0 3px;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.heatmap-info-heading p {
+  margin: 0;
+  color: #6B7280;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.heatmap-info-close {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #F3F4F6;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.heatmap-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heatmap-guide-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  background: #FAFAFA;
+}
+
+.heatmap-guide-number {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: #D1FAE5;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.heatmap-guide-item p {
+  margin: 0;
+  color: #4B5563;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.heatmap-guide-item strong {
+  color: #1F2937;
+}
+
+.heatmap-scale-card {
+  margin-top: 14px;
+  padding: 13px;
+  border-radius: 14px;
+  background: #F0FDF4;
+}
+
+.heatmap-scale-card h4 {
+  margin: 0 0 10px;
+  color: #166534;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.heatmap-scale-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.heatmap-scale-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4B5563;
+  font-size: 0.68rem;
+}
+
+.heatmap-scale-item strong {
+  color: #166534;
+}
+
+.heatmap-info-note {
+  margin: 14px 2px 0;
+  color: #6B7280;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.heatmap-info-action {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #047857;
+  color: #FFFFFF;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(4, 120, 87, 0.2);
+}
+
+.heatmap-info-action:active {
+  transform: scale(0.98);
+}
+
+/* Keep all 22 weeks visible inside narrow mobile cards.
+   The latest activity lives in the last column, so allowing the grid to
+   overflow would hide today's green cells at the initial scroll position. */
+@media (max-width: 420px) {
+  .heatmap-grid-wrap {
+    gap: 4px;
+    margin: 0;
+    padding: 4px 0;
+  }
+
+  .heatmap-y-labels {
+    grid-template-rows: repeat(7, 9px);
+    gap: 3px;
+    width: 24px;
+    font-size: 0.52rem;
+    line-height: 9px;
+  }
+
+  .heatmap-grid {
+    grid-template-rows: repeat(7, 9px);
+    grid-auto-columns: 9px;
+    gap: 3px;
+  }
+
+  .heatmap-day {
+    width: 9px;
+    height: 9px;
+  }
 }
 </style>
