@@ -68,13 +68,13 @@ class AuthController extends Controller
                 ->first();
 
             if ($user) {
-                // Update info google jika email cocok tapi google_id belum terisi
-                if (!$user->google_id) {
-                    $user->update([
-                        'google_id' => $googleUser->getId(),
-                        'avatar' => $googleUser->getAvatar(),
-                    ]);
-                }
+                // Selalu update info Google (nama, email, google_id, avatar) setiap kali login agar tetap sinkron
+                $user->update([
+                    'name' => $googleUser->getName() ?? $user->name,
+                    'email' => $googleUser->getEmail() ?? $user->email,
+                    'google_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar() ?? $user->avatar,
+                ]);
             } else {
                 // Buat user baru
                 $user = User::create([
