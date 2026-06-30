@@ -27,18 +27,24 @@
         </p>
       </div>
 
-      <NuxtLink to="/profile" class="hdr-avatar-btn" v-if="isLoggedIn">
-        <img
-          v-if="user?.avatar"
-          :src="user.avatar"
-          :alt="user.name"
-          class="hdr-avatar-photo"
-          referrerpolicy="no-referrer"
-        />
-        <div v-else class="hdr-avatar-initials">
-          {{ user?.name?.charAt(0)?.toUpperCase() || '?' }}
+      <div class="home-header__right" v-if="isLoggedIn">
+        <div v-if="dashboard?.streak > 0" class="streak-mini-pill" @click="router.push('/profile')" title="Murojaah berturut-turut">
+          <span>🔥</span>
+          <strong>{{ dashboard.streak }}</strong>
         </div>
-      </NuxtLink>
+        <NuxtLink to="/profile" class="hdr-avatar-btn">
+          <img
+            v-if="user?.avatar"
+            :src="user.avatar"
+            :alt="user.name"
+            class="hdr-avatar-photo"
+            referrerpolicy="no-referrer"
+          />
+          <div v-else class="hdr-avatar-initials">
+            {{ user?.name?.charAt(0)?.toUpperCase() || '?' }}
+          </div>
+        </NuxtLink>
+      </div>
     </div>
   </div>
 
@@ -355,6 +361,48 @@
           <div class="empty-today__icon">📿</div>
           <p class="empty-today__title">Belum ada murojaah hari ini</p>
           <p class="empty-today__sub">Yuk mulai murojaah dan jaga hafalan!</p>
+        </div>
+      </section>
+
+      <!-- ===== ANTRIAN MUROJAAH HARI INI (Spaced Repetition) ===== -->
+      <section class="section animate-fade-in" style="animation-delay: 0.08s;" v-if="dashboard && isLoggedIn">
+        <div class="section-header">
+          <h2 class="section-title">Antrian Murojaah</h2>
+          <span class="section-badge" v-if="dashboard.due_today.length > 0">
+            {{ dashboard.due_today.length }} Surat
+          </span>
+        </div>
+
+        <div class="due-list" v-if="dashboard.due_today.length > 0">
+          <div
+            v-for="surah in dashboard.due_today"
+            :key="surah.id"
+            class="due-card"
+            @click="goToRemote(surah)"
+          >
+            <div class="due-card__left">
+              <div class="due-card__number">{{ surah.number }}</div>
+              <div class="due-card__info">
+                <span class="due-card__name">{{ surah.surah_name }}</span>
+                <span class="due-card__desc">{{ surah.due_count }} ayat jatuh tempo</span>
+              </div>
+            </div>
+            <div class="due-card__right">
+              <span class="due-card__arabic">{{ surah.surah_name_arabic }}</span>
+              <button class="due-card__btn">
+                Mulai
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-due">
+          <div class="empty-due__icon">🎉</div>
+          <p class="empty-due__title">Semua hafalan sudah aman!</p>
+          <p class="empty-due__sub">Hebat, belum ada jadwal review lagi hari ini.</p>
         </div>
       </section>
       <section v-else class="section">
@@ -683,6 +731,13 @@ const pct = (surah: SurahProgress, status: string) => {
 
 const goToSurah = (surahId: number) => {
   router.push(`/progress/${surahId}`)
+}
+
+const goToRemote = (surah: any) => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(30)
+  }
+  router.push(`/remote/${surah.id}/1`)
 }
 
 onMounted(async () => {
@@ -2185,5 +2240,189 @@ useHead({
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+/* Streak and Due Murojaah Styles */
+.home-header__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streak-mini-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 5px 12px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
+}
+
+.streak-mini-pill:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.streak-mini-pill:active {
+  transform: translateY(0);
+}
+
+.streak-mini-pill span {
+  font-size: 0.95rem;
+}
+
+.streak-mini-pill strong {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.section-badge {
+  background: var(--color-primary-50);
+  color: var(--color-primary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 1.5px solid var(--color-primary-100);
+}
+
+.due-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.due-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1.5px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.due-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+.due-card:active {
+  transform: scale(0.98);
+}
+
+.due-card__left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.due-card__number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FFFDF5;
+  border: 1.5px solid #FDE68A;
+  color: #B45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.due-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.due-card__name {
+  font-weight: 750;
+  color: #1F2937;
+  font-size: 0.95rem;
+}
+
+.due-card__desc {
+  font-size: 0.74rem;
+  color: #D97706;
+  font-weight: 600;
+}
+
+.due-card__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.due-card__arabic {
+  font-family: var(--font-arabic);
+  font-size: 1.15rem;
+  color: #042719;
+}
+
+.due-card__btn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.15);
+}
+
+.due-card:hover .due-card__btn {
+  background: #047857;
+}
+
+.empty-due {
+  background: white;
+  border-radius: 16px;
+  border: 1.5px solid rgba(0, 0, 0, 0.03);
+  padding: 24px 16px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+}
+
+.empty-due__icon {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+}
+
+.empty-due__title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #1F2937;
+  margin-bottom: 3px;
+}
+
+.empty-due__sub {
+  font-size: 0.76rem;
+  color: #6B7280;
+  font-weight: 550;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
 }
 </style>

@@ -27,6 +27,37 @@ class ReviewController extends Controller
 
         $now = now();
 
+        // Ambil data progress lama jika ada untuk menghitung review_count berikutnya
+        $existingProgress = MemorizationProgress::where([
+            'user_id' => $userId,
+            'surah_id' => $validated['surah_id'],
+            'ayah_id' => $validated['ayah_id'],
+        ])->first();
+
+        $reviewCount = $existingProgress ? $existingProgress->review_count + 1 : 1;
+        $status = $validated['status'];
+
+        // Algoritma Spaced Repetition sederhana:
+        // - Lupa (forgot) -> review besok (+1 hari)
+        // - Ragu-ragu (doubtful) -> review 3 hari lagi (+3 hari)
+        // - Lancar (fluent) -> jika review_count <= 1: 7 hari; <= 3: 14 hari; > 3: 30 hari
+        $days = 1;
+        if ($status === 'forgot') {
+            $days = 1;
+        } elseif ($status === 'doubtful') {
+            $days = 3;
+        } elseif ($status === 'fluent') {
+            if ($reviewCount <= 1) {
+                $days = 7;
+            } elseif ($reviewCount <= 3) {
+                $days = 14;
+            } else {
+                $days = 30;
+            }
+        }
+
+        $nextReviewAt = now()->addDays($days)->startOfDay();
+
         // Update or create memorization progress
         $progress = MemorizationProgress::updateOrCreate(
             [
@@ -35,13 +66,12 @@ class ReviewController extends Controller
                 'ayah_id' => $validated['ayah_id'],
             ],
             [
-                'status' => $validated['status'],
+                'status' => $status,
                 'last_reviewed_at' => $now,
+                'next_review_at' => $nextReviewAt,
+                'review_count' => $reviewCount,
             ]
         );
-
-        // Increment review count
-        $progress->increment('review_count');
 
         // Create review log entry
         ReviewLog::create([

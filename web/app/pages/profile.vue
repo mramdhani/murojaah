@@ -212,6 +212,63 @@
           </div>
         </div>
       </div>
+
+      <!-- Konsistensi Murojaah Section (Streak & Heatmap) -->
+      <div class="consistency-section" v-if="isLoggedIn && !statsLoading">
+        <div class="section-header">
+          <h2 class="section-title">Konsistensi Murojaah</h2>
+        </div>
+
+        <div class="consistency-card">
+          <!-- Streak Sub-card -->
+          <div class="streak-hero">
+            <div class="streak-hero__icon">🔥</div>
+            <div class="streak-hero__detail">
+              <span class="streak-hero__value">{{ streak }} Hari</span>
+              <span class="streak-hero__label">Murojaah Berturut-turut</span>
+            </div>
+          </div>
+
+          <!-- Heatmap Sub-card -->
+          <div class="heatmap-container">
+            <div class="heatmap-header">
+              <span class="heatmap-title">Aktivitas 22 Minggu Terakhir</span>
+              <div class="heatmap-legend">
+                <span>Kurang</span>
+                <div class="legend-box legend-box--0"></div>
+                <div class="legend-box legend-box--1"></div>
+                <div class="legend-box legend-box--2"></div>
+                <div class="legend-box legend-box--3"></div>
+                <span>Banyak</span>
+              </div>
+            </div>
+            
+            <div class="heatmap-grid-wrap">
+              <div class="heatmap-y-labels">
+                <span style="grid-row: 1">S</span>
+                <span style="grid-row: 3">R</span>
+                <span style="grid-row: 5">J</span>
+              </div>
+               <div class="heatmap-grid">
+                <div
+                  v-for="(day, index) in heatmapDays"
+                  :key="day.dateString"
+                  class="heatmap-day"
+                  :class="[
+                    'heatmap-day--level-' + day.level,
+                    { 'heatmap-day--future': day.isFuture }
+                  ]"
+                  :title="day.isFuture ? 'Mendatang' : `${day.dateString}: ${day.count} ayat murojaah`"
+                ></div>
+              </div>
+            </div>
+            <div class="heatmap-months">
+              <span>22 Minggu Lalu</span>
+              <span>Hari Ini</span>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <!-- App Settings Section -->
       <div v-if="user && !user.is_guest" class="settings-section">
@@ -339,12 +396,14 @@
             </div>
           </div>
           
-          <!-- Hidden for now until user has a permanent QRIS -->
-          <div v-if="false" class="infaq-qris-card">
+          <!-- QRIS Card -->
+          <div class="infaq-qris-card">
             <div class="infaq-qris-title">Atau Scan QRIS</div>
-            <div class="infaq-qris-placeholder">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
-              <span>(Gambar QRIS belum tersedia)</span>
+            <div class="infaq-qris-img-wrap">
+              <img src="/images/qris.jpeg" alt="QRIS Murojaah" class="infaq-qris-img" />
+            </div>
+            <div class="infaq-qris-tip">
+              Gak bisa scan? Screenshot layar ini lalu unggah ke GoPay/OVO/Dana/LinkAja/m-banking Anda
             </div>
           </div>
         </div>
@@ -377,7 +436,7 @@
 </template>
 
 <script setup lang="ts">
-const { user, loginWithGoogle, logout, loading: authLoading } = useAuth()
+const { user, isLoggedIn, loginWithGoogle, logout, loading: authLoading } = useAuth()
 const { apiFetch } = useApi()
 const { currentThemeId, setTheme, themesList } = useTheme()
 
@@ -400,6 +459,80 @@ const selectedQari = useCookie<string>('selected_qari', {
 })
 
 const showInfaqModal = ref(false)
+const streak = ref(0)
+const heatmap = ref<Record<string, number>>({})
+
+const heatmapDays = ref<Array<{ dateString: string; count: number; level: number; isFuture: boolean }>>([])
+
+function generateHeatmapDays(heatmapData: Record<string, number>) {
+  const days: Array<{ dateString: string; count: number; level: number; isFuture: boolean }> = []
+  const today = new Date()
+  
+  // Cari hari ke-x dari minggu ini (0: Minggu, 1: Senin, ..., 6: Sabtu)
+  const currentDay = today.getDay()
+  // Hitung selisih hari ke hari Senin minggu ini
+  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay
+  
+  const mondayThisWeek = new Date(today)
+  mondayThisWeek.setDate(today.getDate() + diffToMonday)
+  
+  // Tanggal mulai adalah Senin 21 minggu yang lalu (agar total pas 22 minggu)
+  const startDate = new Date(mondayThisWeek)
+  startDate.setDate(mondayThisWeek.getDate() - 21 * 7)
+  
+  // Generate 154 hari (22 minggu * 7 hari)
+  for (let i = 0; i < 154; i++) {
+    const d = new Date(startDate)
+    d.setDate(startDate.getDate() + i)
+    
+    // Format YYYY-MM-DD local
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const date = String(d.getDate()).padStart(2, '0')
+    const dateString = `${year}-${month}-${date}`
+    
+    const count = heatmapData[dateString] || 0
+    if (count > 0) {
+      console.log('Heatmap match:', dateString, 'Count:', count)
+    }
+    if (dateString === '2026-06-29') {
+      console.log('Monday, June 29 details:', JSON.stringify({ index: i, dateString, count, level: count > 15 ? 3 : (count > 5 ? 2 : (count > 0 ? 1 : 0)), isFuture: false }))
+    }
+    
+    // Bandingkan tanggal saja tanpa jam untuk mendeteksi hari mendatang
+    const dZero = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+    const isFuture = dZero > todayZero
+    
+    let level = 0
+    if (!isFuture) {
+      if (count > 0 && count <= 5) {
+        level = 1
+      } else if (count > 5 && count <= 15) {
+        level = 2
+      } else if (count > 15) {
+        level = 3
+      }
+    }
+    
+    days.push({
+      dateString,
+      count,
+      level,
+      isFuture
+    })
+  }
+  return days
+}
+
+// Generate initial days (with empty heatmap)
+heatmapDays.value = generateHeatmapDays({})
+
+// Watch heatmap changes and regenerate days
+watch(heatmap, (newHeatmap) => {
+  console.log('Heatmap watch triggered:', JSON.stringify(newHeatmap))
+  heatmapDays.value = generateHeatmapDays(newHeatmap || {})
+}, { deep: true, immediate: false })
 
 const qariList = [
   { id: 'Maher_AlMuaiqly_64kbps', name: 'Maher Al-Muaiqly' },
@@ -509,6 +642,9 @@ const loadStats = async () => {
   try {
     const res = await apiFetch<any>('/dashboard')
     stats.value = res.data.overall
+    streak.value = res.data.streak || 0
+    heatmap.value = res.data.heatmap || {}
+    console.log('Heatmap Loaded in Vue:', JSON.stringify(heatmap.value))
   } catch (e) {
     console.error('Failed to load profile stats:', e)
   } finally {
@@ -1345,5 +1481,191 @@ input:checked + .slider:before {
 .infaq-qris-placeholder span {
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.infaq-qris-img-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.infaq-qris-img {
+  max-width: 100%;
+  height: auto;
+  max-height: 280px;
+  object-fit: contain;
+}
+
+.infaq-qris-tip {
+  font-size: 0.72rem;
+  color: #64748B;
+  font-weight: 550;
+  line-height: 1.4;
+  margin-top: 8px;
+  text-align: center;
+  background: #F1F5F9;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+/* Consistency Section (Streak & Heatmap) CSS */
+.consistency-section {
+  margin-top: 24px;
+}
+
+.consistency-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.streak-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #FFFDF5 0%, #FFF9E6 100%);
+  border: 1.5px solid #FDE68A;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.streak-hero__icon {
+  font-size: 2.2rem;
+  animation: sparkFloat 3s ease-in-out infinite;
+}
+
+.streak-hero__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.streak-hero__value {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #B45309;
+  line-height: 1.1;
+}
+
+.streak-hero__label {
+  font-size: 0.76rem;
+  color: #8C8262;
+  font-weight: 700;
+}
+
+.heatmap-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heatmap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heatmap-title {
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: #374151;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: #9CA3AF;
+  font-weight: 600;
+}
+
+.legend-box {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-box--0 { background: #E2E8F0; }
+.legend-box--1 { background: #D1FAE5; }
+.legend-box--2 { background: #34D399; }
+.legend-box--3 { background: #047857; }
+
+.heatmap-grid-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar for clean grid */
+  margin: 0 -4px;
+  padding: 4px;
+}
+
+.heatmap-grid-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.heatmap-y-labels {
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  gap: 4px;
+  font-size: 0.62rem;
+  color: #9CA3AF;
+  font-weight: 750;
+  width: 12px;
+  text-align: center;
+  line-height: 11px;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-flow: column;
+  grid-auto-columns: 11px;
+  gap: 4px;
+  width: max-content;
+}
+
+.heatmap-day {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  transition: transform 0.1s;
+}
+
+.heatmap-day:hover {
+  transform: scale(1.3);
+  z-index: 1;
+}
+
+.heatmap-day--level-0 { background: #E2E8F0; border: 1px solid rgba(0,0,0,0.02); }
+.heatmap-day--level-1 { background: #D1FAE5; }
+.heatmap-day--level-2 { background: #34D399; }
+.heatmap-day--level-3 { background: #047857; }
+
+.heatmap-day--future {
+  background: #F8FAFC !important;
+  border: 1px dashed #CBD5E1 !important;
+  cursor: not-allowed;
+}
+
+.heatmap-months {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: #9CA3AF;
+  font-weight: 600;
+  margin-top: 2px;
 }
 </style>
