@@ -379,44 +379,131 @@ button {
 }
 
 /* ---------- Toast Notification ---------- */
-.toast {
+.toast-region {
   position: fixed;
   top: calc(var(--safe-top) + 16px);
   left: 50%;
+  z-index: 1200;
+  width: min(calc(100% - 32px), 508px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   transform: translateX(-50%);
-  padding: 12px 24px;
-  border-radius: var(--radius-full);
-  font-weight: 600;
-  font-size: 0.875rem;
-  z-index: 1000;
-  animation: slideDown 0.3s ease, fadeOut 0.3s ease 1.5s forwards;
-  box-shadow: var(--shadow-lg);
   pointer-events: none;
 }
 
-.toast--fluent {
-  background: var(--color-fluent);
+.toast {
+  width: 100%;
+  min-height: 54px;
+  padding: 11px 14px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-weight: 650;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+
+.toast__icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: white;
+}
+
+.toast__icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.toast__message {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast--fluent {
+  background: rgba(236, 253, 245, 0.97);
+  border-color: #A7F3D0;
+  color: #065F46;
+}
+
+.toast--fluent .toast__icon {
+  background: #059669;
 }
 
 .toast--doubtful {
-  background: var(--color-doubtful);
-  color: white;
+  background: rgba(255, 251, 235, 0.97);
+  border-color: #FDE68A;
+  color: #92400E;
+}
+
+.toast--doubtful .toast__icon {
+  background: #D97706;
 }
 
 .toast--forgot {
-  background: var(--color-forgot);
-  color: white;
+  background: rgba(254, 242, 242, 0.97);
+  border-color: #FECACA;
+  color: #991B1B;
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast--forgot .toast__icon {
+  background: #DC2626;
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+.toast--info {
+  background: rgba(239, 246, 255, 0.97);
+  border-color: #BFDBFE;
+  color: #1E40AF;
+}
+
+.toast--info .toast__icon {
+  background: #2563EB;
+}
+
+.toast-enter-active,
+.toast-leave-active,
+.toast-move {
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateY(-14px) scale(0.98);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+}
+
+@media (max-width: 420px) {
+  .toast-region {
+    top: calc(var(--safe-top) + 12px);
+    width: calc(100% - 24px);
+  }
+
+  .toast {
+    min-height: 52px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 0.82rem;
+  }
 }
 
 /* ---------- Skeleton Loading ---------- */

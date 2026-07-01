@@ -18,16 +18,35 @@
     </template>
 
     <Teleport to="body">
-      <TransitionGroup name="toast">
-        <div
-          v-for="toast in toasts"
-          :key="toast.id"
-          class="toast"
-          :class="`toast--${toast.type}`"
-        >
-          {{ toast.message }}
-        </div>
-      </TransitionGroup>
+      <div class="toast-region" aria-live="polite" aria-atomic="false">
+        <TransitionGroup name="toast">
+          <div
+            v-for="toast in toasts"
+            :key="toast.id"
+            class="toast"
+            :class="`toast--${toast.type}`"
+            role="status"
+          >
+            <span class="toast__icon" aria-hidden="true">
+              <svg v-if="toast.type === 'fluent'" viewBox="0 0 24 24">
+                <path d="M5 12.5l4.2 4.2L19 7" />
+              </svg>
+              <svg v-else-if="toast.type === 'doubtful'" viewBox="0 0 24 24">
+                <path d="M9.5 9a3 3 0 1 1 4.8 2.4c-1.4 1-2.3 1.6-2.3 3.1" />
+                <path d="M12 18h.01" />
+              </svg>
+              <svg v-else-if="toast.type === 'forgot'" viewBox="0 0 24 24">
+                <path d="M7 7l10 10M17 7L7 17" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 11v5M12 8h.01" />
+              </svg>
+            </span>
+            <span class="toast__message">{{ toast.message }}</span>
+          </div>
+        </TransitionGroup>
+      </div>
     </Teleport>
   </div>
 </template>
@@ -49,7 +68,7 @@ const showToast = (message: string, type: ToastItem['type'] = 'info') => {
   toasts.value.push({ id, message, type })
   setTimeout(() => {
     toasts.value = toasts.value.filter(t => t.id !== id)
-  }, 2000)
+  }, 3000)
 }
 
 provide('showToast', showToast)

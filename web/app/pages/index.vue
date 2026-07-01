@@ -414,8 +414,8 @@
 
       <!-- ===== QUICK ACTIONS ===== -->
       <section class="section animate-fade-in" style="animation-delay: 0.1s">
-        <div class="quick-actions">
-          <div @click="openDrawer" class="quick-action quick-action--primary" style="cursor: pointer;">
+                <div class="quick-actions">
+          <div @click="openDrawer('learning')" class="quick-action quick-action--primary" style="cursor: pointer;">
             <div class="qa-icon-wrap">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="5 3 19 12 5 21 5 3"/>
@@ -424,9 +424,21 @@
             <span>Mulai Murojaah</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
+
+          <div @click="openDrawer('listening')" class="quick-action quick-action--outline" style="cursor: pointer;">
+            <div class="qa-icon-wrap qa-icon-wrap--outline">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+                <path d="M21 8v8"/>
+              </svg>
+            </div>
+            <span>Mode Mendengarkan</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
           <NuxtLink
             v-if="dashboard?.last_session"
-            :to="`/remote/${dashboard.last_session.surah_id}/${dashboard.last_session.current_ayah_number}`"
+            :to="{ path: `/remote/${dashboard.last_session.surah_id}/${dashboard.last_session.current_ayah_number}`, query: { mode: 'learning' } }"
             class="quick-action quick-action--outline"
           >
             <div class="qa-icon-wrap qa-icon-wrap--outline">
@@ -437,8 +449,7 @@
             <span>Lanjut {{ dashboard.last_session.surah_name }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
           </NuxtLink>
-        </div>
-      </section>
+        </div>      </section>
 
       <!-- ===== SURAT AKTIF ===== -->
       <section class="section animate-fade-in" style="animation-delay: 0.14s" v-if="activeSurahs.length > 0">
@@ -737,7 +748,7 @@ const goToRemote = (surah: any) => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     navigator.vibrate(30)
   }
-  router.push(`/remote/${surah.id}/1`)
+  router.push({ path: `/remote/${surah.id}/1`, query: { mode: 'learning' } })
 }
 
 onMounted(async () => {

@@ -17,7 +17,7 @@
     </NuxtLink>
 
     <!-- Murojaah Highlight Button -->
-    <button type="button" class="bottom-nav__murojaah" @click="open">
+    <button type="button" class="bottom-nav__murojaah" @click="open('learning')">
       <div class="bottom-nav__murojaah-inner">
         <img src="/logo-white.png" alt="Murojaah" class="bottom-nav__murojaah-logo" />
       </div>

@@ -69,7 +69,7 @@
         <NuxtLink
           v-for="ayah in ayahs"
           :key="ayah.id"
-          :to="`/remote/${route.params.id}/${ayah.ayah_number}`"
+          :to="{ path: `/remote/${route.params.id}/${ayah.ayah_number}`, query: { mode: currentMode } }"
           class="ayah-cell"
           :class="`ayah-cell--${ayah.progress_status}`"
           @click="triggerHaptic"
@@ -160,6 +160,7 @@ const surah = ref<SurahDetail | null>(null)
 const ayahs = ref<AyahItem[]>([])
 const surahList = ref<SurahDetail[]>([])
 const loading = ref(true)
+const currentMode = computed<'learning' | 'listening'>(() => route.query.mode === 'listening' ? 'listening' : 'learning')
 
 const showSurahPicker = ref(false)
 const isWheelDragging = ref(false)
@@ -180,7 +181,7 @@ const handleSurahSelect = (id: number) => {
   if (isWheelDragging.value) return
   triggerHaptic()
   showSurahPicker.value = false
-  router.push(`/surahs/${id}`)
+  router.push({ path: `/surahs/${id}`, query: { mode: currentMode.value } })
 }
 
 const filteredPickerSurahs = computed(() => {
@@ -204,6 +205,11 @@ const nextSurah = computed(() => {
   const currentNum = surah.value.number
   return surahList.value.find(s => s.number === currentNum + 1) || null
 })
+
+const startMode = (mode: 'learning' | 'listening') => {
+  triggerHaptic()
+  router.push({ path: `/remote/${route.params.id}/1`, query: { mode } })
+}
 
 const loadData = async (id: number | string) => {
   loading.value = true
@@ -353,6 +359,65 @@ useHead({
   color: rgba(255, 255, 255, 0.4);
 }
 
+.mode-launcher {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.mode-launcher__card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.mode-launcher__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mode-launcher__copy strong {
+  font-size: 0.98rem;
+}
+
+.mode-launcher__copy span {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.mode-launcher__cta {
+  font-size: 0.82rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.mode-launcher__card--learning {
+  background: linear-gradient(135deg, #ffffff, #f4fbf6);
+  border: 1px solid rgba(6, 95, 70, 0.1);
+}
+
+.mode-launcher__card--learning .mode-launcher__cta {
+  color: #065f46;
+}
+
+.mode-launcher__card--listening {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 1px solid rgba(16, 185, 129, 0.14);
+}
+
+.mode-launcher__card--listening .mode-launcher__cta {
+  color: #047857;
+}
 .legend {
   display: flex;
   gap: 16px;

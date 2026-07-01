@@ -16,8 +16,8 @@
           <div class="drawer-title-wrap">
             <img src="/logo.png" alt="Murojaah Logo" class="drawer-logo" />
             <div>
-              <h2 class="drawer-title">Mulai Murojaah</h2>
-              <p class="drawer-subtitle">Pilih surat untuk remote hafalan</p>
+              <h2 class="drawer-title">{{ drawerTitle }}</h2>
+              <p class="drawer-subtitle">{{ drawerSubtitle }}</p>
             </div>
           </div>
           <button class="drawer-close" @click="close" aria-label="Tutup">
@@ -25,6 +25,25 @@
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
+          </button>
+        </div>
+
+        <div class="drawer-mode-toggle">
+          <button
+            type="button"
+            class="drawer-mode-toggle__btn"
+            :class="{ 'drawer-mode-toggle__btn--active': mode === 'learning' }"
+            @click="mode = 'learning'"
+          >
+            Mode Murojaah
+          </button>
+          <button
+            type="button"
+            class="drawer-mode-toggle__btn"
+            :class="{ 'drawer-mode-toggle__btn--active': mode === 'listening' }"
+            @click="mode = 'listening'"
+          >
+            Mode Mendengarkan
           </button>
         </div>
 
@@ -120,7 +139,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 
-const { isOpen, close } = useMurojaahDrawer()
+const { isOpen, mode, close } = useMurojaahDrawer()
 const { apiFetch } = useApi()
 
 interface SurahItem {
@@ -140,6 +159,13 @@ interface SurahItem {
 const surahs = ref<SurahItem[]>([])
 const searchQuery = ref('')
 const loading = ref(true)
+
+const drawerTitle = computed(() => mode.value === 'listening' ? 'Mulai Mendengarkan' : 'Mulai Murojaah')
+const drawerSubtitle = computed(() =>
+  mode.value === 'listening'
+    ? 'Pilih surat untuk sesi audio tanpa mencatat progress'
+    : 'Pilih surat untuk remote hafalan'
+)
 
 const fetchSurahs = async () => {
   try {
@@ -195,8 +221,9 @@ const progressPercent = (surah: SurahItem, status: 'fluent' | 'doubtful' | 'forg
 
 const router = useRouter()
 const selectSurah = (surahId: number) => {
+  const targetMode = mode.value
   close()
-  router.push(`/surahs/${surahId}`)
+  router.push({ path: `/remote/${surahId}/1`, query: { mode: targetMode } })
 }
 </script>
 
@@ -309,6 +336,56 @@ const selectSurah = (surahId: number) => {
 }
 
 /* Search Row */
+.drawer-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 20px 18px;
+}
+
+.drawer-mode-toggle__btn {
+  min-height: 46px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(6, 78, 59, 0.12);
+  background: #F7F8F6;
+  color: var(--color-text-secondary);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.drawer-mode-toggle__btn--active {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.12), rgba(16, 185, 129, 0.18));
+  color: #065F46;
+  border-color: rgba(6, 95, 70, 0.22);
+  box-shadow: 0 8px 18px rgba(6, 95, 70, 0.08);
+}
+.drawer-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 20px 18px;
+}
+
+.drawer-mode-toggle__btn {
+  min-height: 46px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(6, 78, 59, 0.12);
+  background: #F7F8F6;
+  color: var(--color-text-secondary);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.drawer-mode-toggle__btn--active {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.12), rgba(16, 185, 129, 0.18));
+  color: #065F46;
+  border-color: rgba(6, 95, 70, 0.22);
+  box-shadow: 0 8px 18px rgba(6, 95, 70, 0.08);
+}
 .drawer-search-row {
   padding: 0 20px 14px;
 }

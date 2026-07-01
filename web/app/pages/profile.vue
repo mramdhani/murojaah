@@ -297,44 +297,91 @@
       </div>
       
       <!-- App Settings Section -->
-      <div v-if="user && !user.is_guest" class="settings-section">
+            <div v-if="user && !user.is_guest" class="settings-section">
         <div class="section-header">
-          <h2 class="section-title">Pengaturan Murojaah</h2>
+          <h2 class="section-title">Preferensi Sesi</h2>
         </div>
+
         <div class="settings-card">
-          <!-- Toggle 1: Reveal Mode (Tebak Hafalan vs Tampilkan Ayat) -->
+          <div class="settings-card__group-head">
+            <h3>Preferensi Murojaah</h3>
+            <p>Untuk sesi belajar, evaluasi hafalan, dan pencatatan progress.</p>
+          </div>
+
           <div class="settings-item">
             <div class="settings-item__info">
-              <span class="settings-item__title">Tampilkan Ayat</span>
-              <span class="settings-item__desc">Otomatis tampilkan teks ayat saat berpindah.</span>
+              <span class="settings-item__title">Mulai dengan ayat disembunyikan</span>
+              <span class="settings-item__desc">Cocok untuk menguji hafalan sebelum melihat teks ayat.</span>
             </div>
             <div class="settings-item__action">
               <label class="switch">
-                <input type="checkbox" v-model="revealMode" true-value="revealed" false-value="hidden" @change="handleRevealModeChange" />
+                <input type="checkbox" v-model="learningRevealMode" true-value="hidden" false-value="revealed" @change="handleLearningRevealModeChange" />
                 <span class="slider round"></span>
               </label>
             </div>
           </div>
 
-          <!-- Toggle 2: Autoplay Murottal (Otomatis Play) -->
           <div class="settings-item">
             <div class="settings-item__info">
-              <span class="settings-item__title">Putar Otomatis</span>
-              <span class="settings-item__desc">Putar audio Qori tiap berpindah ayat.</span>
+              <span class="settings-item__title">Putar audio otomatis saat belajar</span>
+              <span class="settings-item__desc">Audio Qori diputar otomatis saat ayat tampil di mode murojaah.</span>
             </div>
             <div class="settings-item__action">
               <label class="switch">
-                <input type="checkbox" v-model="autoplayAudio" @change="handleAutoplayChange" />
+                <input type="checkbox" v-model="learningAutoplayAudio" @change="handleLearningAutoplayChange" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card settings-card--stacked">
+          <div class="settings-card__group-head">
+            <h3>Preferensi Mendengarkan</h3>
+            <p>Untuk sesi murottal yang tidak menilai hafalan dan tidak menyimpan progress.</p>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item__info">
+              <span class="settings-item__title">Mulai dengan ayat terlihat</span>
+              <span class="settings-item__desc">Direkomendasikan agar menyimak audio sambil membaca terasa lebih natural.</span>
+            </div>
+            <div class="settings-item__action">
+              <label class="switch">
+                <input type="checkbox" v-model="listeningShowAyah" @change="handleListeningShowAyahChange" />
                 <span class="slider round"></span>
               </label>
             </div>
           </div>
 
-          <!-- Setting 3: Default Qari -->
           <div class="settings-item">
             <div class="settings-item__info">
-              <span class="settings-item__title">Pilihan Qori</span>
-              <span class="settings-item__desc">Pilih suara Qori default untuk murottal.</span>
+              <span class="settings-item__title">Lanjut otomatis lintas surat</span>
+              <span class="settings-item__desc">Setelah audio selesai, lanjut ke ayat atau surat berikutnya di mode mendengarkan.</span>
+            </div>
+            <div class="settings-item__action">
+              <label class="switch">
+                <input type="checkbox" v-model="listeningAutoNextAyah" @change="handleListeningAutoNextChange" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-note">
+            Mode mendengarkan dipakai untuk menyimak audio. Progress murojaah tidak dicatat di mode ini.
+          </div>
+        </div>
+
+        <div class="settings-card settings-card--stacked">
+          <div class="settings-card__group-head">
+            <h3>Audio Qori</h3>
+            <p>Dipakai bersama untuk mode murojaah dan mendengarkan.</p>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item__info">
+              <span class="settings-item__title">Qori default</span>
+              <span class="settings-item__desc">Pilih suara murottal yang akan dipakai saat sesi dimulai.</span>
             </div>
             <div class="settings-item__action">
               <select v-model="selectedQari" class="settings-select" @change="handleQariChange">
@@ -533,14 +580,44 @@ const { user, isLoggedIn, loginWithGoogle, logout, loading: authLoading } = useA
 const { apiFetch } = useApi()
 const { currentThemeId, setTheme, themesList } = useTheme()
 
-const revealMode = useCookie<string>('reveal_mode', {
+const legacyRevealMode = useCookie<string>('reveal_mode', {
   default: () => 'hidden',
   maxAge: 60 * 60 * 24 * 365,
   path: '/'
 })
 
-const autoplayAudio = useCookie<boolean>('autoplay_audio', {
+const legacyAutoplayAudio = useCookie<boolean>('autoplay_audio', {
   default: () => false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const legacyAutoNextAyah = useCookie<boolean>('auto_next_ayah', {
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const learningRevealMode = useCookie<string>('learning_reveal_mode', {
+  default: () => legacyRevealMode.value || 'hidden',
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const learningAutoplayAudio = useCookie<boolean>('learning_autoplay_audio', {
+  default: () => legacyAutoplayAudio.value ?? false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const listeningShowAyah = useCookie<boolean>('listening_show_ayah', {
+  default: () => true,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
+  default: () => legacyAutoNextAyah.value ?? false,
   maxAge: 60 * 60 * 24 * 365,
   path: '/'
 })
@@ -614,12 +691,6 @@ function generateHeatmapDays(heatmapData: Record<string, number>) {
     const dateString = `${year}-${month}-${date}`
     
     const count = heatmapData[dateString] || 0
-    if (count > 0) {
-      console.log('Heatmap match:', dateString, 'Count:', count)
-    }
-    if (dateString === '2026-06-29') {
-      console.log('Monday, June 29 details:', JSON.stringify({ index: i, dateString, count, level: count > 15 ? 3 : (count > 5 ? 2 : (count > 0 ? 1 : 0)), isFuture: false }))
-    }
     
     // Bandingkan tanggal saja tanpa jam untuk mendeteksi hari mendatang
     const dZero = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
@@ -652,7 +723,6 @@ heatmapDays.value = generateHeatmapDays({})
 
 // Watch heatmap changes and regenerate days
 watch(heatmap, (newHeatmap) => {
-  console.log('Heatmap watch triggered:', JSON.stringify(newHeatmap))
   heatmapDays.value = generateHeatmapDays(newHeatmap || {})
 }, { deep: true, immediate: false })
 
@@ -687,17 +757,31 @@ const triggerHaptic = () => {
   }
 }
 
-const handleRevealModeChange = () => {
+const handleLearningRevealModeChange = () => {
   triggerHaptic()
   if (showToast) {
-    showToast('Pengaturan Metode Belajar disimpan!', 'fluent')
+    showToast('Preferensi murojaah disimpan!', 'fluent')
   }
 }
 
-const handleAutoplayChange = () => {
+const handleLearningAutoplayChange = () => {
   triggerHaptic()
   if (showToast) {
-    showToast('Pengaturan Putar Otomatis disimpan!', 'fluent')
+    showToast('Audio otomatis untuk murojaah disimpan!', 'fluent')
+  }
+}
+
+const handleListeningShowAyahChange = () => {
+  triggerHaptic()
+  if (showToast) {
+    showToast('Preferensi tampilan ayat untuk mendengarkan disimpan!', 'fluent')
+  }
+}
+
+const handleListeningAutoNextChange = () => {
+  triggerHaptic()
+  if (showToast) {
+    showToast('Preferensi mendengarkan disimpan!', 'fluent')
   }
 }
 
@@ -767,7 +851,6 @@ const loadStats = async () => {
     stats.value = res.data.overall
     streak.value = res.data.streak || 0
     heatmap.value = res.data.heatmap || {}
-    console.log('Heatmap Loaded in Vue:', JSON.stringify(heatmap.value))
   } catch (e) {
     console.error('Failed to load profile stats:', e)
   } finally {
@@ -1262,6 +1345,46 @@ useHead({
   margin-top: 24px;
 }
 
+.settings-card--stacked {
+  margin-top: 14px;
+  overflow: hidden;
+}
+
+.settings-card__group-head {
+  margin: -8px -16px 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: linear-gradient(180deg, #FCFDFB 0%, #F6F8F5 100%);
+}
+
+.settings-card__group-head h3 {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #065F46;
+  margin-bottom: 6px;
+}
+
+.settings-card__group-head p {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  max-width: 34ch;
+}
+
+.settings-note {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #F0FDF4, #ECFDF5);
+  border: 1px solid rgba(16, 185, 129, 0.12);
+  color: #047857;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
 .settings-card {
   background: white;
   border-radius: var(--radius-lg);
@@ -1281,6 +1404,14 @@ useHead({
 
 .settings-item:last-child {
   border-bottom: none;
+}
+
+.settings-item--disabled {
+  opacity: 0.58;
+}
+
+.settings-item--disabled .slider {
+  cursor: not-allowed;
 }
 
 .settings-item__info {

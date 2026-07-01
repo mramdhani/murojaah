@@ -81,7 +81,7 @@
         </div>
         <NuxtLink
           v-if="currentSurahId < 114"
-          :to="`/remote/${currentSurahId + 1}/1`"
+          :to="{ path: `/remote/${currentSurahId + 1}/1`, query: { mode: 'learning' } }"
           class="btn btn-primary completion-banner__btn"
         >
           Mulai Murojaah Selanjutnya
@@ -91,7 +91,7 @@
       <!-- Action: Murajaah Weak Ayahs -->
       <NuxtLink
         v-if="weakAyah"
-        :to="`/remote/${route.params.surahId}/${weakAyah.ayah_number}`"
+        :to="{ path: `/remote/${route.params.surahId}/${weakAyah.ayah_number}`, query: { mode: 'learning' } }"
         class="btn btn-primary btn-block"
         style="margin-bottom: 20px"
       >
@@ -162,7 +162,7 @@ const pct = (status: string) => {
 const router = useRouter()
 
 const goToAyah = (ayahNumber: number) => {
-  router.push(`/remote/${route.params.surahId}/${ayahNumber}`)
+  router.push({ path: `/remote/${route.params.surahId}/${ayahNumber}`, query: { mode: 'learning' } })
 }
 
 const statusLabel = (status: string) => {
