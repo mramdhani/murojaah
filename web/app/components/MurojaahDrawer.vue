@@ -16,8 +16,8 @@
           <div class="drawer-title-wrap">
             <img src="/logo.png" alt="Murojaah Logo" class="drawer-logo" />
             <div>
-              <h2 class="drawer-title">{{ drawerTitle }}</h2>
-              <p class="drawer-subtitle">{{ drawerSubtitle }}</p>
+              <h2 class="drawer-title">Mulai Murojaah</h2>
+              <p class="drawer-subtitle">Pilih cara berlatih, lalu pilih surat</p>
             </div>
           </div>
           <button class="drawer-close" @click="close" aria-label="Tutup">
@@ -28,22 +28,21 @@
           </button>
         </div>
 
-        <div class="drawer-mode-toggle">
-          <button
-            type="button"
-            class="drawer-mode-toggle__btn"
-            :class="{ 'drawer-mode-toggle__btn--active': mode === 'learning' }"
-            @click="mode = 'learning'"
-          >
-            Mode Murojaah
+        <div class="drawer-journeys" role="radiogroup" aria-label="Pilih cara murojaah">
+          <button type="button" class="journey-option" :class="{ 'journey-option--active': selectedJourney === 'quiz' }" role="radio" :aria-checked="selectedJourney === 'quiz'" @click="selectJourney('quiz')">
+            <span class="journey-option__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"/><path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15Z"/></svg></span>
+            <span class="journey-option__copy"><strong>Uji per Ayat</strong><small>Ingat, buka ayat, lalu nilai hafalanmu</small></span>
+            <span class="journey-option__check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 10 3 3 7-7"/></svg></span>
           </button>
-          <button
-            type="button"
-            class="drawer-mode-toggle__btn"
-            :class="{ 'drawer-mode-toggle__btn--active': mode === 'listening' }"
-            @click="mode = 'listening'"
-          >
-            Mode Mendengarkan
+          <button type="button" class="journey-option" :class="{ 'journey-option--active': selectedJourney === 'mushaf' }" role="radio" :aria-checked="selectedJourney === 'mushaf'" @click="selectJourney('mushaf')">
+            <span class="journey-option__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"/></svg></span>
+            <span class="journey-option__copy"><strong>Mushaf per Halaman</strong><small>Murojaah dengan memori visual mushaf</small></span>
+            <span class="journey-option__check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 10 3 3 7-7"/></svg></span>
+          </button>
+          <button type="button" class="journey-option" :class="{ 'journey-option--active': selectedJourney === 'listening' }" role="radio" :aria-checked="selectedJourney === 'listening'" @click="selectJourney('listening')">
+            <span class="journey-option__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h3v7H6a2 2 0 0 1-2-2v-5Zm16 0h-3v7h1a2 2 0 0 0 2-2v-5Z"/></svg></span>
+            <span class="journey-option__copy"><strong>Mendengarkan</strong><small>Ikuti murottal tanpa penilaian hafalan</small></span>
+            <span class="journey-option__check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 10 3 3 7-7"/></svg></span>
           </button>
         </div>
 
@@ -88,14 +87,7 @@
                       <span class="surah-name">{{ surah.name_latin }}</span>
                       <span class="surah-arabic">{{ surah.name_arabic }}</span>
                     </div>
-                    <div class="surah-progress-info">
-                      <span class="progress-txt">Progres Murojaah: {{ activeAyahsCount(surah) }} / {{ surah.total_ayah }} Ayat</span>
-                      <div class="mini-progress">
-                        <div class="mini-bar mini-bar--fluent" :style="{ width: progressPercent(surah, 'fluent') }"></div>
-                        <div class="mini-bar mini-bar--doubtful" :style="{ width: progressPercent(surah, 'doubtful') }"></div>
-                        <div class="mini-bar mini-bar--forgot" :style="{ width: progressPercent(surah, 'forgot') }"></div>
-                      </div>
-                    </div>
+                    <div class="surah-meta">{{ surah.total_ayah }} ayat &middot; {{ revelationLabel(surah) }}</div>
                   </div>
                 </div>
               </div>
@@ -118,7 +110,7 @@
                       <span class="surah-arabic">{{ surah.name_arabic }}</span>
                     </div>
                     <div class="surah-meta">
-                      {{ surah.name_translation }} · {{ surah.total_ayah }} Ayat
+                      {{ surah.name_translation }} &middot; {{ surah.total_ayah }} ayat
                     </div>
                   </div>
                 </div>
@@ -139,7 +131,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 
-const { isOpen, mode, close } = useMurojaahDrawer()
+const { isOpen, mode, format, close } = useMurojaahDrawer()
 const { apiFetch } = useApi()
 
 interface SurahItem {
@@ -149,6 +141,8 @@ interface SurahItem {
   name_arabic: string
   name_translation: string
   total_ayah: number
+  revelation_place: string
+  page_start: number | null
   progress: {
     fluent: number
     doubtful: number
@@ -160,13 +154,25 @@ const surahs = ref<SurahItem[]>([])
 const searchQuery = ref('')
 const loading = ref(true)
 
-const drawerTitle = computed(() => mode.value === 'listening' ? 'Mulai Mendengarkan' : 'Mulai Murojaah')
-const drawerSubtitle = computed(() =>
-  mode.value === 'listening'
-    ? 'Pilih surat untuk sesi audio tanpa mencatat progress'
-    : 'Pilih surat untuk remote hafalan'
-)
+type Journey = 'quiz' | 'mushaf' | 'listening'
 
+const selectedJourney = computed<Journey>(() => {
+  if (mode.value === 'listening') return 'listening'
+  return format.value
+})
+
+const selectJourney = (journey: Journey) => {
+  if (journey === 'listening') {
+    mode.value = 'listening'
+    return
+  }
+
+  mode.value = 'learning'
+  format.value = journey
+}
+
+const revelationLabel = (surah: SurahItem) =>
+  surah.revelation_place === 'meccan' ? 'Makkiyah' : 'Madaniyah'
 const fetchSurahs = async () => {
   try {
     loading.value = true
@@ -209,20 +215,21 @@ const filteredSurahs = computed(() => {
   )
 })
 
-const activeAyahsCount = (surah: SurahItem) => {
-  return surah.progress.fluent + surah.progress.doubtful + surah.progress.forgot
-}
-
-const progressPercent = (surah: SurahItem, status: 'fluent' | 'doubtful' | 'forgot') => {
-  const total = surah.total_ayah
-  const count = surah.progress[status] || 0
-  return `${(count / total) * 100}%`
-}
 
 const router = useRouter()
 const selectSurah = (surahId: number) => {
   const targetMode = mode.value
+  const selectedSurah = surahs.value.find(surah => surah.id === surahId)
   close()
+
+  if (targetMode === 'learning' && format.value === 'mushaf') {
+    router.push({
+      path: `/mushaf/${selectedSurah?.page_start || 1}`,
+      query: { surah: surahId },
+    })
+    return
+  }
+
   router.push({ path: `/remote/${surahId}/1`, query: { mode: targetMode } })
 }
 </script>
@@ -335,58 +342,104 @@ const selectSurah = (surahId: number) => {
   transform: rotate(90deg);
 }
 
-/* Search Row */
-.drawer-mode-toggle {
+/* Journey selector */
+.drawer-journeys {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 0 20px 18px;
+  gap: 8px;
+  padding: 0 20px 16px;
 }
 
-.drawer-mode-toggle__btn {
-  min-height: 46px;
-  border-radius: 16px;
-  border: 1.5px solid rgba(6, 78, 59, 0.12);
-  background: #F7F8F6;
-  color: var(--color-text-secondary);
-  font-size: 0.86rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-
-.drawer-mode-toggle__btn--active {
-  background: linear-gradient(135deg, rgba(6, 78, 59, 0.12), rgba(16, 185, 129, 0.18));
-  color: #065F46;
-  border-color: rgba(6, 95, 70, 0.22);
-  box-shadow: 0 8px 18px rgba(6, 95, 70, 0.08);
-}
-.drawer-mode-toggle {
+.journey-option {
+  width: 100%;
+  min-height: 62px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 0 20px 18px;
-}
-
-.drawer-mode-toggle__btn {
-  min-height: 46px;
-  border-radius: 16px;
-  border: 1.5px solid rgba(6, 78, 59, 0.12);
-  background: #F7F8F6;
-  color: var(--color-text-secondary);
-  font-size: 0.86rem;
-  font-weight: 700;
+  grid-template-columns: 38px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e8e4;
+  border-radius: 15px;
+  background: #fff;
+  color: #506058;
+  text-align: left;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
 }
 
-.drawer-mode-toggle__btn--active {
-  background: linear-gradient(135deg, rgba(6, 78, 59, 0.12), rgba(16, 185, 129, 0.18));
-  color: #065F46;
-  border-color: rgba(6, 95, 70, 0.22);
-  box-shadow: 0 8px 18px rgba(6, 95, 70, 0.08);
+.journey-option:active {
+  transform: scale(.985);
 }
-.drawer-search-row {
+
+.journey-option--active {
+  border-color: #198764;
+  background: #f0f8f4;
+  color: #075c43;
+}
+
+.journey-option__icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #68756f;
+  background: #f3f5f3;
+}
+
+.journey-option--active .journey-option__icon {
+  color: #087d59;
+  background: #dff1e9;
+}
+
+.journey-option__icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.journey-option__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.journey-option__copy strong {
+  color: #1e2c26;
+  font-size: .82rem;
+  font-weight: 780;
+}
+
+.journey-option__copy small {
+  overflow: hidden;
+  color: #7a847f;
+  font-size: .68rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journey-option__check {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #d4dad6;
+  border-radius: 50%;
+  color: transparent;
+}
+
+.journey-option--active .journey-option__check {
+  border-color: #087d59;
+  color: #fff;
+  background: #087d59;
+}
+
+.journey-option__check svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Search Row */.drawer-search-row {
   padding: 0 20px 14px;
 }
 
@@ -572,34 +625,6 @@ const selectSurah = (surahId: number) => {
   color: #6B7280;
 }
 
-.surah-progress-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.progress-txt {
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: #6B7280;
-}
-
-.mini-progress {
-  height: 5px;
-  border-radius: 99px;
-  background: #E5E7EB;
-  display: flex;
-  overflow: hidden;
-}
-
-.mini-bar {
-  height: 100%;
-}
-
-.mini-bar--fluent { background: var(--color-fluent, #059669); }
-.mini-bar--doubtful { background: var(--color-doubtful, #D97706); }
-.mini-bar--forgot { background: var(--color-forgot, #DC2626); }
 
 .drawer-empty {
   text-align: center;
@@ -618,4 +643,5 @@ const selectSurah = (surahId: number) => {
 .drawer-fade-leave-to {
   opacity: 0;
 }
+
 </style>

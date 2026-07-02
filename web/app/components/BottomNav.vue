@@ -47,11 +47,12 @@
 
 <script setup lang="ts">
 const route = useRoute()
+const router = useRouter()
 const { user } = useAuth()
 const { open } = useMurojaahDrawer()
 
 const showNav = computed(() => {
-  return !route.path.startsWith('/remote')
+  return !route.path.startsWith('/remote') && !route.path.startsWith('/mushaf')
 })
 </script>
 

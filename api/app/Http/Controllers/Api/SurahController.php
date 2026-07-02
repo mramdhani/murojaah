@@ -29,7 +29,7 @@ class SurahController extends Controller
             ->groupBy('surah_id');
 
         // Fetch Juz range for all surahs in a single query
-        $juzRanges = Ayah::selectRaw('surah_id, MIN(juz) as juz_start, MAX(juz) as juz_end')
+        $juzRanges = Ayah::selectRaw('surah_id, MIN(juz) as juz_start, MAX(juz) as juz_end, MIN(page) as page_start, MAX(page) as page_end')
             ->groupBy('surah_id')
             ->get()
             ->keyBy('surah_id');
@@ -50,6 +50,8 @@ class SurahController extends Controller
                 'revelation_place' => $surah->revelation_place,
                 'juz_start' => $juz ? (int) $juz->juz_start : null,
                 'juz_end' => $juz ? (int) $juz->juz_end : null,
+                'page_start' => $juz ? (int) $juz->page_start : null,
+                'page_end' => $juz ? (int) $juz->page_end : null,
                 'progress' => [
                     'fluent' => $statusCounts['fluent'] ?? 0,
                     'doubtful' => $statusCounts['doubtful'] ?? 0,

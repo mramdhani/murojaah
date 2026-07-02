@@ -1,63 +1,37 @@
 <template>
   <div class="page">
     <header class="page-header">
-      <div class="container">
-        <!-- Top Row: Back button & Title Info -->
-        <div class="page-header__top-row">
-          <NuxtLink to="/surahs" class="page-header__back" aria-label="Kembali" @click="triggerHaptic">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
+      <div class="page-header__arabesque" aria-hidden="true"></div>
+      <div class="container" style="position: relative; z-index: 2;">
+        <button
+          v-if="surah"
+          type="button"
+          class="page-header__info page-header__surah-trigger"
+          @click="openSurahPicker"
+          aria-label="Pilih surat"
+        >
+          <span class="header-eyebrow" :class="'header-eyebrow--' + currentMode">
+            {{ currentMode === 'listening' ? 'Mendengarkan' : 'Uji Hafalan' }}
+          </span>
+          <span class="page-header__title">
+            {{ surah.name_latin }}
+            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
             </svg>
-          </NuxtLink>
-          <div class="page-header__info page-header__surah-trigger" @click="openSurahPicker" v-if="surah">
-            <h1>
-              {{ surah.name_latin }}
-              <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </h1>
-            <p>Pilih ayat awal — {{ surah.total_ayah }} ayat · {{ surah.name_arabic }}</p>
-          </div>
-        </div>
+          </span>
+          <span class="page-header__meta">
+            Surah {{ surah.number }} &middot; {{ surah.total_ayah }} ayat &middot; {{ revelationLabel }}
+          </span>
 
-        <!-- Surah Pagination Navigation Bar inside Header -->
-        <div class="surah-pagination" v-if="surah">
-          <button
-            class="surah-pagelink surah-pagelink--prev"
-            :disabled="surah.number === 1"
-            @click="handleSurahSelect(surah.number - 1)"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-            <span class="surah-pagelink__name">
-              <span class="surah-pagelink__label">Sebelumnya</span>
-              <span class="surah-pagelink__title">{{ prevSurah ? prevSurah.name_latin : '-' }}</span>
-            </span>
-          </button>
-
-          <button
-            class="surah-pagelink surah-pagelink--next"
-            :disabled="surah.number === 114"
-            @click="handleSurahSelect(surah.number + 1)"
-          >
-            <span class="surah-pagelink__name">
-              <span class="surah-pagelink__label">Selanjutnya</span>
-              <span class="surah-pagelink__title">{{ nextSurah ? nextSurah.name_latin : '-' }}</span>
-            </span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-        </div>
+        </button>
       </div>
     </header>
 
     <div class="page-content container">
 
 
-      <!-- Legend -->
-      <div class="legend">
+      <!-- Legend (hidden in listening mode) -->
+      <div class="legend" v-if="currentMode !== 'listening'">
         <div class="legend__item"><span class="legend__dot legend__dot--fluent"></span> Lancar</div>
         <div class="legend__item"><span class="legend__dot legend__dot--doubtful"></span> Ragu</div>
         <div class="legend__item"><span class="legend__dot legend__dot--forgot"></span> Lupa</div>
@@ -71,7 +45,7 @@
           :key="ayah.id"
           :to="{ path: `/remote/${route.params.id}/${ayah.ayah_number}`, query: { mode: currentMode } }"
           class="ayah-cell"
-          :class="`ayah-cell--${ayah.progress_status}`"
+          :class="currentMode === 'listening' ? 'ayah-cell--unreviewed' : `ayah-cell--${ayah.progress_status}`"
           @click="triggerHaptic"
         >
           {{ ayah.ayah_number }}
@@ -147,6 +121,7 @@ interface SurahDetail {
   name_arabic: string
   name_translation: string
   total_ayah: number
+  revelation_place: string
 }
 
 interface AyahItem {
@@ -161,6 +136,7 @@ const ayahs = ref<AyahItem[]>([])
 const surahList = ref<SurahDetail[]>([])
 const loading = ref(true)
 const currentMode = computed<'learning' | 'listening'>(() => route.query.mode === 'listening' ? 'listening' : 'learning')
+const revelationLabel = computed(() => surah.value?.revelation_place === 'meccan' ? 'Makkiyah' : 'Madaniyah')
 
 const showSurahPicker = ref(false)
 const isWheelDragging = ref(false)
@@ -193,23 +169,6 @@ const filteredPickerSurahs = computed(() => {
     s.number.toString() === q
   )
 })
-
-const prevSurah = computed(() => {
-  if (!surah.value || !surahList.value.length) return null
-  const currentNum = surah.value.number
-  return surahList.value.find(s => s.number === currentNum - 1) || null
-})
-
-const nextSurah = computed(() => {
-  if (!surah.value || !surahList.value.length) return null
-  const currentNum = surah.value.number
-  return surahList.value.find(s => s.number === currentNum + 1) || null
-})
-
-const startMode = (mode: 'learning' | 'listening') => {
-  triggerHaptic()
-  router.push({ path: `/remote/${route.params.id}/1`, query: { mode } })
-}
 
 const loadData = async (id: number | string) => {
   loading.value = true
@@ -256,107 +215,72 @@ useHead({
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.page-header__top-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.page-header__back {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(160deg, #052e1c 0%, #064E3B 45%, #0a6349 100%) !important;
   color: white;
-  flex-shrink: 0;
-  transition: background var(--transition-fast);
-  text-decoration: none;
+  padding: calc(var(--safe-top) + 16px) 0 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(4, 37, 25, 0.15);
 }
 
-.page-header__back:active {
-  background: rgba(255, 255, 255, 0.25);
+.page-header__arabesque {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse at 10% 60%, rgba(212, 175, 55, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 45%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0 L35 25 L60 30 L35 35 L30 60 L25 35 L0 30 L25 25 Z' fill='none' stroke='rgba(212,175,55,0.04)' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: auto, auto, 60px 60px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .page-header__info {
-  flex: 1;
-  min-width: 0;
-}
-
-/* ========== SURAH PAGINATION IN HEADER ========== */
-.surah-pagination {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-  margin-bottom: 4px;
-}
-
-.surah-pagelink {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-lg);
-  padding: 10px 14px;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast), background var(--transition-fast);
-  color: white;
-  text-align: left;
-  min-width: 0;
-}
-
-.surah-pagelink:active:not(:disabled) {
-  transform: scale(0.98);
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.surah-pagelink--next {
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.surah-pagelink__name {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 12px;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: white;
+  text-align: center;
+  cursor: pointer;
 }
 
-.surah-pagelink__label {
+.page-header__title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 1.32rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.page-header__meta {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.header-eyebrow {
+  display: block;
   font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.65);
+  font-weight: 800;
   text-transform: uppercase;
-  font-weight: 300; /* Light label weight */
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
+  margin-bottom: 5px;
 }
 
-.surah-pagelink__title {
-  font-size: 0.9375rem; /* Larger title */
-  font-weight: 800; /* Extra bold */
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.header-eyebrow--learning {
+  color: #34D399; /* Emerald */
 }
 
-.surah-pagelink:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-  background: rgba(255, 255, 255, 0.04);
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.surah-pagelink:disabled .surah-pagelink__title {
-  color: rgba(255, 255, 255, 0.4);
+.header-eyebrow--listening {
+  color: #FBBF24; /* Amber Gold */
 }
 
 .mode-launcher {

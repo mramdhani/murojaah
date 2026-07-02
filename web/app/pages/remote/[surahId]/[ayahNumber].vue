@@ -9,6 +9,10 @@
           </svg>
         </button>
         <div class="remote-header__surah-trigger" @click="openSurahPicker">
+          <button type="button" class="header-eyebrow" :class="'header-eyebrow--' + sessionMode" @click.stop="openModeDrawer">
+            {{ sessionMode === 'listening' ? 'Mendengarkan' : 'Uji Hafalan' }}
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>
+          </button>
           <h1 class="remote-header__title">
             {{ surahNumber }}. {{ surahName }}
             <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -175,19 +179,19 @@
         </button>
 
         <!-- Secondary: Forgot -->
-        <button class="action-btn action-btn--forgot" @click="submitReview('forgot')" :disabled="submitting">
+        <button class="action-btn action-btn--forgot" @click="submitReview('forgot')" :disabled="submitting || !isRevealed">
           <span class="action-btn__icon">&#10005;</span>
           <span class="action-btn__label">Lupa</span>
         </button>
 
         <!-- Secondary: Doubtful -->
-        <button class="action-btn action-btn--doubtful" @click="submitReview('doubtful')" :disabled="submitting">
+        <button class="action-btn action-btn--doubtful" @click="submitReview('doubtful')" :disabled="submitting || !isRevealed">
           <span class="action-btn__icon">~</span>
           <span class="action-btn__label">Ragu</span>
         </button>
 
         <!-- Primary: Fluent & Next -->
-        <button class="action-btn action-btn--fluent" @click="skipAyah" :disabled="submitting">
+        <button class="action-btn action-btn--fluent" @click="skipAyah" :disabled="submitting || !isRevealed">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
@@ -319,7 +323,10 @@
 const route = useRoute()
 const router = useRouter()
 const { apiFetch } = useApi()
+const { open: openMurojaahDrawer } = useMurojaahDrawer()
 const showToast = inject<(msg: string, type: string) => void>('showToast')
+let isInitialized = false
+let isUnmounted = false
 
 const surahId = computed(() => Number(route.params.surahId))
 const currentAyahNumber = ref(Number(route.params.ayahNumber))
@@ -348,6 +355,7 @@ interface SurahItem {
 }
 
 const sessionMode = computed<'learning' | 'listening'>(() => route.query.mode === 'listening' ? 'listening' : 'learning')
+const openModeDrawer = () => openMurojaahDrawer(sessionMode.value, 'quiz')
 
 const legacyRevealMode = useCookie<string>('reveal_mode', {
   default: () => 'hidden',
@@ -379,11 +387,7 @@ const learningAutoplayAudio = useCookie<boolean>('learning_autoplay_audio', {
   path: '/'
 })
 
-const listeningShowAyah = useCookie<boolean>('listening_show_ayah', {
-  default: () => true,
-  maxAge: 60 * 60 * 24 * 365,
-  path: '/'
-})
+
 
 const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
   default: () => legacyAutoNextAyah.value ?? false,
@@ -400,7 +404,7 @@ const remoteContentRef = ref<HTMLElement | null>(null)
 const audioCurrentTime = ref(0)
 const audioDuration = ref(0)
 const surahList = ref<SurahItem[]>([])
-const isRevealed = ref(sessionMode.value === 'listening' ? listeningShowAyah.value : learningRevealMode.value === 'revealed')
+const isRevealed = ref(sessionMode.value === 'listening' ? true : learningRevealMode.value === 'revealed')
 const listeningRevealOverride = ref<boolean | null>(null)
 const submitting = ref(false)
 const flashStatus = ref<string | null>(null)
@@ -525,6 +529,8 @@ const stopAudio = () => {
 }
 
 const startAudioPlayback = (options: { withHaptic?: boolean, restart?: boolean } = {}) => {
+  if (isUnmounted) return
+
   const { withHaptic = false, restart = false } = options
 
   if (withHaptic) {
@@ -637,6 +643,7 @@ const playAudio = () => {
   startAudioPlayback()
 }
 onUnmounted(() => {
+  isUnmounted = true
   stopAudio()
 })
 
@@ -1111,9 +1118,17 @@ const formatListeningAyahBadge = (ayahNum: number) => {
   return `<span class="ayah-ornament ayah-ornament--mini">${ORNAMENT_SVG}<span class="ayah-ornament__num">${ayahNum}</span></span>`
 }
 
-watch(() => [route.params.surahId, route.params.ayahNumber], async ([newSurahId, newAyahNum], [oldSurahId]) => {
+watch(() => [route.params.surahId, route.params.ayahNumber], async (newVals, oldVals) => {
+  if (!isInitialized) return
+  const [newSurahId, newAyahNum] = newVals
+  const [oldSurahId, oldAyahNum] = oldVals || []
+
   if (newSurahId && newAyahNum) {
     const targetAyahNum = Number(newAyahNum)
+    if (newSurahId === oldSurahId && targetAyahNum === Number(oldAyahNum)) {
+      return
+    }
+
     currentAyahNumber.value = targetAyahNum
     syncRevealState()
 
@@ -1122,7 +1137,7 @@ watch(() => [route.params.surahId, route.params.ayahNumber], async ([newSurahId,
       return
     }
 
-    await fetchAyah(targetAyahNum)
+    await fetchAyah(targetAyahNum, { skipAutoplay: isListeningMode.value })
   }
 })
 
@@ -1132,7 +1147,7 @@ watch(currentAyahNumber, async () => {
   }
 })
 
-watch([isListeningMode, listeningShowAyah, learningRevealMode], ([active]) => {
+watch([isListeningMode, learningRevealMode], ([active]) => {
   if (!active) {
     listeningRevealOverride.value = null
   }
@@ -1141,6 +1156,7 @@ watch([isListeningMode, listeningShowAyah, learningRevealMode], ([active]) => {
 
 // Initial fetches
 onMounted(async () => {
+  isInitialized = true
   fetchSurahList()
 
   if (isListeningMode.value) {
@@ -2361,4 +2377,34 @@ useHead({
   font-weight: bold;
   font-size: 1rem;
 }
-</style>
+
+.header-eyebrow {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 5px;
+  text-align: left;
+}
+
+.header-eyebrow--learning {
+  color: #34D399; /* Emerald */
+}
+
+.header-eyebrow--listening {
+  color: #FBBF24; /* Amber Gold */
+}
+
+.header-eyebrow {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.header-eyebrow svg { width: 12px; height: 12px; }</style>

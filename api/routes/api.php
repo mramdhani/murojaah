@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 // Auth (Public)
 Route::post('/auth/guest', [AuthController::class, 'guest']);
+Route::get('/mushaf/pages/{pageNumber}', [AyahController::class, 'byPage']);
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 

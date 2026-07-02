@@ -341,18 +341,6 @@
             <p>Untuk sesi murottal yang tidak menilai hafalan dan tidak menyimpan progress.</p>
           </div>
 
-          <div class="settings-item">
-            <div class="settings-item__info">
-              <span class="settings-item__title">Mulai dengan ayat terlihat</span>
-              <span class="settings-item__desc">Direkomendasikan agar menyimak audio sambil membaca terasa lebih natural.</span>
-            </div>
-            <div class="settings-item__action">
-              <label class="switch">
-                <input type="checkbox" v-model="listeningShowAyah" @change="handleListeningShowAyahChange" />
-                <span class="slider round"></span>
-              </label>
-            </div>
-          </div>
 
           <div class="settings-item">
             <div class="settings-item__info">
@@ -610,12 +598,6 @@ const learningAutoplayAudio = useCookie<boolean>('learning_autoplay_audio', {
   path: '/'
 })
 
-const listeningShowAyah = useCookie<boolean>('listening_show_ayah', {
-  default: () => true,
-  maxAge: 60 * 60 * 24 * 365,
-  path: '/'
-})
-
 const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
   default: () => legacyAutoNextAyah.value ?? false,
   maxAge: 60 * 60 * 24 * 365,
@@ -768,13 +750,6 @@ const handleLearningAutoplayChange = () => {
   triggerHaptic()
   if (showToast) {
     showToast('Audio otomatis untuk murojaah disimpan!', 'fluent')
-  }
-}
-
-const handleListeningShowAyahChange = () => {
-  triggerHaptic()
-  if (showToast) {
-    showToast('Preferensi tampilan ayat untuk mendengarkan disimpan!', 'fluent')
   }
 }
 
@@ -1353,8 +1328,9 @@ useHead({
 .settings-card__group-head {
   margin: -8px -16px 10px;
   padding: 14px 16px 12px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  background: linear-gradient(180deg, #FCFDFB 0%, #F6F8F5 100%);
+  background: var(--color-primary-50);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
 }
 
 .settings-card__group-head h3 {
@@ -1362,15 +1338,15 @@ useHead({
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #065F46;
+  color: var(--color-primary-dark);
   margin-bottom: 6px;
 }
 
 .settings-card__group-head p {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   line-height: 1.5;
-  color: var(--color-text-muted);
-  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-weight: 500;
   max-width: 34ch;
 }
 

@@ -28,10 +28,6 @@
       </div>
 
       <div class="home-header__right" v-if="isLoggedIn">
-        <div v-if="dashboard?.streak > 0" class="streak-mini-pill" @click="router.push('/profile')" title="Murojaah berturut-turut">
-          <span>🔥</span>
-          <strong>{{ dashboard.streak }}</strong>
-        </div>
         <NuxtLink to="/profile" class="hdr-avatar-btn">
           <img
             v-if="user?.avatar"
@@ -361,6 +357,9 @@
           <div class="empty-today__icon">📿</div>
           <p class="empty-today__title">Belum ada murojaah hari ini</p>
           <p class="empty-today__sub">Yuk mulai murojaah dan jaga hafalan!</p>
+          <button type="button" class="btn btn-primary empty-today__btn" @click="openDrawer('learning')">
+            Mulai Murojaah
+          </button>
         </div>
       </section>
 
@@ -403,6 +402,14 @@
           <div class="empty-due__icon">🎉</div>
           <p class="empty-due__title">Semua hafalan sudah aman!</p>
           <p class="empty-due__sub">Hebat, belum ada jadwal review lagi hari ini.</p>
+          <div class="empty-due__actions">
+            <button type="button" class="btn btn-outline empty-due__btn" @click="openDrawer('learning')">
+              Murojaah Mandiri
+            </button>
+            <button type="button" class="btn btn-ghost empty-due__btn" @click="openDrawer('listening')">
+              Mode Mendengarkan
+            </button>
+          </div>
         </div>
       </section>
       <section v-else class="section">
@@ -413,43 +420,22 @@
       </section>
 
       <!-- ===== QUICK ACTIONS ===== -->
-      <section class="section animate-fade-in" style="animation-delay: 0.1s">
-                <div class="quick-actions">
-          <div @click="openDrawer('learning')" class="quick-action quick-action--primary" style="cursor: pointer;">
-            <div class="qa-icon-wrap">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
-            </div>
-            <span>Mulai Murojaah</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-
-          <div @click="openDrawer('listening')" class="quick-action quick-action--outline" style="cursor: pointer;">
-            <div class="qa-icon-wrap qa-icon-wrap--outline">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-                <path d="M21 8v8"/>
-              </svg>
-            </div>
-            <span>Mode Mendengarkan</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-
+      <section class="section animate-fade-in" style="animation-delay: 0.1s" v-if="dashboard?.last_session">
+        <div class="quick-actions">
           <NuxtLink
-            v-if="dashboard?.last_session"
             :to="{ path: `/remote/${dashboard.last_session.surah_id}/${dashboard.last_session.current_ayah_number}`, query: { mode: 'learning' } }"
-            class="quick-action quick-action--outline"
+            class="quick-action quick-action--primary"
           >
-            <div class="qa-icon-wrap qa-icon-wrap--outline">
+            <div class="qa-icon-wrap">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
               </svg>
             </div>
-            <span>Lanjut {{ dashboard.last_session.surah_name }}</span>
+            <span>Lanjut Murojaah {{ dashboard.last_session.surah_name }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
           </NuxtLink>
-        </div>      </section>
+        </div>
+      </section>
 
       <!-- ===== SURAT AKTIF ===== -->
       <section class="section animate-fade-in" style="animation-delay: 0.14s" v-if="activeSurahs.length > 0">
@@ -1086,13 +1072,16 @@ useHead({
 .bpc-top {
   display: flex;
   align-items: center;
-  gap: 16px;
+  width: 100%;
   margin-bottom: 12px;
 }
 
 .bpc-pct-block {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .bpc-pct {
@@ -1113,12 +1102,15 @@ useHead({
   width: 1px;
   height: 36px;
   background: #E5E7EB;
+  flex-shrink: 0;
 }
 
 .bpc-ayah-block {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
 }
 
 .bpc-book-icon {
@@ -1413,6 +1405,9 @@ useHead({
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .empty-today__icon {
@@ -1430,6 +1425,16 @@ useHead({
 .empty-today__sub {
   font-size: 0.8rem;
   color: #6B7280;
+  margin-bottom: 2px;
+}
+
+.empty-today__btn {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  min-height: 46px;
+  padding: 10px 24px;
+  width: 100%;
+  max-width: 220px;
 }
 
 /* ================================================
@@ -2408,6 +2413,9 @@ useHead({
   padding: 24px 16px;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .empty-due__icon {
@@ -2426,6 +2434,23 @@ useHead({
   font-size: 0.76rem;
   color: #6B7280;
   font-weight: 550;
+  margin-bottom: 2px;
+}
+
+.empty-due__actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.empty-due__btn {
+  font-size: 0.82rem;
+  min-height: 44px;
+  padding: 10px 16px;
+  flex: 1;
+  max-width: 180px;
 }
 
 @keyframes pulse-slow {
