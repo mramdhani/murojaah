@@ -167,7 +167,7 @@
               </template>
 
               <div v-else class="navigator-field navigator-field--wide">
-                <label>{{ navigationTypeLabel }} <span>{{ navigationAvailability }}</span></label>
+                <label>{{ navigationTypeLabel }} <span>{{ navigationAvailability }} tersedia</span></label>
                 <button type="button" class="navigator-selector navigator-selector--section" @click="openSectionPicker">
                   <span><strong>{{ sectionDisplayValue }}</strong></span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
@@ -258,19 +258,19 @@
               </div>
             </div>
           </Transition>
-          <Transition name="picker">
+          <Transition name="picker" @after-enter="handleSectionPickerEnter">
             <div v-if="showSectionPicker" class="surah-picker section-picker">
               <header class="surah-picker__header">
                 <button type="button" aria-label="Kembali ke navigasi" @click="showSectionPicker = false">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
                 <div>
-                  <span>{{ navigationAvailability }}</span>
+                  <span>{{ navigationTypeLabel }}</span>
                   <strong>Pilih {{ navigationTypeLabel }}</strong>
                 </div>
               </header>
 
-              <p class="ayah-picker__summary">{{ sectionPickerHint }}</p>
+              <p class="ayah-picker__summary">Tersedia {{ navigationTypeLabel.toLowerCase() }} {{ navigationAvailability }}</p>
               <div ref="sectionGridRef" class="section-picker__grid">
                 <button
                   v-for="option in sectionOptions"
@@ -382,9 +382,9 @@ const pageNumber = computed(() => {
 })
 
 const carouselPages = computed(() => [
-  Math.max(1, pageNumber.value - 1),
-  pageNumber.value,
   Math.min(604, pageNumber.value + 1),
+  pageNumber.value,
+  Math.max(1, pageNumber.value - 1),
 ])
 const trackStyle = computed(() => ({ transform: `translate3d(calc(-33.333333% + ${swipeOffset.value}px), 0, 0)` }))
 const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffset.value) > 1)
@@ -414,7 +414,7 @@ const filteredSurahOptions = computed(() => {
 })
 
 const navigationTypeLabel = computed(() => ({ surah: 'Surat', juz: 'Juz', hizb: 'Hizb', manzil: 'Manzil', page: 'Halaman' }[navigationType.value]))
-const navigationAvailability = computed(() => ({ surah: '114 surat', juz: '1–30 tersedia', hizb: '1–60 tersedia', manzil: '1–7 tersedia', page: '1–604 tersedia' }[navigationType.value]))
+const navigationAvailability = computed(() => ({ surah: '114', juz: '1–30', hizb: '1–60', manzil: '1–7', page: '1–604' }[navigationType.value]))
 const navigationButtonLabel = computed(() => navigationType.value === 'surah' ? 'Buka ayat' : `Buka ${navigationTypeLabel.value}`)
 const sectionOptions = computed(() => {
   const count = { juz: 30, hizb: 60, manzil: 7, page: 604 }[navigationType.value]
@@ -528,8 +528,8 @@ const handlePointerDown = (event: PointerEvent) => {
 const handlePointerMove = (event: PointerEvent) => {
   if (swipeStartX.value === null || swipeAnimating.value) return
   let distance = event.clientX - swipeStartX.value
-  const pullingPastFirst = pageNumber.value === 1 && distance > 0
-  const pullingPastLast = pageNumber.value === 604 && distance < 0
+  const pullingPastFirst = pageNumber.value === 1 && distance < 0
+  const pullingPastLast = pageNumber.value === 604 && distance > 0
   if (pullingPastFirst || pullingPastLast) distance *= .24
   swipeOffset.value = distance
   if (Math.abs(distance) > 8) suppressNextLineTap.value = true
@@ -541,7 +541,7 @@ const handlePointerUp = async (event: PointerEvent) => {
   const elapsed = Math.max(1, performance.now() - swipeStartTime.value)
   const velocity = distance / elapsed
   const viewportWidth = viewportRef.value?.clientWidth || window.innerWidth
-  const direction = distance < 0 ? 1 : -1
+  const direction = distance > 0 ? 1 : -1
   const targetPage = pageNumber.value + direction
   const canMove = targetPage >= 1 && targetPage <= 604
   const shouldMove = canMove && (Math.abs(distance) > viewportWidth * .18 || Math.abs(velocity) > .42)
@@ -553,7 +553,7 @@ const handlePointerUp = async (event: PointerEvent) => {
   }
 
   swipeAnimating.value = true
-  swipeOffset.value = direction > 0 ? -viewportWidth : viewportWidth
+  swipeOffset.value = direction > 0 ? viewportWidth : -viewportWidth
   if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12)
 
   window.setTimeout(async () => {
@@ -583,9 +583,11 @@ const openAyahMode = (mode: 'learning' | 'listening') => {
   router.push({ path: `/remote/${ayah.surah_id}/${ayah.ayah_number}`, query: { mode } })
 }
 
-const openSectionPicker = async () => {
+const openSectionPicker = () => {
   showSectionPicker.value = true
-  await nextTick()
+}
+
+const handleSectionPickerEnter = () => {
   const active = sectionGridRef.value?.querySelector<HTMLElement>(`[data-section-value="${selectedSection.value}"]`)
   active?.scrollIntoView({ block: 'center', behavior: 'auto' })
 }
