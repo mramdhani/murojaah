@@ -1,6 +1,6 @@
 <template>
   <div class="remote-page" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
-    <!-- Header ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â 12% -->
+    <!-- Header -->
     <header class="remote-header">
       <div class="remote-header__left">
         <button class="remote-header__back" @click="goBack" aria-label="Kembali">
@@ -8,20 +8,20 @@
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <div class="remote-header__surah-trigger" @click="openSurahPicker">
-          <button type="button" class="header-eyebrow" :class="'header-eyebrow--' + sessionMode" @click.stop="openModeDrawer">
+        <div class="remote-header__surah-trigger" @click="openNavigator">
+          <span class="header-eyebrow" :class="'header-eyebrow--' + sessionMode">
             {{ sessionMode === 'listening' ? 'Mendengarkan' : 'Uji Hafalan' }}
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>
-          </button>
-          <h1 class="remote-header__title">
-            {{ surahNumber }}. {{ surahName }}
-            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </h1>
-          <p class="remote-header__subtitle">Ayat {{ currentAyahNumber }} dari {{ totalAyah }}</p>
+          </span>
+          <h1 class="remote-header__title">{{ surahNumber }}. {{ surahName }}</h1>
+          <div class="remote-header__subtitle">Ayat {{ currentAyahNumber }} dari {{ totalAyah }}</div>
         </div>
       </div>
+      <button type="button" class="remote-header__browse" aria-label="Pilih surat dan ayat" @click="openNavigator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h10"/>
+          <circle cx="18" cy="18" r="2.5"/>
+        </svg>
+      </button>
     </header>
 
     <!-- Qari Audio Control Bar -->
@@ -125,46 +125,29 @@
     <div class="remote-action-bar" :class="{ 'remote-action-bar--listening': isListeningMode }">
       <template v-if="isListeningMode">
         <div class="listening-player" role="status" aria-live="polite">
-          <button class="listening-player__qari" @click="openQariPicker">
-            <span class="listening-player__qari-icon" aria-hidden="true">
-              <img :src="activeQariImage" :alt="activeQariName" />
-            </span>
-            <span class="listening-player__qari-copy">
-              <strong>{{ activeQariName }}</strong>
-              <small>{{ playerCurrentTimeLabel }} / {{ playerDurationLabel }}</small>
-            </span>
-            <svg class="listening-player__qari-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
           <div class="listening-player__controls">
-            <button class="listening-player__control" @click="prevAyah" :disabled="currentAyahNumber <= 1" aria-label="Ayat sebelumnya">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-            </button>
             <button class="listening-player__play" :class="{ 'listening-player__play--playing': isPlaying }" @click="playAudio" :aria-label="isPlaying ? 'Jeda Audio' : 'Putar Audio'">
-              <template v-if="isPlaying">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <rect x="5.5" y="4" width="4.5" height="16" rx="1.4"></rect>
-                  <rect x="14" y="4" width="4.5" height="16" rx="1.4"></rect>
-                </svg>
-              </template>
-              <template v-else>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M7 4.8c0-1.05 1.15-1.7 2.05-1.15l11.1 6.8a1.82 1.82 0 0 1 0 3.1l-11.1 6.8A1.35 1.35 0 0 1 7 19.2V4.8Z"></path>
-                </svg>
-              </template>
+              <svg v-if="isPlaying" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+              <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
             </button>
-            <button class="listening-player__control" @click="skipAyah" :disabled="submitting" aria-label="Ayat berikutnya">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
+            <button class="listening-player__control" :class="{ 'listening-player__control--active': isCustomRangeActive }" @click="toggleListeningRepeat" aria-label="Pengulangan Murotal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              <span v-if="isCustomRangeActive" class="listening-player__badge">Rentang</span>
+            </button>
+            <button class="listening-player__control" @click="openAudioSettings" aria-label="Pengaturan Murotal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
             </button>
           </div>
+          <button class="listening-player__qari" @click="openQariPicker">
+            <span class="listening-player__qari-icon" aria-hidden="true"><img :src="activeQariImage" :alt="activeQariName" /></span>
+            <span class="listening-player__qari-copy">
+              <strong>{{ activeQariName }}</strong>
+              <small>Ayat {{ currentAyahNumber }} · {{ playerCurrentTimeLabel }} / {{ playerDurationLabel }}</small>
+            </span>
+            <svg class="listening-player__qari-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
         </div>
       </template>
-
       <template v-else>
         <!-- Secondary: Back to prev ayah (icon only) -->
         <button
@@ -200,78 +183,172 @@
       </template>
     </div>
 
-    <!-- iOS-style Surah Picker Sheet -->
+    <!-- Mushaf-style Navigator Sheet (Pilih Bacaan) -->
     <Transition name="sheet">
-      <div v-if="showSurahPicker" class="picker-overlay" @click="closeSurahPicker">
-        <div class="picker-sheet animate-slide-up" @click.stop>
-          <div class="picker-sheet__header">
-            <div class="picker-sheet__indicator"></div>
-            <div class="picker-sheet__title-row">
-              <h3>Pilih Surat</h3>
-              <button class="picker-sheet__close" @click="closeSurahPicker">Selesai</button>
-            </div>
-            <div class="picker-sheet__search">
-              <input
-                v-model="pickerSearch"
-                type="text"
-                placeholder="Cari nama atau nomor surat..."
-                class="picker-sheet__search-input"
-                id="picker-search"
-                @click.stop
-              />
-            </div>
-          </div>
-          <div class="picker-sheet__content" @touchstart="isWheelDragging = false" @touchmove="isWheelDragging = true">
-            <div class="picker-wheel">
-              <div
-                v-for="s in filteredPickerSurahs"
-                :key="s.id"
-                class="picker-wheel__item"
-                :class="{ 'picker-wheel__item--active': s.id === surahId }"
-                @click="handleSurahSelect(s.id)"
-              >
-                <span class="picker-wheel__number">{{ s.number }}</span>
-                <div class="picker-wheel__names">
-                  <span class="picker-wheel__latin">{{ s.name_latin }}</span>
-                  <span class="picker-wheel__translation">{{ s.name_translation }}</span>
+      <div v-if="navigatorOpen" class="navigator-overlay" @click="closeNavigator">
+        <section class="navigator-sheet animate-slide-up" role="dialog" aria-modal="true" aria-labelledby="remote-navigator-title" @click.stop>
+          <div class="navigator-sheet__handle"></div>
+
+          <div class="navigator-sheet__content">
+            <header class="navigator-sheet__header">
+              <div>
+                <span>{{ sessionMode === 'listening' ? 'Mendengarkan' : 'Uji Hafalan' }}</span>
+                <h2 id="remote-navigator-title">Pilih Bacaan</h2>
+                <p>Surat dan ayat yang ingin dibuka</p>
+              </div>
+              <button type="button" aria-label="Tutup navigasi" @click="closeNavigator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m6 6 12 12M18 6 6 18"/>
+                </svg>
+              </button>
+            </header>
+
+            <form class="navigator-dynamic" @submit.prevent="confirmNavigation">
+              <div class="navigator-fields-row">
+                <div class="navigator-field navigator-field--surah">
+                  <label>Surat</label>
+                  <button type="button" class="navigator-selector" @click="navigatorShowSurahPicker = true">
+                    <span>
+                      <strong v-if="navigatorSurahMeta">{{ navigatorSurahMeta.number }}. {{ navigatorSurahMeta.name_latin }}</strong>
+                      <strong v-else>Memuat...</strong>
+                      <small v-if="navigatorSurahMeta">{{ navigatorSurahMeta.total_ayah }} ayat</small>
+                    </span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                  </button>
                 </div>
-                <span class="picker-wheel__arabic">{{ s.name_arabic }}</span>
+                <div class="navigator-field navigator-field--ayah">
+                  <label>Ayat</label>
+                  <button type="button" class="navigator-selector" @click="navigatorShowAyahPicker = true">
+                    <span><strong>{{ navigatorSelectedAyah }}</strong></span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="navigator-primary" :disabled="!navigatorSurahMeta">
+                Buka ayat
+              </button>
+            </form>
+          </div>
+
+          <!-- Surah sub-picker -->
+          <Transition name="picker">
+            <div v-if="navigatorShowSurahPicker" class="surah-picker">
+              <header class="surah-picker__header">
+                <button type="button" aria-label="Kembali ke navigasi" @click="navigatorShowSurahPicker = false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m15 18-6-6 6-6"/>
+                  </svg>
+                </button>
+                <div>
+                  <span>Daftar Surat</span>
+                  <strong>Pilih surat</strong>
+                </div>
+              </header>
+
+              <label class="surah-picker__search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7"/>
+                  <path d="m20 20-4-4"/>
+                </svg>
+                <input v-model="navigatorSurahSearch" type="search" placeholder="Cari nama atau nomor surat">
+              </label>
+
+              <div class="surah-picker__list">
+                <button
+                  v-for="s in filteredNavigatorSurahs"
+                  :key="s.id"
+                  type="button"
+                  class="surah-picker__item"
+                  :class="{ 'surah-picker__item--active': s.id === navigatorSurahId }"
+                  @click="chooseNavigatorSurah(s)"
+                >
+                  <span class="surah-picker__number">{{ s.number }}</span>
+                  <span class="surah-picker__names">
+                    <strong>{{ s.name_latin }}</strong>
+                    <small>{{ s.total_ayah }} ayat</small>
+                  </span>
+                  <span class="surah-picker__arabic">{{ s.name_arabic }}</span>
+                  <svg v-if="s.id === navigatorSurahId" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                    <path d="m5 10 3 3 7-7"/>
+                  </svg>
+                </button>
               </div>
             </div>
-          </div>
-        </div>
+          </Transition>
+
+          <!-- Ayah sub-picker -->
+          <Transition name="picker">
+            <div v-if="navigatorShowAyahPicker" class="surah-picker ayah-picker">
+              <header class="surah-picker__header">
+                <button type="button" aria-label="Kembali ke navigasi" @click="navigatorShowAyahPicker = false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m15 18-6-6 6-6"/>
+                  </svg>
+                </button>
+                <div>
+                  <span>{{ navigatorSurahMeta?.name_latin || 'Surat' }}</span>
+                  <strong>Pilih ayat</strong>
+                </div>
+              </header>
+
+              <p class="ayah-picker__summary">Tersedia {{ navigatorSurahMeta?.total_ayah || 0 }} ayat</p>
+
+              <div class="ayah-picker__grid">
+                <button
+                  v-for="n in navigatorAvailableAyahs"
+                  :key="n"
+                  type="button"
+                  :class="{ 'ayah-picker__number--active': n === navigatorSelectedAyah }"
+                  :aria-label="'Pilih ayat ' + n"
+                  @click="chooseNavigatorAyah(n)"
+                >
+                  {{ n }}
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </section>
       </div>
     </Transition>
 
-    <!-- iOS-style Ayah Picker Sheet -->
+    <!-- Shared Murottal Range Settings -->
     <Transition name="sheet">
-      <div v-if="showAyahPicker" class="picker-overlay" @click="closeAyahPicker">
-        <div class="picker-sheet animate-slide-up" @click.stop>
-          <div class="picker-sheet__header">
-            <div class="picker-sheet__indicator"></div>
-            <div class="picker-sheet__title-row">
-              <h3>Pilih Ayat ({{ surahName }})</h3>
-              <button class="picker-sheet__close" @click="closeAyahPicker">Selesai</button>
+      <div v-if="showAudioSettings" class="picker-overlay" @click="closeAudioSettings">
+        <section class="picker-sheet listening-settings-sheet animate-slide-up" role="dialog" aria-modal="true" aria-labelledby="listening-settings-title" @click.stop>
+          <div class="picker-sheet__indicator"></div>
+          <template v-if="settingsPickerType === 'none'">
+            <header class="listening-settings__header"><h3 id="listening-settings-title">Pengaturan Murotal</h3></header>
+            <div class="audio-settings-body">
+              <div class="audio-settings-row">
+                <div class="audio-settings-col"><label>Dari Surat</label><button type="button" class="custom-select-trigger" @click="settingsPickerType = 'startSurah'"><span>{{ settingsStartSurahName }}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 10 4 4 4-4"/></svg></button></div>
+                <div class="audio-settings-col"><label>Ayat</label><button type="button" class="custom-select-trigger" @click="settingsPickerType = 'startAyah'"><span>{{ settingsStartAyah }}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 10 4 4 4-4"/></svg></button></div>
+              </div>
+              <div class="audio-settings-row">
+                <div class="audio-settings-col"><label>Hingga Surat</label><button type="button" class="custom-select-trigger" @click="settingsPickerType = 'endSurah'"><span>{{ settingsEndSurahName }}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 10 4 4 4-4"/></svg></button></div>
+                <div class="audio-settings-col"><label>Ayat</label><button type="button" class="custom-select-trigger" @click="settingsPickerType = 'endAyah'"><span>{{ settingsEndAyah }}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 10 4 4 4-4"/></svg></button></div>
+              </div>
+              <div class="audio-settings-field"><label>Pengulangan Ayat</label><button type="button" class="custom-select-trigger" @click="settingsPickerType = 'ayahRepeat'"><span>{{ settingsAyahRepeat }}x</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 10 4 4 4-4"/></svg></button></div>
+              <div class="audio-settings-field"><label>Pengulangan Keseluruhan</label><button type="button" class="custom-select-trigger" @click="settingsPickerType = 'rangeRepeat'"><span>{{ settingsRangeRepeat === 99999 ? 'Tanpa batas' : settingsRangeRepeat + 'x' }}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 10 4 4 4-4"/></svg></button></div>
+              <div class="audio-settings-actions"><button class="settings-action-btn settings-action-btn--cancel" @click="closeAudioSettings">Batal</button><button class="settings-action-btn settings-action-btn--play" @click="startCustomRangePlayback">Putar</button></div>
             </div>
-          </div>
-          <div class="picker-sheet__content picker-sheet__content--grid">
-            <div class="ayah-picker-grid">
-              <button
-                v-for="n in totalAyah"
-                :key="n"
-                class="ayah-picker-cell"
-                :class="{ 'ayah-picker-cell--active': n === currentAyahNumber }"
-                @click="changeAyah(n)"
-              >
-                {{ n }}
-              </button>
+          </template>
+          <template v-else>
+            <header class="settings-picker-header"><button type="button" class="settings-picker-back" @click="settingsPickerType = 'none'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg></button><strong>{{ settingsPickerTitle }}</strong></header>
+            <div v-if="settingsPickerType === 'startSurah' || settingsPickerType === 'endSurah'" class="settings-picker-search"><input v-model="settingsSurahSearch" type="search" placeholder="Cari nama atau nomor surat..."></div>
+            <div class="settings-picker-options">
+              <template v-if="settingsPickerType === 'startSurah' || settingsPickerType === 'endSurah'">
+                <button v-for="s in filteredSettingsSurahs" :key="s.id" type="button" class="settings-surah-item" :class="{ 'settings-option--active': settingsPickerType === 'startSurah' ? settingsStartSurah === s.number : settingsEndSurah === s.number }" :disabled="settingsPickerType === 'endSurah' && s.number < settingsStartSurah" @click="selectSettingsSurah(s.number)"><span class="settings-surah-number">{{ s.number }}</span><span class="settings-surah-name"><strong>{{ s.name_latin }}</strong><small>{{ s.total_ayah }} ayat</small></span><span class="settings-surah-arabic">{{ s.name_arabic }}</span></button>
+              </template>
+              <template v-else-if="settingsPickerType === 'startAyah' || settingsPickerType === 'endAyah'">
+                <div class="settings-ayah-grid"><button v-for="n in (settingsPickerType === 'startAyah' ? settingsStartTotalAyah : settingsEndTotalAyah)" :key="n" type="button" :class="{ 'settings-option--active': settingsPickerType === 'startAyah' ? settingsStartAyah === n : settingsEndAyah === n }" :disabled="settingsPickerType === 'endAyah' && settingsStartSurah === settingsEndSurah && n < settingsStartAyah" @click="selectSettingsAyah(n)">{{ n }}</button></div>
+              </template>
+              <template v-else><button v-for="option in settingsRepeatOptions" :key="option.value" type="button" class="settings-repeat-option" :class="{ 'settings-option--active': settingsPickerType === 'ayahRepeat' ? settingsAyahRepeat === option.value : settingsRangeRepeat === option.value }" @click="selectSettingsRepeat(option.value)">{{ option.label }}</button></template>
             </div>
-          </div>
-        </div>
+          </template>
+        </section>
       </div>
-    </Transition>
-
-    <!-- iOS-style Qari Picker Sheet -->
+    </Transition>    <!-- iOS-style Qari Picker Sheet -->
     <Transition name="sheet">
       <div v-if="showQariPicker" class="picker-overlay" @click="closeQariPicker">
         <div class="picker-sheet animate-slide-up" @click.stop>
@@ -342,6 +419,7 @@ interface AyahData {
   text_arabic: string
   translation_id: string | null
   progress_status: string
+  page?: number
 }
 
 interface SurahItem {
@@ -412,6 +490,30 @@ const showSurahPicker = ref(false)
 const showAyahPicker = ref(false)
 const isWheelDragging = ref(false)
 const pickerSearch = ref('')
+const pendingPickerSurahId = ref<number | null>(null)
+
+// Navigator state (Pilih Bacaan)
+const navigatorOpen = ref(false)
+const navigatorSurahId = ref<number>(0)
+const navigatorSelectedAyah = ref(1)
+const navigatorShowSurahPicker = ref(false)
+const navigatorShowAyahPicker = ref(false)
+const navigatorSurahSearch = ref('')
+const showAudioSettings = ref(false)
+const settingsPickerType = ref<'none' | 'startSurah' | 'startAyah' | 'endSurah' | 'endAyah' | 'ayahRepeat' | 'rangeRepeat'>('none')
+const settingsSurahSearch = ref('')
+
+const isCustomRangeActive = useState<boolean>('mushafMurottalRangeActive', () => false)
+const settingsStartSurah = useState<number>('mushafMurottalStartSurah', () => 1)
+const settingsStartAyah = useState<number>('mushafMurottalStartAyah', () => 1)
+const settingsEndSurah = useState<number>('mushafMurottalEndSurah', () => 1)
+const settingsEndAyah = useState<number>('mushafMurottalEndAyah', () => 1)
+const settingsAyahRepeat = useState<number>('mushafMurottalAyahRepeat', () => 1)
+const settingsRangeRepeat = useState<number>('mushafMurottalRangeRepeat', () => 1)
+const activeMurottalQueue = useState<{ surah: number; ayah: number; verse_key: string }[]>('mushafMurottalQueue', () => [])
+const queueIndex = useState<number>('mushafMurottalQueueIndex', () => 0)
+const currentAyahRepeatCount = useState<number>('mushafMurottalAyahRepeatCount', () => 1)
+const currentRangeRepeatCount = useState<number>('mushafMurottalRangeRepeatCount', () => 1)
 
 // Qari selection list and audio player state
 const showQariPicker = ref(false)
@@ -440,6 +542,135 @@ const qariList = [
 const activeQari = computed(() => qariList.find(q => q.id === selectedQari.value) || qariList[0])
 const activeQariName = computed(() => activeQari.value.shortName)
 const activeQariImage = computed(() => activeQari.value.image)
+const pickerAyahSurah = computed(() => surahList.value.find(s => s.id === pendingPickerSurahId.value) || currentSurahMeta.value)
+const pickerAyahTotal = computed(() => pickerAyahSurah.value?.total_ayah || totalAyah.value)
+const pickerAyahSurahName = computed(() => pickerAyahSurah.value?.name_latin || surahName.value)
+
+// Navigator computed
+const navigatorSurahMeta = computed(() => surahList.value.find(s => s.id === navigatorSurahId.value) || null)
+const navigatorAvailableAyahs = computed(() =>
+  Array.from({ length: navigatorSurahMeta.value?.total_ayah || 1 }, (_, i) => i + 1)
+)
+const filteredNavigatorSurahs = computed(() => {
+  const q = navigatorSurahSearch.value.trim().toLowerCase()
+  if (!q) return surahList.value
+  return surahList.value.filter(s =>
+    s.name_latin.toLowerCase().includes(q) ||
+    s.name_arabic.includes(q) ||
+    s.number.toString() === q
+  )
+})
+const settingsStartTotalAyah = computed(() => surahList.value.find(s => s.number === settingsStartSurah.value)?.total_ayah || 1)
+const settingsEndTotalAyah = computed(() => surahList.value.find(s => s.number === settingsEndSurah.value)?.total_ayah || 1)
+const settingsStartSurahName = computed(() => { const s = surahList.value.find(s => s.number === settingsStartSurah.value); return s ? `${s.number}. ${s.name_latin}` : 'Pilih Surat' })
+const settingsEndSurahName = computed(() => { const s = surahList.value.find(s => s.number === settingsEndSurah.value); return s ? `${s.number}. ${s.name_latin}` : 'Pilih Surat' })
+const settingsPickerTitle = computed(() => ({ startSurah: 'Dari Surat', startAyah: 'Dari Ayat', endSurah: 'Hingga Surat', endAyah: 'Hingga Ayat', ayahRepeat: 'Pengulangan Ayat', rangeRepeat: 'Pengulangan Keseluruhan' }[settingsPickerType.value] || ''))
+const filteredSettingsSurahs = computed(() => { const q = settingsSurahSearch.value.trim().toLowerCase(); if (!q) return surahList.value; return surahList.value.filter(s => s.name_latin.toLowerCase().includes(q) || s.name_arabic.includes(q) || String(s.number) === q) })
+const settingsRepeatOptions = computed(() => settingsPickerType.value === 'rangeRepeat' ? [1,2,3,5,10,20,99999].map(value => ({ value, label: value === 99999 ? 'Tanpa batas' : `${value}x` })) : [1,2,3,5,10,20].map(value => ({ value, label: `${value}x` })))
+
+const normalizeMurottalRange = (changed?: 'start' | 'end') => {
+  settingsStartAyah.value = Math.min(Math.max(1, settingsStartAyah.value), settingsStartTotalAyah.value)
+  if (changed === 'start' && settingsEndSurah.value < settingsStartSurah.value) settingsEndSurah.value = settingsStartSurah.value
+  settingsEndAyah.value = Math.min(Math.max(1, settingsEndAyah.value), settingsEndTotalAyah.value)
+  if (settingsStartSurah.value === settingsEndSurah.value && settingsEndAyah.value < settingsStartAyah.value) {
+    settingsEndAyah.value = settingsStartAyah.value
+  }
+}
+
+const openAudioSettings = async () => {
+  if (!surahList.value.length) await fetchSurahList()
+  const currentNumber = currentSurahMeta.value?.number || surahNumber.value
+  if (!surahList.value.some(s => s.number === settingsStartSurah.value)) {
+    settingsStartSurah.value = currentNumber
+    settingsStartAyah.value = currentAyahNumber.value
+    settingsEndSurah.value = currentNumber
+    settingsEndAyah.value = currentAyahNumber.value
+  }
+  normalizeMurottalRange()
+  settingsPickerType.value = 'none'
+  settingsSurahSearch.value = ''
+  pauseAudio()
+  showAudioSettings.value = true
+}
+const closeAudioSettings = () => { showAudioSettings.value = false; settingsPickerType.value = 'none'; settingsSurahSearch.value = '' }
+
+const selectSettingsSurah = (number: number) => {
+  if (settingsPickerType.value === 'startSurah') { settingsStartSurah.value = number; settingsStartAyah.value = 1; if (settingsEndSurah.value < number) settingsEndSurah.value = number }
+  else { settingsEndSurah.value = number; settingsEndAyah.value = settingsEndTotalAyah.value }
+  normalizeMurottalRange()
+  settingsPickerType.value = 'none'
+  settingsSurahSearch.value = ''
+}
+const selectSettingsAyah = (number: number) => { if (settingsPickerType.value === 'startAyah') settingsStartAyah.value = number; else settingsEndAyah.value = number; normalizeMurottalRange(); settingsPickerType.value = 'none' }
+const selectSettingsRepeat = (value: number) => { if (settingsPickerType.value === 'ayahRepeat') settingsAyahRepeat.value = value; else settingsRangeRepeat.value = value; settingsPickerType.value = 'none' }
+const generateMurottalQueue = () => {
+  const queue: { surah: number; ayah: number; verse_key: string }[] = []
+  normalizeMurottalRange()
+  for (let number = settingsStartSurah.value; number <= settingsEndSurah.value; number++) {
+    const meta = surahList.value.find(s => s.number === number)
+    if (!meta) continue
+    const first = number === settingsStartSurah.value ? settingsStartAyah.value : 1
+    const last = number === settingsEndSurah.value ? settingsEndAyah.value : meta.total_ayah
+    for (let ayah = first; ayah <= last; ayah++) queue.push({ surah: number, ayah, verse_key: `${number}:${ayah}` })
+  }
+  return queue
+}
+
+const navigateToMurottalVerse = async (verse: { surah: number; ayah: number }) => {
+  const meta = surahList.value.find(s => s.number === verse.surah)
+  if (!meta) return
+  if (meta.id === surahId.value) {
+    if (!listeningAyahs.value.length) await fetchListeningAyahs()
+    await syncListeningAyahState(verse.ayah, { restartAudio: true })
+    return
+  }
+  await router.replace(buildRemoteRoute(meta.id, verse.ayah))
+}
+
+const startCustomRangePlayback = async () => {
+  const queue = generateMurottalQueue()
+  if (!queue.length) return
+  activeMurottalQueue.value = queue
+  queueIndex.value = 0
+  currentAyahRepeatCount.value = 1
+  currentRangeRepeatCount.value = 1
+  isCustomRangeActive.value = true
+  showAudioSettings.value = false
+  stopAudio()
+  await navigateToMurottalVerse(queue[0])
+}
+
+const toggleListeningRepeat = () => {
+  if (isCustomRangeActive.value) {
+    isCustomRangeActive.value = false
+    activeMurottalQueue.value = []
+    stopAudio()
+    return
+  }
+  openAudioSettings()
+}
+
+const handleCustomRangeEnded = async () => {
+  if (currentAyahRepeatCount.value < settingsAyahRepeat.value) {
+    currentAyahRepeatCount.value += 1
+    startAudioPlayback({ restart: true })
+    return
+  }
+  currentAyahRepeatCount.value = 1
+  if (queueIndex.value < activeMurottalQueue.value.length - 1) {
+    queueIndex.value += 1
+    await navigateToMurottalVerse(activeMurottalQueue.value[queueIndex.value])
+    return
+  }
+  if (currentRangeRepeatCount.value < settingsRangeRepeat.value) {
+    currentRangeRepeatCount.value += 1
+    queueIndex.value = 0
+    await navigateToMurottalVerse(activeMurottalQueue.value[0])
+    return
+  }
+  isCustomRangeActive.value = false
+  showToast?.('Rentang murottal selesai', 'fluent')
+}
 
 const openQariPicker = () => {
   triggerHaptic(40)
@@ -571,7 +802,11 @@ const startAudioPlayback = (options: { withHaptic?: boolean, restart?: boolean }
   audioObj.onended = () => {
     isPlaying.value = false
     audioCurrentTime.value = audioDuration.value || audioCurrentTime.value
-    scheduleAutoAdvance()
+    if (isCustomRangeActive.value) {
+      void handleCustomRangeEnded()
+    } else {
+      scheduleAutoAdvance()
+    }
   }
   audioObj.onerror = () => {
     isPlaying.value = false
@@ -828,14 +1063,14 @@ let touchStartY = 0
 let isScrolling = false
 const onTouchStart = (e: TouchEvent) => {
   // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
-  if (showSurahPicker.value || showAyahPicker.value) return
+  if (showSurahPicker.value || showAyahPicker.value || navigatorOpen.value) return
   touchStartX = e.touches[0].clientX
   touchStartY = e.touches[0].clientY
   isScrolling = false
 }
 
 const onTouchMove = (e: TouchEvent) => {
-  if (showSurahPicker.value || showAyahPicker.value) return
+  if (showSurahPicker.value || showAyahPicker.value || navigatorOpen.value) return
   const diffX = Math.abs(e.touches[0].clientX - touchStartX)
   const diffY = Math.abs(e.touches[0].clientY - touchStartY)
   // Jika jari bergeser lebih dari 10px, anggap sedang melakukan scroll/drag
@@ -845,7 +1080,7 @@ const onTouchMove = (e: TouchEvent) => {
 }
 const onTouchEnd = (e: TouchEvent) => {
   // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
-  if (showSurahPicker.value || showAyahPicker.value) return
+  if (showSurahPicker.value || showAyahPicker.value || navigatorOpen.value) return
 
   const diffX = e.changedTouches[0].clientX - touchStartX
   const diffY = e.changedTouches[0].clientY - touchStartY
@@ -942,7 +1177,50 @@ const openSurahPicker = () => {
   triggerHaptic(40)
   if (isListeningMode.value) pauseAudio()
   pickerSearch.value = ''
+  pendingPickerSurahId.value = null
   showSurahPicker.value = true
+}
+
+const openNavigator = async () => {
+  triggerHaptic(40)
+  if (isListeningMode.value) pauseAudio()
+  if (!surahList.value.length) await fetchSurahList()
+  // Pre-select current surah + ayah
+  navigatorSurahId.value = surahId.value
+  navigatorSelectedAyah.value = currentAyahNumber.value
+  navigatorSurahSearch.value = ''
+  navigatorShowSurahPicker.value = false
+  navigatorShowAyahPicker.value = false
+  navigatorOpen.value = true
+}
+
+const closeNavigator = () => {
+  navigatorOpen.value = false
+  navigatorShowSurahPicker.value = false
+  navigatorShowAyahPicker.value = false
+}
+
+const chooseNavigatorSurah = (s: SurahItem) => {
+  triggerHaptic(40)
+  navigatorSurahId.value = s.id
+  navigatorSelectedAyah.value = 1
+  navigatorShowSurahPicker.value = false
+}
+
+const chooseNavigatorAyah = (n: number) => {
+  triggerHaptic(40)
+  navigatorSelectedAyah.value = n
+  navigatorShowAyahPicker.value = false
+}
+
+const confirmNavigation = async () => {
+  const targetSurahId = navigatorSurahId.value
+  const targetAyah = navigatorSelectedAyah.value
+  closeNavigator()
+  stopAudio()
+
+  pendingPickerSurahId.value = targetSurahId !== surahId.value ? targetSurahId : null
+  await changeAyah(targetAyah)
 }
 
 const closeSurahPicker = () => {
@@ -959,6 +1237,7 @@ const openAyahPicker = () => {
 const closeAyahPicker = () => {
   triggerHaptic(40)
   showAyahPicker.value = false
+  pendingPickerSurahId.value = null
 }
 
 const changeSurah = (targetSurahId: number) => {
@@ -970,13 +1249,23 @@ const changeSurah = (targetSurahId: number) => {
 
 const handleSurahSelect = (id: number) => {
   if (isWheelDragging.value) return
-  changeSurah(id)
+  triggerHaptic(45)
+  pendingPickerSurahId.value = id
+  showSurahPicker.value = false
+  showAyahPicker.value = true
 }
 
 const changeAyah = async (targetAyahNum: number) => {
   triggerHaptic(50)
   stopAudio()
+  const targetSurahId = pendingPickerSurahId.value || surahId.value
+  pendingPickerSurahId.value = null
   showAyahPicker.value = false
+
+  if (targetSurahId !== surahId.value) {
+    await router.push(buildRemoteRoute(targetSurahId, targetAyahNum))
+    return
+  }
 
   if (isListeningMode.value) {
     const changed = await syncListeningAyahState(targetAyahNum)
@@ -987,6 +1276,10 @@ const changeAyah = async (targetAyahNum: number) => {
   router.replace(buildRemoteRoute(surahId.value, targetAyahNum))
 }
 
+const jumpToHeaderAyah = (event: Event) => {
+  const value = Number((event.target as HTMLSelectElement).value)
+  if (value >= 1 && value <= totalAyah.value) void changeAyah(value)
+}
 const submitReview = async (status: 'forgot' | 'doubtful' | 'fluent') => {
   if (!currentAyah.value || submitting.value) return
   stopAudio()
@@ -2395,16 +2688,811 @@ useHead({
 .header-eyebrow--listening {
   color: #FBBF24; /* Amber Gold */
 }
-
-.header-eyebrow {
-  width: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  border: 0;
+/* Unified reader chrome */
+.remote-header {
+  flex: 0 0 auto;
+  min-height: 76px;
+  gap: 10px;
+  padding: calc(var(--safe-top) + 8px) 12px 8px;
+}
+.remote-header__left { min-width: 0; flex: 1; gap: 8px; }
+.remote-header__surah-trigger { min-width: 0; flex: 1; }
+.remote-header__back { width: 40px; height: 40px; }
+.remote-header__title {
+  max-width: 100%;
+  overflow: hidden;
+  gap: 4px;
+  font-size: 1rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.remote-header__subtitle { font-size: .68rem; }
+.remote-header__browse {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255,255,255,.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.remote-header__browse svg { width: 21px; height: 21px; }
+.remote-action-bar--listening {
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(255,255,253,.97);
+  border-top-color: rgba(31,54,45,.1);
+  box-shadow: 0 -8px 26px rgba(28,46,39,.08);
+}
+.listening-player {
+  min-height: 54px;
+  gap: 10px;
   padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #26362f;
   background: transparent;
+  box-shadow: none;
+}
+.listening-player__controls {
+  order: 0;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #e2ece7;
+  border-radius: 999px;
+  background: #f1f7f4;
+}
+.listening-player__control,
+.listening-player__play {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 0;
+  border-radius: 50%;
+}
+.listening-player__control { color: #527067; background: transparent; }
+.listening-player__control:active { color: #087d59; background: #e2f0e9; }
+.listening-player__play {
+  color: #fff;
+  background: #12866a;
+  box-shadow: 0 4px 10px rgba(18,134,106,.2);
+}
+.listening-player__control svg,
+.listening-player__play svg { width: 20px; height: 20px; }
+.listening-player__qari {
+  order: 1;
+  gap: 8px;
+  padding: 0;
+  color: #26362f;
+}
+.listening-player__qari-icon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border-color: rgba(180,146,77,.2);
+  background: #f3efe5;
+}
+.listening-player__qari-copy strong { color: #26362f; font-size: .78rem; }
+.listening-player__qari-copy small { color: #7b8680; font-size: .62rem; }
+.listening-player__qari-chevron { width: 16px; height: 16px; color: #168d70; }
+/* Header optical alignment and shared Murottal settings */
+.remote-header { padding-right: 12px; padding-left: 12px; }
+.remote-header__left { gap: 12px; }
+.listening-player__control { position: relative; }
+.listening-player__control--active { color: #087d59; background: #e2f0e9; }
+.listening-player__badge {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  padding: 2px 4px;
+  border-radius: 999px;
+  color: #fff;
+  background: #12866a;
+  font-size: .48rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.listening-settings-sheet { padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); }
+.listening-settings__header h3 { margin: 6px 0 18px; color: #1f2e28; font-size: 1.2rem; }
+.listening-settings__body { display: flex; flex-direction: column; gap: 14px; }
+.listening-settings__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(92px, .72fr); gap: 12px; }
+.listening-settings__body label { display: flex; flex-direction: column; gap: 7px; color: #43534c; font-size: .72rem; font-weight: 750; }
+.listening-settings__body select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d8e3de;
+  border-radius: 13px;
+  padding: 0 12px;
+  color: #26362f;
+  background: #fbfcfa;
+  font-size: .78rem;
+  font-weight: 700;
+}
+.listening-settings__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+.listening-settings__actions button { min-height: 48px; border-radius: 13px; font-size: .82rem; font-weight: 800; }
+.listening-settings__cancel { border: 1px solid #d8e3de; color: #75827c; background: #fff; }
+.listening-settings__play { color: #fff; background: #12866a; }
+/* Remote Navigator Sheet (mushaf-style Pilih Bacaan) */
+.navigator-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(4, 39, 25, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.navigator-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #FFFDF7;
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
+  height: 92dvh;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.navigator-sheet__handle {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 2px;
+}
+
+.navigator-sheet__handle::before {
+  content: '';
+  width: 40px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(0,0,0,0.12);
+}
+
+.navigator-sheet__content {
+  padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.navigator-sheet__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.navigator-sheet__header > div > span {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #087d59;
+  margin-bottom: 4px;
+}
+
+.navigator-sheet__header h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #042719;
+  letter-spacing: -0.02em;
+  margin: 0 0 3px;
+}
+
+.navigator-sheet__header p {
+  font-size: 0.78rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.navigator-sheet__header > button {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #F3F4F6;
+  color: #4B5563;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.navigator-sheet__header > button:hover {
+  background: #E5E7EB;
+}
+
+.navigator-sheet__header > button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.navigator-dynamic {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.navigator-fields-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.navigator-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.navigator-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: 0.02em;
+}
+
+.navigator-field--surah {
+  flex: 1;
+  min-width: 0;
+}
+
+.navigator-field--ayah {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.navigator-selector {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #1F2937;
+}
+
+.navigator-selector:hover {
+  border-color: rgba(8, 125, 89, 0.35);
+  box-shadow: 0 2px 8px rgba(8, 125, 89, 0.06);
+}
+
+.navigator-selector > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.navigator-selector strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navigator-selector small {
+  font-size: 0.7rem;
+  color: #6B7280;
+  font-weight: 400;
+}
+
+.navigator-selector svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #9CA3AF;
+}
+
+.navigator-primary {
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #087d59, #065c41);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 4px 12px rgba(8, 125, 89, 0.3);
+}
+
+.navigator-primary:active {
+  transform: scale(0.98);
+}
+
+.navigator-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Surah / Ayah sub-picker — identik dengan mushaf */
+.surah-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 18px 18px calc(20px + var(--safe-bottom, 0px));
+  background: #fffdfa;
+}
+
+.surah-picker__header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.surah-picker__header > button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  color: #087d59;
+  background: #edf6f2;
+}
+
+.surah-picker__header svg {
+  width: 19px;
+  height: 19px;
+}
+
+.surah-picker__header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.surah-picker__header span {
+  color: #087d59;
+  font-size: .61rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.surah-picker__header strong {
+  color: #23332c;
+  font-size: 1.05rem;
+}
+
+.surah-picker__search {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+  border: 1px solid #e0e4e1;
+  border-radius: 13px;
+  padding: 0 13px;
+  background: #f6f7f4;
+}
+
+.surah-picker__search svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: #8a9590;
+}
+
+.surah-picker__search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #28362f;
+  background: transparent;
+  font-size: .8rem;
+}
+
+.surah-picker__list {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.surah-picker__item {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto 20px;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  border: 1px solid #e8eae7;
+  border-radius: 14px;
+  padding: 8px 10px;
+  color: #2b3933;
+  background: #fff;
+  text-align: left;
+}
+
+.surah-picker__item--active {
+  border-color: #5aac91;
+  background: #eff8f4;
+}
+
+.surah-picker__number {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #64716b;
+  background: #f1f3f1;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.surah-picker__item--active .surah-picker__number {
+  color: #087d59;
+  background: #dcefe7;
+}
+
+.surah-picker__names {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.surah-picker__names strong {
+  overflow: hidden;
+  font-size: .78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.surah-picker__names small {
+  color: #8a948f;
+  font-size: .61rem;
+}
+
+.surah-picker__arabic {
+  font-family: var(--font-arabic);
+  color: #087d59;
+  font-size: 1.02rem;
+  direction: rtl;
+}
+
+.surah-picker__item > svg {
+  width: 17px;
+  height: 17px;
+  color: #087d59;
+}
+
+/* Ayah grid sub-picker */
+.ayah-picker {
+  /* inherits .surah-picker layout */
+}
+
+.ayah-picker__summary {
+  margin: 0 0 13px;
+  color: #7e8983;
+  font-size: .68rem;
+  flex-shrink: 0;
+}
+
+.ayah-picker__grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  gap: 9px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 1px 8px;
+}
+
+.ayah-picker__grid button {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e2e6e3;
+  border-radius: 13px;
+  color: #44524c;
+  background: #fff;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.ayah-picker__grid button:active {
+  transform: scale(.96);
+}
+
+.ayah-picker__grid .ayah-picker__number--active {
+  border-color: #087d59;
+  color: #fff;
+  background: #087d59;
+  box-shadow: 0 5px 13px rgba(8, 125, 89, .2);
+}
+
+/* Picker sub-panel transitions — identik mushaf */
+.picker-enter-active,
+.picker-leave-active {
+  transition: transform .24s ease, opacity .2s ease;
+}
+.picker-enter-from,
+.picker-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.surah-picker__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  flex-shrink: 0;
+}
+
+.surah-picker__header > button {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #F3F4F6;
+  color: #374151;
+  border: none;
   cursor: pointer;
 }
 
-.header-eyebrow svg { width: 12px; height: 12px; }</style>
+.surah-picker__header svg {
+  width: 20px;
+  height: 20px;
+}
+
+.surah-picker__header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.surah-picker__header span {
+  font-size: 0.68rem;
+  color: #6B7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.surah-picker__header strong {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #042719;
+}
+
+.surah-picker__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  flex-shrink: 0;
+}
+
+.surah-picker__search svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #9CA3AF;
+}
+
+.surah-picker__search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
+  color: #1F2937;
+  outline: none;
+}
+
+.surah-picker__search input::placeholder {
+  color: #9CA3AF;
+}
+
+.surah-picker__list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px calc(24px + env(safe-area-inset-bottom));
+}
+
+.surah-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  color: #1F2937;
+}
+
+.surah-picker__item:active,
+.surah-picker__item--active {
+  background: #E9F6F0;
+}
+
+.surah-picker__item--active {
+  color: #087d59;
+}
+
+.surah-picker__number {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 50%;
+  background: #F4F3ED;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #6B7280;
+}
+
+.surah-picker__item--active .surah-picker__number {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.surah-picker__names {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.surah-picker__names strong {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.surah-picker__names small {
+  font-size: 0.68rem;
+  color: #6B7280;
+}
+
+.surah-picker__arabic {
+  font-family: 'Uthmanic Hafs', serif;
+  font-size: 1rem;
+  color: #374151;
+  direction: rtl;
+}
+
+.surah-picker__item > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #087d59;
+}
+
+/* Ayah grid sub-picker */
+.ayah-picker {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.ayah-picker__summary {
+  padding: 10px 16px 0;
+  font-size: 0.75rem;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.ayah-picker__grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 10px 14px calc(24px + env(safe-area-inset-bottom));
+}
+
+.ayah-picker__grid button {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0,0,0,0.06);
+  background: #fff;
+  color: #374151;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ayah-picker__grid button:active {
+  transform: scale(0.93);
+}
+
+.ayah-picker__grid .ayah-picker__number--active {
+  background: #087d59 !important;
+  color: #fff !important;
+  border-color: #087d59 !important;
+  box-shadow: 0 2px 8px rgba(8, 125, 89, 0.3);
+}
+
+/* Picker sub-panel transitions */
+.picker-enter-active, .picker-leave-active {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+}
+.picker-enter-from {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.picker-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.listening-settings-sheet { padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); }
+.listening-settings__header h3 { margin: 6px 0 18px; color: #1f2e28; font-size: 1.2rem; }
+.audio-settings-body { display: flex; flex-direction: column; gap: 16px; padding: 8px 0; }
+.audio-settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.audio-settings-col, .audio-settings-field { display: flex; flex-direction: column; gap: 6px; }
+.audio-settings-col label, .audio-settings-field label { color: #314039; font-size: .75rem; font-weight: 700; }
+.custom-select-trigger { width: 100%; height: 48px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #dce3df; border-radius: 13px; padding: 0 16px; color: #314039; background: #fbfcfa; font-size: .8rem; font-weight: 750; text-align: left; }
+.custom-select-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.custom-select-trigger svg { width: 16px; height: 16px; flex: 0 0 16px; color: #159174; }
+.audio-settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.settings-action-btn { height: 48px; border: 1px solid #dce3df; border-radius: 12px; font-size: .85rem; font-weight: 750; }
+.settings-action-btn--cancel { color: #7b8680; background: #fff; }
+.settings-action-btn--play { color: #fff; border-color: #159174; background: #159174; }
+.settings-picker-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid #dce3df; padding-bottom: 12px; color: #26362f; }
+.settings-picker-back { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #314039; background: #f4f6f5; }
+.settings-picker-back svg { width: 20px; height: 20px; }
+.settings-picker-search { margin-bottom: 12px; }
+.settings-picker-search input { width: 100%; height: 40px; border: 1px solid #dce3df; border-radius: 10px; padding: 0 12px; background: #fbfcfa; font-size: .8rem; }
+.settings-picker-options { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.settings-surah-item { width: 100%; min-height: 58px; display: flex; align-items: center; gap: 11px; border: 1px solid #eef1ef; border-radius: 12px; padding: 8px 10px; color: #314039; background: #fff; text-align: left; }
+.settings-surah-item:disabled { opacity: .35; }
+.settings-surah-number { width: 31px; height: 31px; flex: 0 0 31px; display: grid; place-items: center; border-radius: 50%; color: #087d59; background: #e9f6f0; font-size: .7rem; font-weight: 800; }
+.settings-surah-name { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.settings-surah-name strong { font-size: .78rem; }
+.settings-surah-name small { color: #7b8580; font-size: .64rem; }
+.settings-surah-arabic { color: #53625b; font-family: 'Uthmanic Hafs', serif; font-size: .9rem; }
+.settings-ayah-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px; }
+.settings-ayah-grid button { aspect-ratio: 1; border: 1px solid #dce3df; border-radius: 11px; color: #43534c; background: #fbfcfa; font-weight: 750; }
+.settings-ayah-grid button:disabled { opacity: .28; }
+.settings-repeat-option { width: 100%; min-height: 48px; border: 1px solid #eef1ef; border-radius: 10px; padding: 0 16px; color: #314039; background: #fff; text-align: left; font-size: .82rem; font-weight: 650; }
+.settings-option--active { color: #087d59 !important; border-color: #ccece2 !important; background: #e9f6f0 !important; }</style>

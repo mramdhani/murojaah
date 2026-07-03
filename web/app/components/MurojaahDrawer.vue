@@ -17,7 +17,7 @@
             <img src="/logo.png" alt="Murojaah Logo" class="drawer-logo" />
             <div>
               <h2 class="drawer-title">Mulai Murojaah</h2>
-              <p class="drawer-subtitle">Pilih cara berlatih, lalu pilih surat</p>
+              <p class="drawer-subtitle">{{ isSessionPage ? 'Pilih cara berlatih untuk surat ini' : 'Pilih cara berlatih, lalu pilih surat' }}</p>
             </div>
           </div>
           <button class="drawer-close" @click="close" aria-label="Tutup">
@@ -28,26 +28,23 @@
           </button>
         </div>
 
-        <div class="drawer-journeys" role="radiogroup" aria-label="Pilih cara murojaah">
-          <button type="button" class="journey-option" :class="{ 'journey-option--active': selectedJourney === 'quiz' }" role="radio" :aria-checked="selectedJourney === 'quiz'" @click="selectJourney('quiz')">
-            <span class="journey-option__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"/><path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15Z"/></svg></span>
-            <span class="journey-option__copy"><strong>Uji per Ayat</strong><small>Ingat, buka ayat, lalu nilai hafalanmu</small></span>
-            <span class="journey-option__check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 10 3 3 7-7"/></svg></span>
+        <div class="drawer-journeys-tabs" role="tablist" aria-label="Pilih cara murojaah">
+          <button type="button" class="journey-tab" :class="{ 'journey-tab--active': selectedJourney === 'quiz' }" role="tab" :aria-selected="selectedJourney === 'quiz'" @click="selectJourney('quiz')">
+            <svg class="journey-tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"/></svg>
+            <span>Uji Ayat</span>
           </button>
-          <button type="button" class="journey-option" :class="{ 'journey-option--active': selectedJourney === 'mushaf' }" role="radio" :aria-checked="selectedJourney === 'mushaf'" @click="selectJourney('mushaf')">
-            <span class="journey-option__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"/></svg></span>
-            <span class="journey-option__copy"><strong>Mushaf per Halaman</strong><small>Murojaah dengan memori visual mushaf</small></span>
-            <span class="journey-option__check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 10 3 3 7-7"/></svg></span>
+          <button type="button" class="journey-tab" :class="{ 'journey-tab--active': selectedJourney === 'mushaf' }" role="tab" :aria-selected="selectedJourney === 'mushaf'" @click="selectJourney('mushaf')">
+            <svg class="journey-tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"/></svg>
+            <span>Mushaf</span>
           </button>
-          <button type="button" class="journey-option" :class="{ 'journey-option--active': selectedJourney === 'listening' }" role="radio" :aria-checked="selectedJourney === 'listening'" @click="selectJourney('listening')">
-            <span class="journey-option__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h3v7H6a2 2 0 0 1-2-2v-5Zm16 0h-3v7h1a2 2 0 0 0 2-2v-5Z"/></svg></span>
-            <span class="journey-option__copy"><strong>Mendengarkan</strong><small>Ikuti murottal tanpa penilaian hafalan</small></span>
-            <span class="journey-option__check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 10 3 3 7-7"/></svg></span>
+          <button type="button" class="journey-tab" :class="{ 'journey-tab--active': selectedJourney === 'listening' }" role="tab" :aria-selected="selectedJourney === 'listening'" @click="selectJourney('listening')">
+            <svg class="journey-tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h3v7H6a2 2 0 0 1-2-2v-5Zm16 0h-3v7h1a2 2 0 0 0 2-2v-5Z"/></svg>
+            <span>Dengar</span>
           </button>
         </div>
 
         <!-- Search Input -->
-        <div class="drawer-search-row">
+        <div v-if="!isSessionPage" class="drawer-search-row">
           <div class="search-wrapper">
             <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <circle cx="11" cy="11" r="8"/>
@@ -63,7 +60,7 @@
         </div>
 
         <!-- Content Area -->
-        <div class="drawer-body">
+        <div v-if="!isSessionPage" class="drawer-body">
           <!-- Loading state -->
           <div v-if="loading" class="drawer-loading">
             <div class="spinner"></div>
@@ -123,6 +120,8 @@
             </div>
           </div>
         </div>
+
+        <div v-else class="drawer-safe-bottom"></div>
       </div>
     </div>
   </Transition>
@@ -164,11 +163,32 @@ const selectedJourney = computed<Journey>(() => {
 const selectJourney = (journey: Journey) => {
   if (journey === 'listening') {
     mode.value = 'listening'
-    return
+  } else {
+    mode.value = 'learning'
+    format.value = journey
   }
 
-  mode.value = 'learning'
-  format.value = journey
+  // Jika sedang di halaman membaca (session aktif), langsung pindah mode untuk surat saat ini
+  if (isSessionPage.value && currentSurahIdFromRoute.value !== null) {
+    const activeSurahId = currentSurahIdFromRoute.value
+    close()
+
+    // Memberikan delay agar animasi slide-down drawer selesai sebelum halaman berpindah
+    window.setTimeout(() => {
+      if (mode.value === 'learning' && format.value === 'mushaf') {
+        const selectedSurah = surahs.value.find(s => s.id === activeSurahId)
+        router.push({
+          path: `/mushaf/${selectedSurah?.page_start || 1}`,
+          query: { surah: activeSurahId },
+        })
+      } else {
+        router.push({
+          path: `/remote/${activeSurahId}/1`,
+          query: { mode: mode.value },
+        })
+      }
+    }, 280)
+  }
 }
 
 const revelationLabel = (surah: SurahItem) =>
@@ -217,6 +237,20 @@ const filteredSurahs = computed(() => {
 
 
 const router = useRouter()
+const route = useRoute()
+
+const currentSurahIdFromRoute = computed(() => {
+  if (route.params.surahId) {
+    return Number(route.params.surahId)
+  }
+  if (route.query.surah) {
+    return Number(route.query.surah)
+  }
+  return null
+})
+
+const isSessionPage = computed(() => currentSurahIdFromRoute.value !== null)
+
 const selectSurah = (surahId: number) => {
   const targetMode = mode.value
   const selectedSurah = surahs.value.find(surah => surah.id === surahId)
@@ -342,101 +376,52 @@ const selectSurah = (surahId: number) => {
   transform: rotate(90deg);
 }
 
-/* Journey selector */
-.drawer-journeys {
-  display: grid;
-  gap: 8px;
-  padding: 0 20px 16px;
-}
-
-.journey-option {
-  width: 100%;
-  min-height: 62px;
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 22px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid #e5e8e4;
-  border-radius: 15px;
-  background: #fff;
-  color: #506058;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color .18s ease, background .18s ease, transform .18s ease;
-}
-
-.journey-option:active {
-  transform: scale(.985);
-}
-
-.journey-option--active {
-  border-color: #198764;
-  background: #f0f8f4;
-  color: #075c43;
-}
-
-.journey-option__icon {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  color: #68756f;
-  background: #f3f5f3;
-}
-
-.journey-option--active .journey-option__icon {
-  color: #087d59;
-  background: #dff1e9;
-}
-
-.journey-option__icon svg {
-  width: 21px;
-  height: 21px;
-}
-
-.journey-option__copy {
-  min-width: 0;
+/* Journey selector tabs */
+.drawer-journeys-tabs {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  background: #f2f3ee;
+  border-radius: 14px;
+  padding: 4px;
+  margin: 0 20px 16px;
+  gap: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
 }
 
-.journey-option__copy strong {
-  color: #1e2c26;
-  font-size: .82rem;
-  font-weight: 780;
+.journey-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #55625c;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.18s ease;
 }
 
-.journey-option__copy small {
-  overflow: hidden;
-  color: #7a847f;
-  font-size: .68rem;
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.journey-tab:active {
+  transform: scale(0.97);
 }
 
-.journey-option__check {
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid #d4dad6;
-  border-radius: 50%;
-  color: transparent;
+.journey-tab--active {
+  background: #FFF;
+  color: #087d59;
+  box-shadow: 0 2px 8px rgba(4, 39, 25, 0.08);
 }
 
-.journey-option--active .journey-option__check {
-  border-color: #087d59;
-  color: #fff;
-  background: #087d59;
+.journey-tab__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
-.journey-option__check svg {
-  width: 13px;
-  height: 13px;
+.drawer-safe-bottom {
+  height: calc(20px + var(--safe-bottom, 0px));
 }
 
 /* Search Row */.drawer-search-row {

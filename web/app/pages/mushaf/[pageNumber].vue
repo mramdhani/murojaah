@@ -1,7 +1,7 @@
 <template>
-  <div class="mushaf-page">
-    <header class="mushaf-header">
-      <button type="button" class="mushaf-header__back" aria-label="Kembali" @click="router.back()">
+  <div class="mushaf-page" @click.self="toggleFullscreen">
+    <header class="mushaf-header" :class="{ 'mushaf-header--hidden': isFullscreenMode }">
+      <button type="button" class="mushaf-header__back" aria-label="Kembali" @click="router.push('/')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
       </button>
 
@@ -12,7 +12,7 @@
         </button>
         <button type="button" class="mushaf-header__title" @click="openNavigator">
           <strong>{{ currentSurahTitle }}</strong>
-          <small>Hal {{ pageNumber }} <span>·</span> Juz {{ juzLabel }}</small>
+          <small>Hal {{ pageNumber }} <span>&middot;</span> Juz {{ juzLabel }}</small>
         </button>
       </div>
 
@@ -23,7 +23,7 @@
         </svg>
       </button>
     </header>
-    <main class="mushaf-content">
+    <main class="mushaf-content" @click.self="toggleFullscreen">
       <section
         ref="viewportRef"
         class="mushaf-viewport"
@@ -33,6 +33,7 @@
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
         @pointercancel="cancelSwipe"
+        @click.stop="toggleFullscreen"
       >
         <div class="mushaf-track" :class="{ 'mushaf-track--animating': swipeAnimating }" :style="trackStyle">
           <div v-for="(slidePage, index) in carouselPages" :key="slidePage + '-' + index" class="mushaf-slide">
@@ -66,27 +67,210 @@
             class="line-mask"
             :class="{ 'line-mask--revealed': revealedLines[line - 1] }"
             :aria-label="(revealedLines[line - 1] ? 'Sembunyikan baris ' : 'Tampilkan baris ') + line"
-            @click="toggleLine(line - 1)"
+            @dblclick.stop="toggleLine(line - 1)"
           ></button>
         </div>
       </section>
     </main>
 
-    <section class="mushaf-player" aria-label="Pemutar murottal">
-      <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
-        <svg v-if="!isPlaying" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
-        <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
-      </button>
+    <section class="mushaf-player" :class="{ 'mushaf-player--hidden': isFullscreenMode }" aria-label="Pemutar murottal">
+      <div class="mushaf-player__actions">
+        <!-- Play/Pause -->
+        <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
+          <svg v-if="!isPlaying" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
+          <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+        </button>
+
+        <!-- Repeat Button -->
+        <button type="button" class="mushaf-player__btn" :class="{ 'mushaf-player__btn--active': isCustomRangeActive || localRepeatCount > 1 }" @click="toggleRepeatMode" aria-label="Pengulangan Murotal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="17 1 21 5 17 9"/>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+            <polyline points="7 23 3 19 7 15"/>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+          </svg>
+          <span v-if="isCustomRangeActive" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">Rentang</span>
+          <span v-else-if="localRepeatCount > 1" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">
+            {{ localRepeatCount === 99999 ? '\u221E' : localRepeatCount }}
+          </span>
+        </button>
+
+        <!-- Settings Button -->
+        <button type="button" class="mushaf-player__btn" @click="openAudioSettings" aria-label="Pengaturan Murotal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"/>
+            <line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/>
+            <line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/>
+            <line x1="9" y1="8" x2="15" y2="8"/>
+            <line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+        </button>
+      </div>
+
       <button type="button" class="mushaf-player__qari-select" @click="openQariPicker">
         <img :src="activeQari.image" :alt="activeQariName">
         <span class="mushaf-player__info">
           <strong>{{ activeQariName }}</strong>
           <small>{{ playerAyahLabel }}</small>
-          <span><i :style="{ width: playerProgress + '%' }"></i></span>
         </span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
       </button>
     </section>
+
+    <!-- Settings Bottom Sheet -->
+    <Transition name="sheet">
+      <div v-if="showAudioSettings" class="qari-overlay" @click="closeAudioSettings">
+        <section class="qari-sheet animate-slide-up" role="dialog" aria-modal="true" @click.stop>
+          <div class="qari-sheet__handle"></div>
+
+          <template v-if="activePickerType === 'none'">
+            <header class="qari-sheet__header">
+              <h3 id="audio-settings-title" class="qari-sheet__title">Pengaturan Murotal</h3>
+            </header>
+
+            <div class="audio-settings-body">
+              <div class="audio-settings-row">
+                <div class="audio-settings-col">
+                  <label>Dari Surat</label>
+                  <button type="button" class="custom-select-trigger" @click="activePickerType = 'startSurah'">
+                    <span>{{ startSurahName }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                  </button>
+                </div>
+                <div class="audio-settings-col">
+                  <label>Ayat</label>
+                  <button type="button" class="custom-select-trigger" @click="activePickerType = 'startAyah'">
+                    <span>{{ settingsStartAyah }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="audio-settings-row">
+                <div class="audio-settings-col">
+                  <label>Hingga Surat</label>
+                  <button type="button" class="custom-select-trigger" @click="activePickerType = 'endSurah'">
+                    <span>{{ endSurahName }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                  </button>
+                </div>
+                <div class="audio-settings-col">
+                  <label>Ayat</label>
+                  <button type="button" class="custom-select-trigger" @click="activePickerType = 'endAyah'">
+                    <span>{{ settingsEndAyah }}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="audio-settings-field">
+                <label>Pengulangan Ayat</label>
+                <button type="button" class="custom-select-trigger" @click="activePickerType = 'ayahRepeat'">
+                  <span>{{ ayahRepeatLabel }}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                </button>
+              </div>
+
+              <div class="audio-settings-field">
+                <label>Pengulangan Keseluruhan</label>
+                <button type="button" class="custom-select-trigger" @click="activePickerType = 'rangeRepeat'">
+                  <span>{{ rangeRepeatLabel }}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+                </button>
+              </div>
+
+              <div class="audio-settings-actions">
+                <button class="settings-action-btn settings-action-btn--cancel" @click="closeAudioSettings">Batal</button>
+                <button class="settings-action-btn settings-action-btn--play" @click="startCustomRangePlayback">Putar</button>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <header class="picker-header">
+              <button type="button" class="picker-back" @click="activePickerType = 'none'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <div>
+                <strong class="qari-sheet__title">{{ pickerTitle }}</strong>
+              </div>
+            </header>
+
+            <div v-if="activePickerType === 'startSurah' || activePickerType === 'endSurah'" class="picker-search-bar">
+              <input v-model="settingsSurahSearch" type="search" placeholder="Cari nama atau nomor surat..." class="picker-search-input">
+            </div>
+
+            <div class="picker-options-list">
+              <!-- Surahs list -->
+              <template v-if="activePickerType === 'startSurah' || activePickerType === 'endSurah'">
+                <button
+                  v-for="s in filteredSettingsSurahs"
+                  :key="s.id"
+                  type="button"
+                  class="surah-picker__item"
+                  :class="{
+                    'surah-picker__item--active': activePickerType === 'startSurah' ? settingsStartSurah === s.number : settingsEndSurah === s.number,
+                    'picker-option-item--disabled': isSurahDisabled(s.number)
+                  }"
+                  :disabled="isSurahDisabled(s.number)"
+                  @click="selectSurahOption(s.number)"
+                >
+                  <span class="surah-picker__number">{{ s.number }}</span>
+                  <span class="surah-picker__names">
+                    <strong>{{ s.name_latin }}</strong>
+                    <small>{{ s.total_ayah }} ayat</small>
+                  </span>
+                  <span class="surah-picker__arabic">{{ s.name_arabic }}</span>
+                  <svg v-if="(activePickerType === 'startSurah' ? settingsStartSurah === s.number : settingsEndSurah === s.number)" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                    <path d="m5 10 3 3 7-7"/>
+                  </svg>
+                </button>
+              </template>
+
+              <!-- Ayahs grid -->
+              <template v-else-if="activePickerType === 'startAyah' || activePickerType === 'endAyah'">
+                <div class="ayah-picker-grid">
+                  <button
+                    v-for="a in (activePickerType === 'startAyah' ? startSurahTotalAyah : endSurahTotalAyah)"
+                    :key="a"
+                    type="button"
+                    class="ayah-picker-cell"
+                    :class="{
+                      'ayah-picker-cell--active': activePickerType === 'startAyah' ? settingsStartAyah === a : settingsEndAyah === a,
+                      'ayah-picker-cell--disabled': isAyahDisabled(a)
+                    }"
+                    :disabled="isAyahDisabled(a)"
+                    @click="selectAyahOption(a)"
+                  >
+                    {{ a }}
+                  </button>
+                </div>
+              </template>
+
+              <!-- Generic repeat count selections -->
+              <template v-else>
+                <button
+                  v-for="opt in repeatOptions"
+                  :key="opt.value"
+                  type="button"
+                  class="picker-option-item"
+                  :class="{
+                    'picker-option-item--active': activePickerType === 'ayahRepeat' ? settingsAyahRepeat === opt.value : settingsRangeRepeat === opt.value
+                  }"
+                  @click="selectRepeatOption(opt.value)"
+                >
+                  <span>{{ opt.label }}</span>
+                </button>
+              </template>
+            </div>
+          </template>
+        </section>
+      </div>
+    </Transition>
 
     <Transition name="sheet">
       <div v-if="showQariPicker" class="qari-overlay" @click="closeQariPicker">
@@ -327,6 +511,7 @@ const route = useRoute()
 const router = useRouter()
 const { apiFetch } = useApi()
 const { open: openMurojaahDrawer } = useMurojaahDrawer()
+const showToast = inject<(msg: string, type?: string) => void>('showToast')
 
 const pageData = ref<MushafPageData | null>(null)
 const surahOptions = ref<SurahOption[]>([])
@@ -374,7 +559,46 @@ const isPlaying = ref(false)
 const playerAyahIndex = ref(0)
 const playerCurrentTime = ref(0)
 const playerDuration = ref(0)
+const shouldAutoplayNextPage = useState<boolean>('shouldAutoplayNextPage', () => false)
+
+const legacyAutoNextAyah = useCookie<boolean>('auto_next_ayah', {
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
+  default: () => legacyAutoNextAyah.value ?? false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
 let playerAudio: HTMLAudioElement | null = null
+let preloadedAudio: HTMLAudioElement | null = null
+let preloadedAudioUrl = ''
+
+const showAudioSettings = ref(false)
+const isCustomRangeActive = useState<boolean>('mushafMurottalRangeActive', () => false)
+const localRepeatCount = ref(1)
+const currentLocalAyahRepeatCount = ref(1)
+
+const activePickerType = ref<'none' | 'startSurah' | 'startAyah' | 'endSurah' | 'endAyah' | 'ayahRepeat' | 'rangeRepeat'>('none')
+const settingsSurahSearch = ref('')
+
+const isFullscreenMode = ref(false)
+const isSettingsInitialized = useState<boolean>('mushafMurottalSettingsInitialized', () => false)
+
+const settingsStartSurah = useState<number>('mushafMurottalStartSurah', () => 1)
+const settingsStartAyah = useState<number>('mushafMurottalStartAyah', () => 1)
+const settingsEndSurah = useState<number>('mushafMurottalEndSurah', () => 1)
+const settingsEndAyah = useState<number>('mushafMurottalEndAyah', () => 1)
+const settingsAyahRepeat = useState<number>('mushafMurottalAyahRepeat', () => 1)
+const settingsRangeRepeat = useState<number>('mushafMurottalRangeRepeat', () => 1)
+
+const activeMurottalQueue = useState<{ surah: number; ayah: number; verse_key: string }[]>('mushafMurottalQueue', () => [])
+const queueIndex = useState<number>('mushafMurottalQueueIndex', () => 0)
+const currentAyahRepeatCount = useState<number>('mushafMurottalAyahRepeatCount', () => 1)
+const currentRangeRepeatCount = useState<number>('mushafMurottalRangeRepeatCount', () => 1)
 
 const pageNumber = computed(() => {
   const value = Number(route.params.pageNumber)
@@ -414,7 +638,7 @@ const filteredSurahOptions = computed(() => {
 })
 
 const navigationTypeLabel = computed(() => ({ surah: 'Surat', juz: 'Juz', hizb: 'Hizb', manzil: 'Manzil', page: 'Halaman' }[navigationType.value]))
-const navigationAvailability = computed(() => ({ surah: '114', juz: '1–30', hizb: '1–60', manzil: '1–7', page: '1–604' }[navigationType.value]))
+const navigationAvailability = computed(() => ({ surah: '114', juz: '1-30', hizb: '1-60', manzil: '1-7', page: '1-604' }[navigationType.value]))
 const navigationButtonLabel = computed(() => navigationType.value === 'surah' ? 'Buka ayat' : `Buka ${navigationTypeLabel.value}`)
 const sectionOptions = computed(() => {
   const count = { juz: 30, hizb: 60, manzil: 7, page: 604 }[navigationType.value]
@@ -426,8 +650,23 @@ const sectionPickerHint = computed(() => navigationType.value === 'page' ? 'Pili
 const activeQari = computed(() => qariList.find(qari => qari.id === selectedQari.value) || qariList[0])
 const activeQariName = computed(() => activeQari.value.name)
 const playerAyahs = computed(() => pageData.value?.ayahs || [])
-const playerAyah = computed(() => playerAyahs.value[playerAyahIndex.value] || playerAyahs.value[0])
-const playerAyahLabel = computed(() => playerAyah.value ? `Ayat ${playerAyah.value.verse_key} · Halaman ${pageNumber.value}` : `Halaman ${pageNumber.value}`)
+
+const playerAyah = computed(() => {
+  if (isCustomRangeActive.value && activeMurottalQueue.value[queueIndex.value]) {
+    const qv = activeMurottalQueue.value[queueIndex.value]
+    return pageData.value?.ayahs.find(x => x.verse_key === qv.verse_key) || null
+  }
+  return playerAyahs.value[playerAyahIndex.value] || playerAyahs.value[0]
+})
+
+const playerAyahLabel = computed(() => {
+  if (isCustomRangeActive.value && activeMurottalQueue.value[queueIndex.value]) {
+    const qv = activeMurottalQueue.value[queueIndex.value]
+    return `Ayat ${qv.verse_key} \u00B7 Halaman ${pageNumber.value}`
+  }
+  return playerAyah.value ? `Ayat ${playerAyah.value.verse_key} \u00B7 Halaman ${pageNumber.value}` : `Halaman ${pageNumber.value}`
+})
+
 const playerProgress = computed(() => playerDuration.value > 0 ? Math.min(100, (playerCurrentTime.value / playerDuration.value) * 100) : 0)
 
 const findSectionForPage = (starts: number[]) => {
@@ -480,6 +719,27 @@ const loadPageMetadata = async () => {
   try {
     const response = await apiFetch<{ data: MushafPageData }>('/mushaf/pages/' + pageNumber.value)
     pageData.value = response.data
+
+    const hasValidSettings = Number.isFinite(settingsStartSurah.value) && Number.isFinite(settingsEndSurah.value)
+    if ((!isSettingsInitialized.value || !hasValidSettings) && pageData.value?.ayahs.length) {
+      await loadSurahOptions()
+      const currentSurah = pageData.value.ayahs[0]
+      const sNum = Number(currentSurah.verse_key.split(':')[0])
+      settingsStartSurah.value = sNum
+      settingsEndSurah.value = sNum
+      const surahMeta = surahOptions.value.find(s => s.number === sNum)
+      settingsStartAyah.value = 1
+      settingsEndAyah.value = surahMeta ? surahMeta.total_ayah : 7
+      isSettingsInitialized.value = true
+    }
+
+    if (shouldAutoplayNextPage.value) {
+      shouldAutoplayNextPage.value = false
+      if (!isCustomRangeActive.value) {
+        playerAyahIndex.value = 0
+      }
+      playPlayerAyah()
+    }
   } catch (error) {
     console.error('Failed to load Mushaf page metadata:', error)
   }
@@ -496,7 +756,21 @@ const loadSurahOptions = async () => {
 }
 
 const handlePageChange = () => {
+  const wasAutoplay = shouldAutoplayNextPage.value
+  const wasRangeActive = isCustomRangeActive.value
+  const savedQueue = [...activeMurottalQueue.value]
+  const savedIndex = queueIndex.value
+
   resetPlayer()
+
+  if (wasAutoplay) {
+    shouldAutoplayNextPage.value = true
+  }
+  if (wasRangeActive) {
+    isCustomRangeActive.value = true
+    activeMurottalQueue.value = savedQueue
+    queueIndex.value = savedIndex
+  }
   imageLoaded.value = false
   imageError.value = false
   revealedLines.value = Array(lineCount).fill(true)
@@ -613,13 +887,6 @@ const openNavigationTarget = async () => {
   goToPage(targetPage)
 }
 
-const playerAudioUrl = () => {
-  const ayah = playerAyah.value
-  if (!ayah) return ''
-  const [surah, number] = ayah.verse_key.split(':').map(Number)
-  return `https://everyayah.com/data/${selectedQari.value}/${String(surah).padStart(3, '0')}${String(number).padStart(3, '0')}.mp3`
-}
-
 const stopPlayer = () => {
   if (playerAudio) {
     playerAudio.pause()
@@ -634,22 +901,69 @@ const stopPlayer = () => {
 const playPlayerAyah = () => {
   const src = playerAudioUrl()
   if (!src) return
-  if (!playerAudio) playerAudio = new Audio()
-  playerAudio.src = src
+  if (preloadedAudio && preloadedAudioUrl === src) {
+    playerAudio = preloadedAudio
+    preloadedAudio = null
+    preloadedAudioUrl = ''
+  } else {
+    if (!playerAudio) playerAudio = new Audio()
+    playerAudio.src = src
+  }
+  playerAudio.preload = 'auto'
   playerAudio.ontimeupdate = () => { playerCurrentTime.value = playerAudio?.currentTime || 0 }
   playerAudio.onloadedmetadata = () => { playerDuration.value = Number.isFinite(playerAudio?.duration) ? (playerAudio?.duration || 0) : 0 }
   playerAudio.onplay = () => { isPlaying.value = true }
   playerAudio.onpause = () => { isPlaying.value = false }
   playerAudio.onerror = () => { isPlaying.value = false }
   playerAudio.onended = () => {
-    if (playerAyahIndex.value < playerAyahs.value.length - 1) {
-      playerAyahIndex.value += 1
-      playPlayerAyah()
+    if (isCustomRangeActive.value) {
+      if (currentAyahRepeatCount.value < settingsAyahRepeat.value) {
+        currentAyahRepeatCount.value += 1
+        playPlayerAyah()
+      } else {
+        currentAyahRepeatCount.value = 1
+        if (queueIndex.value < activeMurottalQueue.value.length - 1) {
+          queueIndex.value += 1
+          const nextVerse = activeMurottalQueue.value[queueIndex.value]
+          syncPageForVerse(nextVerse.surah, nextVerse.ayah).then((pageChanged) => {
+            if (!pageChanged) playPlayerAyah()
+          })
+        } else {
+          if (currentRangeRepeatCount.value < settingsRangeRepeat.value) {
+            currentRangeRepeatCount.value += 1
+            queueIndex.value = 0
+            const firstVerse = activeMurottalQueue.value[0]
+            syncPageForVerse(firstVerse.surah, firstVerse.ayah).then((pageChanged) => {
+              if (!pageChanged) playPlayerAyah()
+            })
+          } else {
+            stopPlayer()
+            isCustomRangeActive.value = false
+          }
+        }
+      }
     } else {
-      isPlaying.value = false
-      playerCurrentTime.value = playerDuration.value
+      if (currentLocalAyahRepeatCount.value < localRepeatCount.value) {
+        currentLocalAyahRepeatCount.value += 1
+        playPlayerAyah()
+      } else {
+        currentLocalAyahRepeatCount.value = 1
+        if (playerAyahIndex.value < playerAyahs.value.length - 1) {
+          playerAyahIndex.value += 1
+          playPlayerAyah()
+        } else {
+          if (listeningAutoNextAyah.value && pageNumber.value < 604) {
+            shouldAutoplayNextPage.value = true
+            slideToPage(pageNumber.value + 1)
+          } else {
+            isPlaying.value = false
+            playerCurrentTime.value = playerDuration.value
+          }
+        }
+      }
     }
   }
+  preloadFollowingAyah()
   playerAudio.play().catch(() => { isPlaying.value = false })
 }
 
@@ -668,6 +982,282 @@ const togglePlayer = () => {
 const resetPlayer = () => {
   stopPlayer()
   playerAyahIndex.value = 0
+  shouldAutoplayNextPage.value = false
+  isCustomRangeActive.value = false
+  currentLocalAyahRepeatCount.value = 1
+}
+
+const audioUrlForVerse = (verse: { surah: number; ayah: number }) =>
+  `https://everyayah.com/data/${selectedQari.value}/${String(verse.surah).padStart(3, '0')}${String(verse.ayah).padStart(3, '0')}.mp3`
+
+const preloadFollowingAyah = () => {
+  let nextVerse: { surah: number; ayah: number } | null = null
+  if (isCustomRangeActive.value) {
+    nextVerse = activeMurottalQueue.value[queueIndex.value + 1] || null
+  } else {
+    const nextAyah = playerAyahs.value[playerAyahIndex.value + 1]
+    if (nextAyah) {
+      const [surah, ayah] = nextAyah.verse_key.split(':').map(Number)
+      nextVerse = { surah, ayah }
+    }
+  }
+  if (!nextVerse) return
+  const url = audioUrlForVerse(nextVerse)
+  if (url === preloadedAudioUrl) return
+  preloadedAudio = new Audio(url)
+  preloadedAudio.preload = 'auto'
+  preloadedAudioUrl = url
+  preloadedAudio.load()
+}
+
+const playerAudioUrl = () => {
+  let verse: { surah: number; ayah: number } | null = null
+  if (isCustomRangeActive.value) {
+    verse = activeMurottalQueue.value[queueIndex.value]
+  } else {
+    const ayah = playerAyah.value
+    if (!ayah) return ''
+    const [surah, number] = ayah.verse_key.split(':').map(Number)
+    verse = { surah, ayah: number }
+  }
+  if (!verse) return ''
+  return audioUrlForVerse(verse)
+}
+
+const startSurahTotalAyah = computed(() => {
+  const surah = surahOptions.value.find(s => s.number === settingsStartSurah.value)
+  return surah ? surah.total_ayah : 7
+})
+
+const endSurahTotalAyah = computed(() => {
+  const surah = surahOptions.value.find(s => s.number === settingsEndSurah.value)
+  return surah ? surah.total_ayah : 7
+})
+
+const openAudioSettings = async () => {
+  await loadSurahOptions()
+  activePickerType.value = 'none'
+  showAudioSettings.value = true
+}
+
+const closeAudioSettings = () => {
+  showAudioSettings.value = false
+}
+
+const onStartSurahChange = () => {
+  settingsStartAyah.value = 1
+  settingsEndSurah.value = settingsStartSurah.value
+  settingsEndAyah.value = endSurahTotalAyah.value
+}
+
+const onEndSurahChange = () => {
+  settingsEndAyah.value = endSurahTotalAyah.value
+  if (settingsEndSurah.value < settingsStartSurah.value) {
+    settingsStartSurah.value = settingsEndSurah.value
+    settingsStartAyah.value = 1
+  }
+}
+
+const generateVerseQueue = (startSurah: number, startAyah: number, endSurah: number, endAyah: number) => {
+  const queue: { surah: number; ayah: number; verse_key: string }[] = []
+  if (startSurah > endSurah || (startSurah === endSurah && startAyah > endAyah)) {
+    return queue
+  }
+  for (let s = startSurah; s <= endSurah; s++) {
+    const surahMeta = surahOptions.value.find(x => x.number === s)
+    if (!surahMeta) continue
+    const total = surahMeta.total_ayah
+    const sAyah = (s === startSurah) ? startAyah : 1
+    const eAyah = (s === endSurah) ? endAyah : total
+    for (let a = sAyah; a <= eAyah; a++) {
+      queue.push({ surah: s, ayah: a, verse_key: `${s}:${a}` })
+    }
+  }
+  return queue
+}
+
+const slideToPage = async (targetPage: number) => {
+  const distance = targetPage - pageNumber.value
+  if (Math.abs(distance) !== 1) {
+    await goToPage(targetPage)
+    return
+  }
+
+  const viewportWidth = viewportRef.value?.clientWidth || window.innerWidth
+  swipeAnimating.value = true
+  swipeOffset.value = distance > 0 ? viewportWidth : -viewportWidth
+  await new Promise(resolve => window.setTimeout(resolve, 235))
+  await goToPage(targetPage)
+  swipeAnimating.value = false
+  swipeOffset.value = 0
+}
+
+const syncPageForVerse = async (surah: number, ayah: number): Promise<boolean> => {
+  const isOnCurrentPage = pageData.value?.ayahs.some(x => x.verse_key === `${surah}:${ayah}`)
+  if (isOnCurrentPage) return false
+  try {
+    const res = await apiFetch<{ data: { page: number } }>(`/surahs/${surah}/ayahs/${ayah}`)
+    if (res.data && res.data.page !== pageNumber.value) {
+      shouldAutoplayNextPage.value = true
+      await slideToPage(res.data.page)
+      return true
+    }
+  } catch (e) {
+    console.error('Failed to sync page for verse:', e)
+  }
+  return false
+}
+
+const toggleFullscreen = () => {
+  if (suppressNextLineTap.value) {
+    suppressNextLineTap.value = false
+    return
+  }
+  isFullscreenMode.value = !isFullscreenMode.value
+}
+
+
+
+const startCustomRangePlayback = async () => {
+  if (settingsStartSurah.value > settingsEndSurah.value) return
+  if (settingsStartSurah.value === settingsEndSurah.value && settingsStartAyah.value > settingsEndAyah.value) {
+    settingsEndAyah.value = settingsStartAyah.value
+  }
+  const queue = generateVerseQueue(
+    settingsStartSurah.value,
+    settingsStartAyah.value,
+    settingsEndSurah.value,
+    settingsEndAyah.value
+  )
+  if (queue.length === 0) return
+  activeMurottalQueue.value = queue
+  queueIndex.value = 0
+  currentAyahRepeatCount.value = 1
+  currentRangeRepeatCount.value = 1
+  isCustomRangeActive.value = true
+  closeAudioSettings()
+  stopPlayer()
+  const pageChanged = await syncPageForVerse(queue[0].surah, queue[0].ayah)
+  if (!pageChanged) playPlayerAyah()
+}
+
+const toggleRepeatMode = () => {
+  if (isCustomRangeActive.value) {
+    isCustomRangeActive.value = false
+    resetPlayer()
+    return
+  }
+
+  const cycle = [1, 2, 3, 4, 5, 10, 20, 99999]
+  const currentIndex = cycle.indexOf(localRepeatCount.value)
+  const nextIndex = (currentIndex + 1) % cycle.length
+  localRepeatCount.value = cycle[nextIndex]
+  currentLocalAyahRepeatCount.value = 1
+}
+
+// Custom select helper values
+const startSurahName = computed(() => {
+  const s = surahOptions.value.find(x => x.number === settingsStartSurah.value)
+  return s ? `${s.number}. ${s.name_latin}` : 'Pilih Surat'
+})
+
+const endSurahName = computed(() => {
+  const s = surahOptions.value.find(x => x.number === settingsEndSurah.value)
+  return s ? `${s.number}. ${s.name_latin}` : 'Pilih Surat'
+})
+
+const ayahRepeatLabel = computed(() => `${settingsAyahRepeat.value}x`)
+const rangeRepeatLabel = computed(() => settingsRangeRepeat.value === 99999 ? '\u221E' : settingsRangeRepeat.value + 'x')
+
+const pickerTitle = computed(() => {
+  switch (activePickerType.value) {
+    case 'startSurah': return 'Dari Surat'
+    case 'startAyah': return 'Dari Ayat'
+    case 'endSurah': return 'Hingga Surat'
+    case 'endAyah': return 'Hingga Ayat'
+    case 'ayahRepeat': return 'Pengulangan Ayat'
+    case 'rangeRepeat': return 'Pengulangan Keseluruhan'
+    default: return ''
+  }
+})
+
+const filteredSettingsSurahs = computed(() => {
+  const query = settingsSurahSearch.value.trim().toLowerCase()
+  if (!query) return surahOptions.value
+  return surahOptions.value.filter(s =>
+    s.name_latin.toLowerCase().includes(query) ||
+    s.name_arabic.includes(query) ||
+    String(s.number) === query
+  )
+})
+
+const repeatOptions = computed(() => {
+  if (activePickerType.value === 'ayahRepeat') {
+    return [
+      { value: 1, label: '1x (Sekali putar)' },
+      { value: 2, label: '2x' },
+      { value: 3, label: '3x' },
+      { value: 5, label: '5x' },
+      { value: 10, label: '10x' },
+      { value: 20, label: '20x' },
+    ]
+  }
+  if (activePickerType.value === 'rangeRepeat') {
+    return [
+      { value: 1, label: '1x (Sekali putar)' },
+      { value: 2, label: '2x' },
+      { value: 3, label: '3x' },
+      { value: 5, label: '5x' },
+      { value: 10, label: '10x' },
+      { value: 20, label: '20x' },
+      { value: 99999, label: '\u221E (Tanpa Batas)' }
+    ]
+  }
+  return []
+})
+
+const isSurahDisabled = (num: number) => {
+  if (activePickerType.value === 'endSurah') {
+    return num < settingsStartSurah.value
+  }
+  return false
+}
+
+const isAyahDisabled = (num: number) => {
+  if (activePickerType.value === 'endAyah') {
+    return settingsStartSurah.value === settingsEndSurah.value && num < settingsStartAyah.value
+  }
+  return false
+}
+
+const selectSurahOption = (num: number) => {
+  if (activePickerType.value === 'startSurah') {
+    settingsStartSurah.value = num
+    onStartSurahChange()
+  } else if (activePickerType.value === 'endSurah') {
+    settingsEndSurah.value = num
+    onEndSurahChange()
+  }
+  activePickerType.value = 'none'
+  settingsSurahSearch.value = ''
+}
+
+const selectAyahOption = (num: number) => {
+  if (activePickerType.value === 'startAyah') {
+    settingsStartAyah.value = num
+  } else if (activePickerType.value === 'endAyah') {
+    settingsEndAyah.value = num
+  }
+  activePickerType.value = 'none'
+}
+
+const selectRepeatOption = (val: number) => {
+  if (activePickerType.value === 'ayahRepeat') {
+    settingsAyahRepeat.value = val
+  } else if (activePickerType.value === 'rangeRepeat') {
+    settingsRangeRepeat.value = val
+  }
+  activePickerType.value = 'none'
 }
 const openNavigator = () => {
   navigatorError.value = ''
@@ -734,6 +1324,18 @@ const openDirectPage = () => {
   goToPage(page)
 }
 
+watch(activePickerType, async (newVal) => {
+  if (newVal === 'none') return
+  if (newVal === 'startAyah' || newVal === 'endAyah') return
+  await nextTick()
+  setTimeout(() => {
+    const activeEl = document.querySelector('.qari-sheet .surah-picker__item--active, .qari-sheet .picker-option-item--active')
+    if (activeEl) {
+      activeEl.scrollIntoView({ block: 'center', behavior: 'auto' })
+    }
+  }, 60)
+})
+
 watch(() => route.params.pageNumber, handlePageChange)
 
 onMounted(() => {
@@ -749,6 +1351,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 <style scoped>
 .mushaf-page {
   min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   padding-bottom: calc(72px + var(--safe-bottom));
   overflow-x: hidden;
   background: #fffefa;
@@ -766,6 +1370,12 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   border-bottom: 1px solid rgba(31, 54, 45, .08);
   background: rgba(255, 255, 253, .97);
   backdrop-filter: blur(18px);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mushaf-header--hidden {
+  pointer-events: none;
+  transform: translateY(-110%);
 }
 
 .mushaf-header__main {
@@ -831,7 +1441,11 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-content {
   width: 100%;
   max-width: 620px;
-  margin: 0 auto;
+  margin: auto auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mushaf-viewport {
@@ -1466,6 +2080,12 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   background: rgba(255, 255, 253, .97);
   box-shadow: 0 -8px 26px rgba(28, 46, 39, .08);
   backdrop-filter: blur(18px);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mushaf-player--hidden {
+  pointer-events: none;
+  transform: translateY(110%);
 }
 
 .mushaf-player__play {
@@ -1490,6 +2110,295 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-player__qari select { position: absolute; inset: 0; width: 100%; appearance: none; border: 0; opacity: 0; cursor: pointer; }
 .mushaf-player__qari svg { position: absolute; top: 50%; left: 50%; width: 19px; height: 19px; pointer-events: none; transform: translate(-50%, -50%); }
 .mushaf-player__qari select option { color: #26362f; font-size: .8rem; }
+
+.mushaf-player__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.mushaf-player__btn {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #7b8680;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.mushaf-player__btn:hover,
+.mushaf-player__btn:active {
+  color: #0c8a69;
+  background: rgba(21, 145, 116, 0.08);
+}
+
+.mushaf-player__btn--active {
+  color: #0c8a69;
+  background: rgba(21, 145, 116, 0.06);
+}
+
+.mushaf-player__repeat-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #159174;
+  color: white;
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 10px;
+  line-height: 1;
+}
+
+.audio-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.audio-settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.audio-settings-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.audio-settings-col label,
+.audio-settings-field label {
+  color: #314039;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.audio-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.audio-settings-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.settings-action-btn {
+  height: 48px;
+  border: 1px solid #dce3df;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.settings-action-btn--cancel {
+  background: #fff;
+  color: #7b8680;
+}
+
+.settings-action-btn--cancel:active {
+  background: #f4f6f5;
+}
+
+.settings-action-btn--play {
+  background: #159174;
+  color: white;
+  border-color: #159174;
+}
+
+.settings-action-btn--play:active {
+  background: #0f735b;
+  border-color: #0f735b;
+}
+
+.custom-select-trigger {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #dce3df;
+  border-radius: 13px;
+  padding: 0 16px;
+  color: #314039;
+  background: #fbfcfa;
+  font-size: .8rem;
+  font-weight: 750;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.custom-select-trigger:active {
+  background: #f0f2f1;
+  border-color: #cdd6d2;
+}
+
+.custom-select-trigger svg {
+  width: 16px;
+  height: 16px;
+  color: #159174;
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #dce3df;
+  padding-bottom: 12px;
+}
+
+.picker-back {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #314039;
+  background: #f4f6f5;
+  cursor: pointer;
+}
+
+.picker-back svg {
+  width: 20px;
+  height: 20px;
+}
+
+.picker-search-bar {
+  margin-bottom: 12px;
+}
+
+.picker-search-input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #dce3df;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  outline: none;
+  background: #fbfcfa;
+}
+
+.picker-options-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overscroll-behavior: contain;
+}
+
+.picker-option-item {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border: 1px solid #f4f6f5;
+  border-radius: 10px;
+  background: transparent;
+  color: #314039;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.picker-option-item:active {
+  background: #f4f6f5;
+}
+
+.picker-option-item--active {
+  background: #e9f6f0 !important;
+  color: #087d59;
+  border-color: #ccece2;
+}
+
+.picker-option-item--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.picker-option-item__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.picker-option-item__number {
+  min-width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f4f6f5;
+  color: #7b8680;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.picker-option-item--active .picker-option-item__number {
+  background: #ccece2;
+  color: #087d59;
+}
+
+.picker-option-item__arabic {
+  font-family: 'me_quran', 'Scheherazade', sans-serif;
+  font-size: 1.1rem;
+}
+
+.ayah-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.ayah-picker-cell {
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #dce3df;
+  border-radius: 10px;
+  background: #fff;
+  color: #314039;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ayah-picker-cell--active {
+  background: #159174;
+  color: white;
+  border-color: #159174;
+}
+
+.ayah-picker-cell--disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: #f4f6f5;
+  border-color: #e8eae7;
+}
 
 .navigator-dynamic { display: flex; flex-direction: column; gap: 14px; }
 .navigator-fields-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 10px; }
@@ -1664,4 +2573,61 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   color: #fff;
   background: #087d59;
   box-shadow: 0 5px 13px rgba(8, 125, 89, .2);
-}</style>
+}
+/* Unified reader chrome */
+.mushaf-header {
+  border-bottom-color: rgba(255,255,255,.1);
+  color: #fff;
+  background: linear-gradient(135deg, #0b654f 0%, #07513f 58%, #063f35 100%);
+  box-shadow: 0 4px 16px rgba(4,55,43,.2);
+}
+.mushaf-header__back {
+  color: #fff;
+  background: rgba(255,255,255,.1);
+}
+.mushaf-header__back:active { background: rgba(255,255,255,.2); }
+.mushaf-header__mode { color: #FBBF24; }
+.mushaf-header__title strong { color: #fff; }
+.mushaf-header__title small { color: rgba(255,255,255,.72); }
+.mushaf-header__title small span { color: rgba(243,217,148,.8); }
+.mushaf-header__browse {
+  color: #fff;
+  background: rgba(255,255,255,.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.mushaf-content { cursor: pointer; }
+.mushaf-player {
+  gap: 10px;
+  padding: 8px 12px calc(8px + var(--safe-bottom));
+}
+.mushaf-player__actions {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #e2ece7;
+  border-radius: 999px;
+  background: #f1f7f4;
+}
+.mushaf-player__play,
+.mushaf-player__btn {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+.mushaf-player__play {
+  border: 0;
+  color: #fff;
+  background: #12866a;
+  box-shadow: 0 4px 10px rgba(18,134,106,.2);
+}
+.mushaf-player__play svg,
+.mushaf-player__btn svg { width: 20px; height: 20px; }
+.mushaf-player__btn { color: #527067; }
+.mushaf-player__btn:hover,
+.mushaf-player__btn:active,
+.mushaf-player__btn--active { color: #087d59; background: #e2f0e9; }
+.mushaf-player__qari-select { gap: 8px; }
+.mushaf-player__qari-select > img { width: 34px; height: 34px; flex-basis: 34px; }
+.mushaf-player__qari-select > svg { width: 16px; height: 16px; flex-basis: 16px; }
+/* Header optical alignment */
+.mushaf-header { gap: 12px; padding-right: 12px; padding-left: 12px; }
+.mushaf-header__main { padding-left: 1px; }</style>
