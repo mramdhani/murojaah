@@ -402,14 +402,6 @@
           <div class="empty-due__icon">🎉</div>
           <p class="empty-due__title">Semua hafalan sudah aman!</p>
           <p class="empty-due__sub">Hebat, belum ada jadwal review lagi hari ini.</p>
-          <div class="empty-due__actions">
-            <button type="button" class="btn btn-outline empty-due__btn" @click="openDrawer('learning')">
-              Murojaah Mandiri
-            </button>
-            <button type="button" class="btn btn-ghost empty-due__btn" @click="openDrawer('listening')">
-              Mode Mendengarkan
-            </button>
-          </div>
         </div>
       </section>
       <section v-else class="section">
@@ -727,7 +719,10 @@ const pct = (surah: SurahProgress, status: string) => {
 }
 
 const goToSurah = (surahId: number) => {
-  router.push(`/progress/${surahId}`)
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(30)
+  }
+  router.push({ path: `/remote/${surahId}/1`, query: { mode: 'learning' } })
 }
 
 const goToRemote = (surah: any) => {

@@ -1,5 +1,5 @@
 <template>
-  <div class="remote-page" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
+  <div class="remote-page" :class="{ 'remote-page--hidden': isHiddenState }" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
     <!-- Header -->
     <header class="remote-header">
       <div class="remote-header__left">
@@ -8,12 +8,15 @@
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <div class="remote-header__surah-trigger" @click="openNavigator">
-          <span class="header-eyebrow" :class="'header-eyebrow--' + sessionMode">
+        <div class="remote-header__surah-info">
+          <button type="button" class="header-eyebrow" :class="'header-eyebrow--' + sessionMode" @click.stop="openModeDrawer">
             {{ sessionMode === 'listening' ? 'Mendengarkan' : 'Uji Hafalan' }}
-          </span>
-          <h1 class="remote-header__title">{{ surahNumber }}. {{ surahName }}</h1>
-          <div class="remote-header__subtitle">Ayat {{ currentAyahNumber }} dari {{ totalAyah }}</div>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width: 12px; height: 12px; margin-left: 2px;"><path d="m6 8 4 4 4-4"/></svg>
+          </button>
+          <div class="remote-header__surah-trigger" @click="openNavigator">
+            <h1 class="remote-header__title">{{ surahNumber }}. {{ surahName }}</h1>
+            <div class="remote-header__subtitle">Ayat {{ currentAyahNumber }} dari {{ totalAyah }}</div>
+          </div>
         </div>
       </div>
       <button type="button" class="remote-header__browse" aria-label="Pilih surat dan ayat" @click="openNavigator">
@@ -86,15 +89,99 @@
         <Transition name="ayah" mode="out-in">
           <!-- Hidden State -->
           <div v-if="!isRevealed" class="remote-hidden" key="hidden">
-            <div class="remote-hidden__icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
+            <!-- Surah label -->
+            <p class="rh-label">{{ surahName }}</p>
+
+            <!-- Ayat number: two clean nested circles -->
+            <div class="rh-circle-outer" :class="{ 'rh-circle-outer--recording': voiceState === 'recording' }">
+              <!-- Concentric audio pulses — only when recording -->
+              <span v-if="voiceState === 'recording'" class="rh-pulse-ring rh-pulse-ring--1" aria-hidden="true"></span>
+              <span v-if="voiceState === 'recording'" class="rh-pulse-ring rh-pulse-ring--2" aria-hidden="true"></span>
+
+              <div class="rh-circle-inner">
+                <span class="rh-num">{{ currentAyahNumber }}</span>
+              </div>
             </div>
-            <p class="remote-hidden__text">AYAT DISEMBUNYIKAN</p>
-            <p class="remote-hidden__hint">Coba lanjutkan dari hafalan dulu, lalu ketuk untuk cek ayat</p>
+
+            <!-- Action buttons: side-by-side to avoid pill overload -->
+            <div class="rh-actions-row">
+              <!-- Voice state idle/recording -->
+              <button
+                v-if="voiceState === 'idle'"
+                type="button"
+                class="rh-action-btn rh-action-btn--record"
+                @click.stop="startRecording"
+              >
+                <!-- Red Record Dot Icon -->
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true" style="color: #ef4444; flex-shrink: 0;">
+                  <circle cx="4" cy="4" r="4" />
+                </svg>
+                <span>Rekam Hafalan</span>
+              </button>
+
+              <button
+                v-else-if="voiceState === 'recording'"
+                type="button"
+                class="rh-action-btn rh-action-btn--recording"
+                @click.stop="stopRecording"
+              >
+                <span class="rh-voice-indicator"></span>
+                <span>Selesai ({{ voiceDuration }}s)</span>
+              </button>
+
+              <div v-else-if="voiceState === 'review'" class="rh-voice-player" @click.stop>
+                <button
+                  type="button"
+                  class="rh-voice-control-btn rh-voice-control-btn--play"
+                  @click.stop="togglePlayVoice"
+                >
+                  <svg v-if="isPlayingVoice" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1"/>
+                    <rect x="14" y="4" width="4" height="16" rx="1"/>
+                  </svg>
+                  <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                </button>
+                <span class="rh-voice-status">{{ voiceDuration }}s</span>
+                <button
+                  type="button"
+                  class="rh-voice-control-btn rh-voice-control-btn--delete"
+                  @click.stop="deleteVoice"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Hint button -->
+              <button
+                v-if="currentAyah && !showFirstWordHint"
+                type="button"
+                class="rh-action-btn rh-action-btn--hint"
+                @click.stop="showFirstWordHint = true"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>Intip Kata</span>
+              </button>
+            </div>
+
+            <!-- Hint Word Display (rendered outside Actions row when active) -->
+            <div v-if="showFirstWordHint" class="rh-hint-word" @click.stop>
+              <p class="rh-hint-word__label">Kata pertama</p>
+              <p class="rh-hint-word__arabic text-arabic">{{ firstArabicWord }}</p>
+            </div>
+
+            <!-- Highlighted instruction without being a pill button -->
+            <div class="rh-reveal-instruction" @click.stop="toggleReveal">
+              <span class="rh-reveal-dot"></span>
+              <span class="rh-reveal-text">Ketuk layar untuk lihat ayat</span>
+            </div>
           </div>
 
           <!-- Revealed State -->
@@ -880,6 +967,7 @@ const playAudio = () => {
 onUnmounted(() => {
   isUnmounted = true
   stopAudio()
+  cleanupVoice()
 })
 
 const currentSurahMeta = computed(() => surahList.value.find(s => s.id === surahId.value) || null)
@@ -887,9 +975,133 @@ const surahName = computed(() => currentAyah.value?.surah_name || lastSurahSnaps
 const surahNumber = computed(() => currentAyah.value?.surah_number || lastSurahSnapshot.value?.number || currentSurahMeta.value?.number || surahId.value)
 const totalAyah = computed(() => currentAyah.value?.total_ayah || lastSurahSnapshot.value?.total_ayah || currentSurahMeta.value?.total_ayah || 0)
 const isListeningMode = computed(() => sessionMode.value === 'listening')
+const isHiddenState = computed(() => !isListeningMode.value && !isRevealed.value)
 const shouldAutoplayAudio = computed(() => isListeningMode.value || learningAutoplayAudio.value)
 const shouldAutoAdvance = computed(() => isListeningMode.value && listeningAutoNextAyah.value)
 const remoteRouteQuery = computed(() => ({ mode: sessionMode.value }))
+
+const showFirstWordHint = ref(false)
+const firstArabicWord = computed(() => {
+  const text = currentAyah.value?.text_arabic || ''
+  return text.trim().split(' ')[0] || ''
+})
+
+// Voice recording variables for self-murojaah
+const voiceState = ref<'idle' | 'recording' | 'review'>('idle')
+const mediaRecorder = ref<MediaRecorder | null>(null)
+const voiceBlobUrl = ref<string | null>(null)
+const voiceAudio = ref<HTMLAudioElement | null>(null)
+const isPlayingVoice = ref(false)
+const voiceDuration = ref(0)
+
+let audioChunks: Blob[] = []
+let recordingInterval: any = null
+
+const startRecording = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    audioChunks = []
+    
+    // Stop any existing main audio playback
+    pauseAudio()
+    if (isPlayingVoice.value && voiceAudio.value) {
+      voiceAudio.value.pause()
+      isPlayingVoice.value = false
+    }
+
+    const options = { mimeType: 'audio/webm' }
+    let recorder: MediaRecorder
+    try {
+      recorder = new MediaRecorder(stream, options)
+    } catch (err) {
+      recorder = new MediaRecorder(stream) // Fallback for browsers with strict codecs (like Safari)
+    }
+    
+    mediaRecorder.value = recorder
+    
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        audioChunks.push(e.data)
+      }
+    }
+    
+    recorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: recorder.mimeType || 'audio/webm' })
+      if (voiceBlobUrl.value) {
+        URL.revokeObjectURL(voiceBlobUrl.value)
+      }
+      voiceBlobUrl.value = URL.createObjectURL(blob)
+      voiceState.value = 'review'
+      
+      // Stop media tracks to turn off mic light
+      stream.getTracks().forEach(track => track.stop())
+    }
+    
+    voiceState.value = 'recording'
+    voiceDuration.value = 0
+    const startTime = Date.now()
+    recordingInterval = setInterval(() => {
+      voiceDuration.value = Math.round((Date.now() - startTime) / 1000)
+    }, 1000)
+    
+    recorder.start()
+  } catch (err) {
+    console.error('Microphone access denied:', err)
+    alert('Gagal mengakses mikrofon. Pastikan izin mikrofon telah diberikan.')
+  }
+}
+
+const stopRecording = () => {
+  if (recordingInterval) {
+    clearInterval(recordingInterval)
+  }
+  if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+    mediaRecorder.value.stop()
+  }
+}
+
+const togglePlayVoice = () => {
+  if (!voiceBlobUrl.value) return
+  
+  if (!voiceAudio.value) {
+    voiceAudio.value = new Audio(voiceBlobUrl.value)
+    voiceAudio.value.onended = () => {
+      isPlayingVoice.value = false
+    }
+  }
+  
+  if (isPlayingVoice.value) {
+    voiceAudio.value.pause()
+    isPlayingVoice.value = false
+  } else {
+    // Stop main qari player before playing own voice
+    pauseAudio()
+    
+    voiceAudio.value.play()
+    isPlayingVoice.value = true
+  }
+}
+
+const deleteVoice = () => {
+  cleanupVoice()
+}
+
+const cleanupVoice = () => {
+  if (recordingInterval) {
+    clearInterval(recordingInterval)
+  }
+  if (voiceAudio.value) {
+    voiceAudio.value.pause()
+    voiceAudio.value = null
+  }
+  if (voiceBlobUrl.value) {
+    URL.revokeObjectURL(voiceBlobUrl.value)
+    voiceBlobUrl.value = null
+  }
+  voiceState.value = 'idle'
+  isPlayingVoice.value = false
+  voiceDuration.value = 0
+}
 
 const buildRemoteRoute = (targetSurahId: number, targetAyahNumber: number) => ({
   path: `/remote/${targetSurahId}/${targetAyahNumber}`,
@@ -1435,15 +1647,23 @@ watch(() => [route.params.surahId, route.params.ayahNumber], async (newVals, old
 })
 
 watch(currentAyahNumber, async () => {
+  cleanupVoice()
+  showFirstWordHint.value = false
   if (isListeningMode.value) {
     await scrollListeningAyahIntoView()
   }
 })
 
-watch([isListeningMode, learningRevealMode], ([active]) => {
-  if (!active) {
+watch(isListeningMode, async (active) => {
+  if (active) {
+    await initializeListeningAyahs(currentAyahNumber.value)
+  } else {
     listeningRevealOverride.value = null
   }
+  syncRevealState()
+})
+
+watch(learningRevealMode, () => {
   syncRevealState()
 })
 
@@ -1475,11 +1695,61 @@ useHead({
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
-  max-width: 540px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
   position: relative;
   touch-action: pan-x;
+  transition: background 0.35s ease;
 }
+
+/* ─── Full-page immersive dark mode when ayat is hidden ─── */
+.remote-page--hidden {
+  background: #032d1d;
+}
+
+.remote-page--hidden .remote-header {
+  background: linear-gradient(135deg, #022318 0%, #043526 100%);
+  box-shadow: none;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.remote-page--hidden .remote-content {
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.remote-page--hidden .remote-action-bar {
+  background: #032d1d;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.3);
+}
+
+.remote-page--hidden .action-btn--back {
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.remote-page--hidden .action-btn--forgot {
+  color: #fca5a5;
+  background: rgba(248,113,113,0.1);
+  border-color: rgba(248,113,113,0.15);
+}
+
+.remote-page--hidden .action-btn--doubtful {
+  color: #fcd34d;
+  background: rgba(252,211,77,0.1);
+  border-color: rgba(252,211,77,0.15);
+}
+
+.remote-page--hidden .action-btn--fluent {
+  background: linear-gradient(135deg, #065f46, #0a9e72);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(10,158,114,0.4);
+}
+
 
 /* Header ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â 12% */
 .remote-header {
@@ -1626,46 +1896,363 @@ useHead({
   -webkit-user-select: none;
   user-select: none;
   overflow: hidden;
+  /* Smooth background transition when toggling hidden/revealed state */
+  transition: background 0.4s ease;
 }
 
+/* ───── HIDDEN STATE — Clean Redesign ───── */
 .remote-hidden {
-  text-align: center;
-  animation: scaleIn 0.3s ease;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  /* Account for the fixed action bar (~80px) + safe area */
+  padding: 0 32px calc(96px + env(safe-area-inset-bottom, 0px));
   touch-action: none;
+  user-select: none;
 }
 
-.remote-hidden__icon {
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 16px;
+.rh-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* Two real div circles — always symmetrical */
+.rh-circle-outer {
+  position: relative;
+  width: 176px;
+  height: 176px;
   border-radius: 50%;
-  background: var(--color-bg-subtle);
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  animation: rhBreath 3.5s ease-in-out infinite;
+}
+
+.rh-circle-outer--recording {
+  border-color: rgba(239, 68, 68, 0.4);
+  animation: rhBreathRecording 2.4s ease-in-out infinite;
+}
+
+.rh-circle-inner {
+  position: relative;
+  z-index: 2;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  place-items: center;
+}
+
+@keyframes rhBreath {
+  0%, 100% { transform: scale(1);    border-color: rgba(212, 175, 55, 0.3); }
+  50%       { transform: scale(1.05); border-color: rgba(212, 175, 55, 0.65); }
+}
+
+@keyframes rhBreathRecording {
+  0%, 100% { transform: scale(1);    border-color: rgba(239, 68, 68, 0.3); }
+  50%       { transform: scale(1.04); border-color: rgba(239, 68, 68, 0.55); }
+}
+
+/* Concentric audio pulse waves scaling outwards behind circle */
+.rh-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 2px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.04);
+  z-index: 1;
+}
+
+.rh-pulse-ring--1 {
+  animation: rhVoicePulseRing 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.rh-pulse-ring--2 {
+  animation: rhVoicePulseRing 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation-delay: 0.8s;
+}
+
+@keyframes rhVoicePulseRing {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+/* Landscape orientation optimization for small heights */
+@media (max-height: 500px) {
+  .remote-hidden {
+    gap: 8px;
+    padding: 8px 16px calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .rh-circle-outer {
+    width: 110px;
+    height: 110px;
+  }
+  .rh-circle-inner {
+    width: 82px;
+    height: 82px;
+  }
+  .rh-num {
+    font-size: 2.6rem;
+  }
+  .rh-hint-word__arabic {
+    font-size: 2.2rem;
+  }
+  .rh-hint-zone {
+    min-height: 48px;
+  }
+}
+
+.rh-num {
+  font-size: 3.8rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.rh-progress-text {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 500;
+}
+
+.rh-progress-text strong {
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 700;
+}
+
+/* Hint zone — fixed min-height keeps layout stable when toggling */
+.rh-hint-zone {
+  min-height: 60px;
+  display: grid;
+  place-items: center;
+}
+
+.rh-hint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rh-hint-btn:active {
+  transform: scale(0.93);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Arabic hint word — separate display below button */
+.rh-hint-word {
+  text-align: center;
+  animation: fadeSlideUp 0.25s ease;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rh-hint-word__label {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.rh-hint-word__arabic {
+  font-size: 2.8rem;
+  /* Soft warm white — readable but not jarring on dark green */
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  line-height: 1.6;
+}
+
+.rh-reveal-instruction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rh-reveal-instruction:active {
+  opacity: 0.7;
+}
+
+.rh-reveal-dot {
+  width: 6px;
+  height: 6px;
+  background: #34d399; /* Emerald accent */
+  border-radius: 50%;
+  box-shadow: 0 0 8px #34d399;
+  animation: rhDotPulse 1.8s infinite ease-in-out;
+}
+
+.rh-reveal-text {
+  font-size: 0.72rem;
+  color: #34d399; /* Highlighted in Emerald */
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@keyframes rhDotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.6); opacity: 1; }
+}
+
+/* ─── Side-by-Side Action Buttons ─── */
+.rh-actions-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-muted);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+  gap: 12px;
+  width: 100%;
+  margin: 4px 0;
+  z-index: 10;
 }
 
-.remote-hidden__text {
-  font-size: 1.125rem;
+.rh-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 99px;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rh-action-btn:active {
+  transform: scale(0.95);
+}
+
+.rh-action-btn--record {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+}
+
+.rh-action-btn--record:active {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.rh-action-btn--recording {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.rh-action-btn--hint {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rh-action-btn--hint:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rh-voice-indicator {
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: rhRecordPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes rhRecordPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+.rh-voice-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 5px 12px;
+  border-radius: 99px;
+  animation: fadeSlideUp 0.22s ease;
+}
+
+.rh-voice-status {
+  font-size: 0.72rem;
   font-weight: 700;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.55);
 }
 
-.remote-hidden__hint {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
+.rh-voice-control-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.remote-hidden__status {
-  margin-top: 12px;
-  font-size: 0.8125rem;
-  color: var(--color-primary);
-  font-weight: 600;
+.rh-voice-control-btn:active {
+  transform: scale(0.9);
 }
+
+.rh-voice-control-btn--play {
+  background: #FFF;
+  color: #032d1d;
+}
+
+.rh-voice-control-btn--play:active {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.rh-voice-control-btn--delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.rh-voice-control-btn--delete:active {
+  background: rgba(239, 68, 68, 0.25);
+}
+
 
 .remote-revealed {
   display: flex;
@@ -1680,12 +2267,13 @@ useHead({
 }
 
 .remote-ayah-card {
-  background: #FAF8F2;
-  border: 2px solid #E6DFCE;
+  /* Slightly warm cream — easier transition from dark hidden state than pure white */
+  background: #F5F1E8;
+  border: 1.5px solid #DDD5C0;
   border-radius: var(--radius-lg);
   padding: 20px 12px;
   margin-bottom: 16px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06), inset 0 1px 3px rgba(0,0,0,0.02);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -1798,10 +2386,9 @@ useHead({
 .remote-action-bar {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   width: 100%;
-  max-width: 540px;
+  max-width: 100%;
   display: flex;
   gap: 10px;
   align-items: stretch;
@@ -2671,22 +3258,54 @@ useHead({
   font-size: 1rem;
 }
 
+.remote-header__surah-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
 .header-eyebrow {
-  display: block;
-  font-size: 0.62rem;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6rem;
+  font-weight: 850;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 5px;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
   text-align: left;
+  cursor: pointer;
+  border: none;
+  padding: 4.5px 10px;
+  border-radius: 99px;
+  transition: transform 0.2s, background 0.22s, color 0.22s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.header-eyebrow:active {
+  transform: scale(0.95);
 }
 
 .header-eyebrow--learning {
-  color: #34D399; /* Emerald */
+  background: rgba(52, 211, 153, 0.15); /* Emerald Tint */
+  color: #34D399;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.header-eyebrow--learning:active {
+  background: rgba(52, 211, 153, 0.25);
 }
 
 .header-eyebrow--listening {
-  color: #FBBF24; /* Amber Gold */
+  background: rgba(99, 102, 241, 0.18); /* Indigo Tint to match Dengar mode card */
+  color: #a5b4fc; /* Light Indigo */
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.header-eyebrow--listening:active {
+  background: rgba(99, 102, 241, 0.3);
 }
 /* Unified reader chrome */
 .remote-header {

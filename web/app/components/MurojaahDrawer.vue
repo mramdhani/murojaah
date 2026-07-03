@@ -28,18 +28,71 @@
           </button>
         </div>
 
-        <div class="drawer-journeys-tabs" role="tablist" aria-label="Pilih cara murojaah">
-          <button type="button" class="journey-tab" :class="{ 'journey-tab--active': selectedJourney === 'quiz' }" role="tab" :aria-selected="selectedJourney === 'quiz'" @click="selectJourney('quiz')">
-            <svg class="journey-tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"/></svg>
-            <span>Uji Ayat</span>
+        <div class="journey-cards" role="tablist" aria-label="Pilih cara murojaah">
+          <!-- Uji Ayat -->
+          <button
+            type="button"
+            class="journey-card journey-card--quiz"
+            :class="{ 'journey-card--active': selectedJourney === 'quiz' }"
+            role="tab"
+            :aria-selected="selectedJourney === 'quiz'"
+            @click="selectJourney('quiz')"
+          >
+            <span v-if="selectedJourney === 'quiz'" class="journey-card__check">
+              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0z"/></svg>
+            </span>
+            <span class="journey-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+            </span>
+            <span class="journey-card__name">Uji Ayat</span>
+            <span class="journey-card__desc">Hafalan ayat per ayat</span>
           </button>
-          <button type="button" class="journey-tab" :class="{ 'journey-tab--active': selectedJourney === 'mushaf' }" role="tab" :aria-selected="selectedJourney === 'mushaf'" @click="selectJourney('mushaf')">
-            <svg class="journey-tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"/></svg>
-            <span>Mushaf</span>
+
+          <!-- Mushaf -->
+          <button
+            type="button"
+            class="journey-card journey-card--mushaf"
+            :class="{ 'journey-card--active': selectedJourney === 'mushaf' }"
+            role="tab"
+            :aria-selected="selectedJourney === 'mushaf'"
+            @click="selectJourney('mushaf')"
+          >
+            <span v-if="selectedJourney === 'mushaf'" class="journey-card__check">
+              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0z"/></svg>
+            </span>
+            <span class="journey-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/>
+                <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"/>
+              </svg>
+            </span>
+            <span class="journey-card__name">Mushaf</span>
+            <span class="journey-card__desc">Tandai hafalan per baris</span>
           </button>
-          <button type="button" class="journey-tab" :class="{ 'journey-tab--active': selectedJourney === 'listening' }" role="tab" :aria-selected="selectedJourney === 'listening'" @click="selectJourney('listening')">
-            <svg class="journey-tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h3v7H6a2 2 0 0 1-2-2v-5Zm16 0h-3v7h1a2 2 0 0 0 2-2v-5Z"/></svg>
-            <span>Dengar</span>
+
+          <!-- Dengar -->
+          <button
+            type="button"
+            class="journey-card journey-card--listening"
+            :class="{ 'journey-card--active': selectedJourney === 'listening' }"
+            role="tab"
+            :aria-selected="selectedJourney === 'listening'"
+            @click="selectJourney('listening')"
+          >
+            <span v-if="selectedJourney === 'listening'" class="journey-card__check">
+              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0z"/></svg>
+            </span>
+            <span class="journey-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 13v-1a8 8 0 0 1 16 0v1"/>
+                <path d="M4 13h3v7H6a2 2 0 0 1-2-2v-5Zm16 0h-3v7h1a2 2 0 0 0 2-2v-5Z"/>
+              </svg>
+            </span>
+            <span class="journey-card__name">Dengar</span>
+            <span class="journey-card__desc">Murottal fokus</span>
           </button>
         </div>
 
@@ -376,48 +429,137 @@ const selectSurah = (surahId: number) => {
   transform: rotate(90deg);
 }
 
-/* Journey selector tabs */
-.drawer-journeys-tabs {
-  display: flex;
-  background: #f2f3ee;
-  border-radius: 14px;
-  padding: 4px;
-  margin: 0 20px 16px;
-  gap: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.03);
+/* Journey Mode Cards */
+.journey-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 20px 18px;
 }
 
-.journey-tab {
-  flex: 1;
+.journey-card {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 2px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: #55625c;
-  font-size: 0.72rem;
-  font-weight: 750;
+  gap: 5px;
+  padding: 14px 6px 12px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(0, 0, 0, 0.05);
+  background: #f4f3ee;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.22s ease,
+              background 0.22s ease,
+              border-color 0.22s ease,
+              color 0.18s ease;
+  text-align: center;
+  color: #6b7280;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.journey-tab:active {
-  transform: scale(0.97);
+.journey-card:active {
+  transform: scale(0.91) !important;
+  transition: transform 0.1s ease !important;
 }
 
-.journey-tab--active {
-  background: #FFF;
-  color: #087d59;
-  box-shadow: 0 2px 8px rgba(4, 39, 25, 0.08);
+.journey-card__check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: grid;
+  place-items: center;
+  animation: checkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.journey-tab__icon {
-  width: 14px;
-  height: 14px;
+@keyframes checkPop {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.journey-card__check svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+}
+
+.journey-card__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.06);
+  transition: background 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-bottom: 2px;
   flex-shrink: 0;
+}
+
+.journey-card__icon svg {
+  width: 22px;
+  height: 22px;
+  transition: stroke 0.18s ease;
+}
+
+.journey-card__name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.journey-card__desc {
+  font-size: 0.6rem;
+  opacity: 0.65;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+/* ─── Uji Ayat — Emerald ─── */
+.journey-card--quiz.journey-card--active {
+  background: linear-gradient(145deg, #054f38 0%, #0a9e72 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(8, 125, 89, 0.42), 0 2px 6px rgba(8, 125, 89, 0.18);
+  transform: translateY(-4px);
+}
+
+.journey-card--quiz.journey-card--active .journey-card__icon {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.06);
+}
+
+/* ─── Mushaf — Warm Amber ─── */
+.journey-card--mushaf.journey-card--active {
+  background: linear-gradient(145deg, #6b2d07 0%, #c2610a 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(194, 97, 10, 0.38), 0 2px 6px rgba(194, 97, 10, 0.18);
+  transform: translateY(-4px);
+}
+
+.journey-card--mushaf.journey-card--active .journey-card__icon {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.06);
+}
+
+/* ─── Dengar — Deep Indigo ─── */
+.journey-card--listening.journey-card--active {
+  background: linear-gradient(145deg, #1a2e5c 0%, #2b5fd4 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(43, 95, 212, 0.38), 0 2px 6px rgba(43, 95, 212, 0.18);
+  transform: translateY(-4px);
+}
+
+.journey-card--listening.journey-card--active .journey-card__icon {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.06);
 }
 
 .drawer-safe-bottom {

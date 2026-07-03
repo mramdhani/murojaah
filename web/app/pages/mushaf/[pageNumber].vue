@@ -806,7 +806,7 @@ const handlePointerMove = (event: PointerEvent) => {
   const pullingPastLast = pageNumber.value === 604 && distance > 0
   if (pullingPastFirst || pullingPastLast) distance *= .24
   swipeOffset.value = distance
-  if (Math.abs(distance) > 8) suppressNextLineTap.value = true
+  if (Math.abs(distance) > 20) suppressNextLineTap.value = true
 }
 
 const handlePointerUp = async (event: PointerEvent) => {
@@ -1440,17 +1440,17 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 .mushaf-content {
   width: 100%;
-  max-width: 620px;
-  margin: auto auto;
+  margin: 0 auto;
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Align to top so it scrolls naturally downwards */
   justify-content: center;
 }
 
 .mushaf-viewport {
   position: relative;
   width: 100%;
+  max-width: 100%; /* Stretch fully to left and right */
   overflow: hidden;
   aspect-ratio: 750 / 1075;
   background: #fffefa;
@@ -2073,8 +2073,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   display: flex;
   align-items: center;
   gap: 11px;
-  max-width: 620px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
   padding: 9px 16px calc(9px + var(--safe-bottom));
   border-top: 1px solid rgba(31, 54, 45, .1);
   background: rgba(255, 255, 253, .97);
@@ -2424,7 +2424,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .navigator-dynamic .navigator-primary { width: 100%; margin-top: 2px; }
 
 @media (min-width: 621px) {
-  .mushaf-header, .mushaf-modes { max-width: 620px; margin-right: auto; margin-left: auto; }
+  /* removed max-width limits to support landscape full width */
 }
 /* Compact reader header */
 .mushaf-header {
@@ -2453,12 +2453,24 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-header__mode {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  color: #087d59;
-  font-size: .61rem;
-  font-weight: 800;
+  gap: 4px;
+  background: rgba(251, 191, 36, 0.16); /* Warm amber/gold tint */
+  color: #FBBF24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  font-size: .6rem;
+  font-weight: 850;
   letter-spacing: .08em;
   text-transform: uppercase;
+  padding: 4.5px 10px;
+  border-radius: 99px;
+  margin-bottom: 5px;
+  transition: transform 0.2s, background 0.22s;
+  cursor: pointer;
+}
+
+.mushaf-header__mode:active {
+  transform: scale(0.95);
+  background: rgba(251, 191, 36, 0.28);
 }
 
 .mushaf-header__mode svg { width: 13px; height: 13px; }
@@ -2630,4 +2642,5 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-player__qari-select > svg { width: 16px; height: 16px; flex-basis: 16px; }
 /* Header optical alignment */
 .mushaf-header { gap: 12px; padding-right: 12px; padding-left: 12px; }
-.mushaf-header__main { padding-left: 1px; }</style>
+.mushaf-header__main { padding-left: 1px; }
+</style>

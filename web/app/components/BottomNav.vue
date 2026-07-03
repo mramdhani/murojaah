@@ -8,12 +8,13 @@
       <span>Beranda</span>
     </NuxtLink>
 
-    <NuxtLink to="/surahs" class="bottom-nav__item" :class="{ active: route.path.startsWith('/surahs') }">
+    <NuxtLink to="/progress" class="bottom-nav__item" :class="{ active: route.path.startsWith('/progress') }">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
       </svg>
-      <span>Surat</span>
+      <span>Progres</span>
     </NuxtLink>
 
     <!-- Murojaah Highlight Button -->
