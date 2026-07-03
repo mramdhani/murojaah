@@ -4114,4 +4114,86 @@ useHead({
 .settings-ayah-grid button { aspect-ratio: 1; border: 1px solid #dce3df; border-radius: 11px; color: #43534c; background: #fbfcfa; font-weight: 750; }
 .settings-ayah-grid button:disabled { opacity: .28; }
 .settings-repeat-option { width: 100%; min-height: 48px; border: 1px solid #eef1ef; border-radius: 10px; padding: 0 16px; color: #314039; background: #fff; text-align: left; font-size: .82rem; font-weight: 650; }
-.settings-option--active { color: #087d59 !important; border-color: #ccece2 !important; background: #e9f6f0 !important; }</style>
+.settings-option--active { color: #087d59 !important; border-color: #ccece2 !important; background: #e9f6f0 !important; }
+
+/* Landscape orientation optimization for modal pickers and sheets */
+@media (max-height: 520px) {
+  .navigator-sheet,
+  .picker-sheet {
+    min-height: 0 !important;
+    max-height: 96dvh !important;
+  }
+  .navigator-sheet__content,
+  .picker-sheet__content,
+  .audio-settings-body {
+    flex: 1 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+  .settings-picker-options,
+  .ayah-picker-grid,
+  .settings-ayah-grid {
+    max-height: 50vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* ─── 2-Column Grid Layout for Landscape Uji Ayat / listening mode ─── */
+  .remote-page {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+  }
+  .remote-header {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    height: 48px !important;
+    padding: 4px 16px !important;
+  }
+  .remote-content {
+    flex: 0 0 60% !important;
+    width: 60% !important;
+    height: calc(100dvh - 48px) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+  .remote-action-bar {
+    position: relative !important;
+    left: 0 !important;
+    transform: none !important;
+    flex: 0 0 40% !important;
+    width: 40% !important;
+    height: calc(100dvh - 48px) !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+    gap: 8px !important;
+    border-top: none !important;
+    border-left: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+  .remote-page--hidden .remote-action-bar {
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: #022318 !important;
+  }
+  .action-btn {
+    width: 100% !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    height: 42px !important;
+    padding: 0 16px !important;
+    flex: 0 0 auto !important;
+  }
+  .action-btn--back {
+    height: 38px !important;
+  }
+  .listening-player {
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+  .listening-player__controls {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .listening-player__qari {
+    width: 100% !important;
+  }
+}
+</style>

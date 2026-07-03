@@ -585,7 +585,7 @@ const currentLocalAyahRepeatCount = ref(1)
 const activePickerType = ref<'none' | 'startSurah' | 'startAyah' | 'endSurah' | 'endAyah' | 'ayahRepeat' | 'rangeRepeat'>('none')
 const settingsSurahSearch = ref('')
 
-const isFullscreenMode = ref(false)
+const isFullscreenMode = useState<boolean>('mushafFullscreenMode', () => false)
 const isSettingsInitialized = useState<boolean>('mushafMurottalSettingsInitialized', () => false)
 
 const settingsStartSurah = useState<number>('mushafMurottalStartSurah', () => 1)
@@ -1350,17 +1350,18 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 <style scoped>
 .mushaf-page {
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(72px + var(--safe-bottom));
-  overflow-x: hidden;
+  overflow: hidden; /* Lock scroll at root level */
   background: #fffefa;
 }
 
 .mushaf-header {
-  position: sticky;
+  position: fixed; /* Fixed at the top */
   top: 0;
+  left: 0;
+  width: 100%;
   z-index: 20;
   min-height: 76px;
   display: flex;
@@ -1443,8 +1444,12 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   margin: 0 auto;
   flex: 1;
   display: flex;
-  align-items: flex-start; /* Align to top so it scrolls naturally downwards */
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto; /* Isolated scroll on the content container */
+  -webkit-overflow-scrolling: touch;
+  padding-top: calc(76px + var(--safe-top)); /* Leaves space for fixed header */
+  padding-bottom: calc(70px + var(--safe-bottom) + 16px); /* Leaves space for fixed player */
 }
 
 .mushaf-viewport {
@@ -1567,13 +1572,21 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   position: relative;
   width: 100%;
   max-width: 620px;
-  min-height: 500px;
+  min-height: 460px;
   max-height: 90dvh;
   overflow: hidden;
-  padding: 10px 20px calc(24px + var(--safe-bottom));
+  padding: 10px 20px calc(16px + var(--safe-bottom));
   border-radius: 26px 26px 0 0;
   background: #fffdfa;
   box-shadow: 0 -18px 50px rgba(17, 35, 28, .2);
+  display: flex;
+  flex-direction: column;
+}
+
+.navigator-sheet__content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .navigator-sheet__handle {
@@ -2519,10 +2532,13 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .qari-sheet {
   width: 100%;
   max-width: 620px;
-  padding: 10px 20px calc(24px + var(--safe-bottom));
+  max-height: 90dvh;
+  padding: 10px 20px calc(16px + var(--safe-bottom));
   border-radius: 26px 26px 0 0;
   background: #fffdfa;
   box-shadow: 0 -18px 50px rgba(17, 35, 28, .2);
+  display: flex;
+  flex-direction: column;
 }
 
 .qari-sheet__handle { width: 42px; height: 4px; margin: 0 auto 15px; border-radius: 999px; background: #d5d9d6; }
@@ -2643,4 +2659,25 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 /* Header optical alignment */
 .mushaf-header { gap: 12px; padding-right: 12px; padding-left: 12px; }
 .mushaf-header__main { padding-left: 1px; }
+
+/* Landscape orientation optimization for modal pickers and sheets */
+@media (max-height: 520px) {
+  .navigator-sheet,
+  .qari-sheet {
+    min-height: 0 !important;
+    max-height: 95dvh !important;
+  }
+  .navigator-sheet__content,
+  .audio-settings-body {
+    flex: 1 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+  .surah-picker__list,
+  .picker-options-list,
+  .qari-list {
+    max-height: 50vh !important;
+    overflow-y: auto !important;
+  }
+}
 </style>
