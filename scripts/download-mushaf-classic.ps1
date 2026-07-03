@@ -1,5 +1,5 @@
 param(
-    [string]$TargetDirectory = "web/public/mushaf/madinah-classic"
+    [string]$TargetDirectory = "web/public/mushaf/madinah-nabawiyyah"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,7 +16,7 @@ $progressFile = Join-Path $target "download-progress.json"
 $downloaded = 0
 
 function Write-DownloadProgress([string]$status, [int]$current, [string]$message = "") {
-    $bytes = (Get-ChildItem -LiteralPath $target -Filter "page-*.jpg" -File -ErrorAction SilentlyContinue |
+    $bytes = (Get-ChildItem -LiteralPath $target -Filter "page-*.gif" -File -ErrorAction SilentlyContinue |
         Measure-Object -Property Length -Sum).Sum
     if ($null -eq $bytes) { $bytes = 0 }
 
@@ -34,7 +34,7 @@ function Write-DownloadProgress([string]$status, [int]$current, [string]$message
 Write-DownloadProgress "running" 0
 
 for ($page = 1; $page -le 604; $page++) {
-    $destination = Join-Path $target ("page-{0:D3}.jpg" -f $page)
+    $destination = Join-Path $target ("page-{0:D3}.gif" -f $page)
     if ((Test-Path -LiteralPath $destination) -and (Get-Item -LiteralPath $destination).Length -gt 1000) {
         $downloaded++
         Write-DownloadProgress "running" $page
@@ -42,13 +42,18 @@ for ($page = 1; $page -le 604; $page++) {
     }
 
     $assetNumber = $page + 3
-    $url = "https://www.searchtruth.com/quran/images/images3/{0:D4}.jpg" -f $assetNumber
+    $url = "https://app.quranflash.com/book/Medina1/epub/EPUB/imgs/{0:D4}.gif" -f $assetNumber
     $temporary = "$destination.part"
     $lastError = ""
+    
+    # Custom headers to bypass bot protection
+    $headers = @{
+        "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
 
     for ($attempt = 1; $attempt -le 3; $attempt++) {
         try {
-            Invoke-WebRequest -Uri $url -OutFile $temporary -UseBasicParsing -TimeoutSec 60
+            Invoke-WebRequest -Uri $url -Headers $headers -OutFile $temporary -UseBasicParsing -TimeoutSec 60
             if ((Get-Item -LiteralPath $temporary).Length -le 1000) {
                 throw "Downloaded file is unexpectedly small"
             }

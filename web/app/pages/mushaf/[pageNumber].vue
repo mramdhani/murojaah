@@ -41,6 +41,7 @@
               :src="localImageUrl(slidePage)"
               :alt="'Mushaf Al-Quran halaman ' + slidePage"
               class="mushaf-image"
+              :class="'mushaf-image--' + mushafTheme"
               decoding="async"
               :fetchpriority="index === 1 ? 'high' : 'low'"
               @load="index === 1 && handleImageLoad()"
@@ -358,6 +359,28 @@
                 </button>
               </div>
 
+              <div class="navigator-field navigator-field--wide" style="margin-top: 14px; margin-bottom: 8px;">
+                <label>Tema Gambar Mushaf</label>
+                <div class="theme-segmented-control">
+                  <button 
+                    type="button" 
+                    class="theme-segment-btn" 
+                    :class="{ 'theme-segment-btn--active': mushafTheme === 'nabawiyyah' }"
+                    @click="mushafTheme = 'nabawiyyah'"
+                  >
+                    Nabawiyyah (HD)
+                  </button>
+                  <button 
+                    type="button" 
+                    class="theme-segment-btn" 
+                    :class="{ 'theme-segment-btn--active': mushafTheme === 'classic' }"
+                    @click="mushafTheme = 'classic'"
+                  >
+                    Klasik
+                  </button>
+                </div>
+              </div>
+
               <button type="submit" class="navigator-primary" :disabled="navigatorLoading || (navigationType === 'surah' && !selectedSurah)">
                 {{ navigatorLoading ? 'Menyiapkan...' : navigationButtonLabel }}
               </button>
@@ -573,6 +596,12 @@ const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
   path: '/'
 })
 
+const mushafTheme = useCookie<'classic' | 'nabawiyyah'>('mushaf_theme', {
+  default: () => 'nabawiyyah',
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
 let playerAudio: HTMLAudioElement | null = null
 let preloadedAudio: HTMLAudioElement | null = null
 let preloadedAudioUrl = ''
@@ -674,8 +703,13 @@ const findSectionForPage = (starts: number[]) => {
   starts.forEach((start, index) => { if (start <= pageNumber.value) value = index + 1 })
   return value
 }
-const localImageUrl = (page: number) =>
-  '/mushaf/madinah-classic/page-' + String(page).padStart(3, '0') + '.jpg'
+const localImageUrl = (page: number) => {
+  const theme = mushafTheme.value || 'nabawiyyah'
+  if (theme === 'classic') {
+    return '/mushaf/madinah-classic/page-' + String(page).padStart(3, '0') + '.jpg'
+  }
+  return '/mushaf/madinah-nabawiyyah/page-' + String(page).padStart(3, '0') + '.gif'
+}
 
 const mushafImageUrl = computed(() => localImageUrl(pageNumber.value))
 
@@ -1491,8 +1525,16 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   object-fit: contain;
   pointer-events: none;
   -webkit-user-drag: none;
-  transform: scale(1.1);
   transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+.mushaf-image--classic {
+  transform: scale(1.1); /* Classic JPG needs zoom to hide wide margins */
+}
+
+.mushaf-image--nabawiyyah {
+  transform: scale(1.0); /* Nabawiyyah GIF already fits perfectly */
 }
 
 .image-loading,
@@ -2199,6 +2241,34 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* Segmented control for theme switching */
+.theme-segmented-control {
+  display: flex;
+  background: #f1f4f2;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.theme-segment-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #556c60;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.theme-segment-btn--active {
+  background: #fff;
+  color: var(--color-primary-dark);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .audio-settings-actions {
