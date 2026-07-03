@@ -103,62 +103,17 @@
               </div>
             </div>
 
-            <!-- Action buttons: side-by-side to avoid pill overload -->
-            <div class="rh-actions-row">
-              <!-- Voice state idle/recording -->
-              <button
-                v-if="voiceState === 'idle'"
-                type="button"
-                class="rh-action-btn rh-action-btn--record"
-                @click.stop="startRecording"
-              >
-                <!-- Red Record Dot Icon -->
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true" style="color: #ef4444; flex-shrink: 0;">
-                  <circle cx="4" cy="4" r="4" />
-                </svg>
-                <span>Rekam Hafalan</span>
-              </button>
-
-              <button
-                v-else-if="voiceState === 'recording'"
-                type="button"
-                class="rh-action-btn rh-action-btn--recording"
-                @click.stop="stopRecording"
-              >
-                <span class="rh-voice-indicator"></span>
-                <span>Selesai ({{ voiceDuration }}s)</span>
-              </button>
-
-              <div v-else-if="voiceState === 'review'" class="rh-voice-player" @click.stop>
-                <button
-                  type="button"
-                  class="rh-voice-control-btn rh-voice-control-btn--play"
-                  @click.stop="togglePlayVoice"
-                >
-                  <svg v-if="isPlayingVoice" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="4" width="4" height="16" rx="1"/>
-                    <rect x="14" y="4" width="4" height="16" rx="1"/>
-                  </svg>
-                  <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="5 3 19 12 5 21 5 3"/>
-                  </svg>
-                </button>
-                <span class="rh-voice-status">{{ voiceDuration }}s</span>
-                <button
-                  type="button"
-                  class="rh-voice-control-btn rh-voice-control-btn--delete"
-                  @click.stop="deleteVoice"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
+            <!-- Hint zone: Intip Kata button or hint word card -->
+            <div class="rh-hint-zone">
+              <div v-if="showFirstWordHint" class="rh-hint-card" @click.stop>
+                <span class="rh-hint-card__label">Kata Pertama</span>
+                <p class="rh-hint-card__arabic text-arabic">{{ firstArabicWord }}</p>
+                <button class="rh-hint-card__close" @click.stop="showFirstWordHint = false" aria-label="Tutup petunjuk">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
-
-              <!-- Hint button -->
               <button
-                v-if="currentAyah && !showFirstWordHint"
+                v-else-if="currentAyah"
                 type="button"
                 class="rh-action-btn rh-action-btn--hint"
                 @click.stop="showFirstWordHint = true"
@@ -171,24 +126,21 @@
               </button>
             </div>
 
-            <!-- Hint Word Display (rendered outside Actions row when active) -->
-            <div v-if="showFirstWordHint" class="rh-hint-word" @click.stop>
-              <p class="rh-hint-word__label">Kata pertama</p>
-              <p class="rh-hint-word__arabic text-arabic">{{ firstArabicWord }}</p>
-            </div>
-
-            <!-- Highlighted instruction without being a pill button -->
+            <!-- Reveal instruction -->
             <div class="rh-reveal-instruction" @click.stop="toggleReveal">
               <span class="rh-reveal-dot"></span>
               <span class="rh-reveal-text">Ketuk layar untuk lihat ayat</span>
             </div>
+
           </div>
 
           <!-- Revealed State -->
           <div v-else class="remote-revealed" key="revealed">
             <div class="remote-ayah-card">
+              <!-- Ornament: top-left aligned in flex column -->
+              <div class="remote-ayah-card__ornament" v-html="formatListeningAyahBadge(currentAyahNumber)"></div>
               <p :class="['text-arabic', dynamicFontSizeClass, 'remote-ayah-text']" v-if="displayAyah"
-                 v-html="formatArabicWithOrnament(displayAyah.text_arabic, currentAyahNumber)">
+                 v-html="formatArabicText(displayAyah.text_arabic)">
               </p>
             </div>
 
@@ -236,8 +188,9 @@
         </div>
       </template>
       <template v-else>
-        <!-- Secondary: Back to prev ayah (icon only) -->
+        <!-- Secondary: Back to prev ayah — only when revealed (in hidden mode, header back handles navigation) -->
         <button
+          v-if="isRevealed"
           class="action-btn action-btn--back"
           @click="prevAyah"
           :disabled="currentAyahNumber <= 1"
@@ -248,25 +201,78 @@
           </svg>
         </button>
 
-        <!-- Secondary: Forgot -->
-        <button class="action-btn action-btn--forgot" @click="submitReview('forgot')" :disabled="submitting || !isRevealed">
-          <span class="action-btn__icon">&#10005;</span>
-          <span class="action-btn__label">Lupa</span>
-        </button>
+        <!-- Rating buttons: only shown AFTER ayah is revealed -->
+        <template v-if="isRevealed">
+          <!-- Secondary: Forgot -->
+          <button class="action-btn action-btn--forgot" @click="submitReview('forgot')" :disabled="submitting">
+            <span class="action-btn__icon">&#10005;</span>
+            <span class="action-btn__label">Lupa</span>
+          </button>
 
-        <!-- Secondary: Doubtful -->
-        <button class="action-btn action-btn--doubtful" @click="submitReview('doubtful')" :disabled="submitting || !isRevealed">
-          <span class="action-btn__icon">~</span>
-          <span class="action-btn__label">Ragu</span>
-        </button>
+          <!-- Secondary: Doubtful -->
+          <button class="action-btn action-btn--doubtful" @click="submitReview('doubtful')" :disabled="submitting">
+            <span class="action-btn__icon">~</span>
+            <span class="action-btn__label">Ragu</span>
+          </button>
 
-        <!-- Primary: Fluent & Next -->
-        <button class="action-btn action-btn--fluent" @click="skipAyah" :disabled="submitting || !isRevealed">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          <span class="action-btn__label">Lancar</span>
-        </button>
+          <!-- Primary: Fluent & Next -->
+          <button class="action-btn action-btn--fluent" @click="skipAyah" :disabled="submitting">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span class="action-btn__label">Lancar</span>
+          </button>
+        </template>
+
+        <!-- Hidden mode: only mic bar, centered full-width -->
+        <template v-else>
+          <div class="action-bar-mic-dock" @click.stop>
+            <!-- IDLE: mic button -->
+            <button
+              v-if="voiceState === 'idle'"
+              type="button"
+              class="rh-mic-btn rh-mic-btn--docked"
+              @click.stop="startRecording"
+              aria-label="Mulai rekam hafalan"
+            >
+              <div class="rh-mic-btn__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+              </div>
+              <span class="rh-mic-btn__label">Rekam Hafalan</span>
+            </button>
+
+            <!-- RECORDING -->
+            <div v-else-if="voiceState === 'recording'" class="rh-mic-recording-row">
+              <span class="rh-voice-indicator rh-voice-indicator--lg"></span>
+              <span class="rh-mic-timer">{{ voiceDurationLabel }}</span>
+              <button type="button" class="rh-mic-stop-btn" @click.stop="stopRecording">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                Selesai
+              </button>
+            </div>
+
+            <!-- REVIEW: player bar -->
+            <div v-else-if="voiceState === 'review'" class="rh-vn-bar">
+              <button type="button" class="rh-vn-delete-btn" @click.stop="deleteVoice" aria-label="Hapus rekaman">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+              <button type="button" class="rh-vn-play-btn" @click.stop="togglePlayVoice">
+                <svg v-if="isPlayingVoice" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </button>
+              <div class="rh-vn-waveform">
+                <div class="rh-vn-progress-track"><div class="rh-vn-progress-fill" :style="{ width: voicePlayProgress + '%' }"></div></div>
+                <span class="rh-vn-time">{{ voiceDurationLabel }}</span>
+              </div>
+              <button type="button" class="rh-vn-download-btn" @click.stop="downloadVoice">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </template>
       </template>
     </div>
 
@@ -676,7 +682,7 @@ const openAudioSettings = async () => {
   normalizeMurottalRange()
   settingsPickerType.value = 'none'
   settingsSurahSearch.value = ''
-  pauseAudio()
+  // Do NOT pause — murotal keeps playing while settings is open
   showAudioSettings.value = true
 }
 const closeAudioSettings = () => { showAudioSettings.value = false; settingsPickerType.value = 'none'; settingsSurahSearch.value = '' }
@@ -761,7 +767,7 @@ const handleCustomRangeEnded = async () => {
 
 const openQariPicker = () => {
   triggerHaptic(40)
-  if (isListeningMode.value) pauseAudio()
+  // Do NOT pause — qari list opens while murotal keeps playing; only stops when new qari is selected
   showQariPicker.value = true
 }
 
@@ -901,8 +907,12 @@ const startAudioPlayback = (options: { withHaptic?: boolean, restart?: boolean }
   }
 
   audioObj.play().catch(err => {
-    console.error('Playback error:', err)
     isPlaying.value = false
+    if (err.name === 'NotAllowedError') {
+      console.warn('Autoplay blocked by browser. User interaction required to play audio.')
+    } else {
+      console.error('Playback error:', err)
+    }
   })
 }
 
@@ -983,7 +993,18 @@ const remoteRouteQuery = computed(() => ({ mode: sessionMode.value }))
 const showFirstWordHint = ref(false)
 const firstArabicWord = computed(() => {
   const text = currentAyah.value?.text_arabic || ''
-  return text.trim().split(' ')[0] || ''
+  if (!text) return ''
+  // Same stripping logic as formatArabicText:
+  // Tajweed markup pattern is [rulename[char] (single closing bracket)
+  // e.g. [i:61[صُ] → صُ  |  [h[مٌّ] → مٌّ
+  const stripped = text
+    .replace(/^\uFEFF/, '')                                                  // BOM
+    .replace(/\u0672/g, '\u0670')                                            // normalize alef
+    .replace(/[\u0610-\u061A\u06D6-\u06E4\u06E7-\u06ED\u08A0-\u08FF]/g, '') // annotation marks
+    .replace(/\[([a-z0-9:]+)\[([^\]]*)\]/g, '$2')                           // [rule[char] → char
+    .replace(/[\u0600-\u0605\u06DD]/g, '')                                   // Quran control chars
+    .trim()
+  return stripped.split(/\s+/)[0] || ''
 })
 
 // Voice recording variables for self-murojaah
@@ -993,6 +1014,70 @@ const voiceBlobUrl = ref<string | null>(null)
 const voiceAudio = ref<HTMLAudioElement | null>(null)
 const isPlayingVoice = ref(false)
 const voiceDuration = ref(0)
+const voicePlayProgress = ref(0)
+const voiceMimeType = ref('audio/webm') // Actual recorded mime type (varies by browser)
+const MAX_RECORDING_SECONDS = 60
+
+const voiceDurationLabel = computed(() => {
+  const s = voiceDuration.value
+  const mins = Math.floor(s / 60)
+  const secs = s % 60
+  return `${mins}:${String(secs).padStart(2, '0')}`
+})
+
+const currentVoiceKey = computed(() => `recording-${surahId.value}-${currentAyahNumber.value}`)
+
+// ── IndexedDB helpers for persisting voice recordings ──
+const IDB_NAME = 'murojaah-recordings'
+const IDB_VERSION = 1
+const IDB_STORE = 'recordings'
+const RECORDING_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+let idb: IDBDatabase | null = null
+
+const openRecordingDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    if (idb) { resolve(idb); return }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION)
+    req.onerror = () => reject(req.error)
+    req.onsuccess = () => { idb = req.result; resolve(idb) }
+    req.onupgradeneeded = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: 'key' })
+      }
+    }
+  })
+}
+
+const saveVoiceRecording = async (key: string, blob: Blob, duration: number) => {
+  try {
+    const db = await openRecordingDB()
+    const tx = db.transaction(IDB_STORE, 'readwrite')
+    tx.objectStore(IDB_STORE).put({ key, blob, duration, savedAt: Date.now() })
+  } catch (e) { console.error('Failed to save recording:', e) }
+}
+
+const loadVoiceRecording = async (key: string): Promise<{ blob: Blob; duration: number } | null> => {
+  try {
+    const db = await openRecordingDB()
+    return new Promise((resolve) => {
+      const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key)
+      req.onsuccess = () => {
+        const r = req.result
+        if (!r || Date.now() - r.savedAt > RECORDING_TTL_MS) { resolve(null); return }
+        resolve({ blob: r.blob, duration: r.duration })
+      }
+      req.onerror = () => resolve(null)
+    })
+  } catch { return null }
+}
+
+const deleteVoiceRecording = async (key: string) => {
+  try {
+    const db = await openRecordingDB()
+    db.transaction(IDB_STORE, 'readwrite').objectStore(IDB_STORE).delete(key)
+  } catch (e) { console.error('Failed to delete recording:', e) }
+}
 
 let audioChunks: Blob[] = []
 let recordingInterval: any = null
@@ -1025,29 +1110,39 @@ const startRecording = async () => {
       }
     }
     
-    recorder.onstop = () => {
-      const blob = new Blob(audioChunks, { type: recorder.mimeType || 'audio/webm' })
-      if (voiceBlobUrl.value) {
-        URL.revokeObjectURL(voiceBlobUrl.value)
-      }
+    recorder.onstop = async () => {
+      const mimeType = recorder.mimeType || 'audio/webm'
+      voiceMimeType.value = mimeType
+      const blob = new Blob(audioChunks, { type: mimeType })
+      if (voiceBlobUrl.value) URL.revokeObjectURL(voiceBlobUrl.value)
       voiceBlobUrl.value = URL.createObjectURL(blob)
+      voiceAudio.value = null // Reset so a fresh element is created on play (fixes volume inconsistency)
       voiceState.value = 'review'
-      
-      // Stop media tracks to turn off mic light
+      voicePlayProgress.value = 0
+
+      // Persist to IndexedDB so it survives page refresh
+      await saveVoiceRecording(currentVoiceKey.value, blob, voiceDuration.value)
+
+      // Stop media tracks to turn off mic indicator
       stream.getTracks().forEach(track => track.stop())
     }
-    
+
     voiceState.value = 'recording'
     voiceDuration.value = 0
     const startTime = Date.now()
     recordingInterval = setInterval(() => {
       voiceDuration.value = Math.round((Date.now() - startTime) / 1000)
+      // Auto-stop after MAX_RECORDING_SECONDS
+      if (voiceDuration.value >= MAX_RECORDING_SECONDS) {
+        stopRecording()
+        showToast?.(`Rekaman otomatis berhenti (maks. ${MAX_RECORDING_SECONDS} detik)`, 'doubtful')
+      }
     }, 1000)
-    
+
     recorder.start()
   } catch (err) {
     console.error('Microphone access denied:', err)
-    alert('Gagal mengakses mikrofon. Pastikan izin mikrofon telah diberikan.')
+    showToast?.('Gagal mengakses mikrofon. Pastikan izin mikrofon diberikan.', 'forgot')
   }
 }
 
@@ -1062,36 +1157,74 @@ const stopRecording = () => {
 
 const togglePlayVoice = () => {
   if (!voiceBlobUrl.value) return
-  
-  if (!voiceAudio.value) {
-    voiceAudio.value = new Audio(voiceBlobUrl.value)
-    voiceAudio.value.onended = () => {
-      isPlayingVoice.value = false
-    }
-  }
-  
-  if (isPlayingVoice.value) {
+
+  if (isPlayingVoice.value && voiceAudio.value) {
     voiceAudio.value.pause()
     isPlayingVoice.value = false
-  } else {
-    // Stop main qari player before playing own voice
-    pauseAudio()
-    
-    voiceAudio.value.play()
-    isPlayingVoice.value = true
+    return
   }
+
+  // Always create a fresh Audio element to prevent volume inconsistency bug
+  if (voiceAudio.value) {
+    voiceAudio.value.pause()
+    voiceAudio.value.ontimeupdate = null
+    voiceAudio.value.onended = null
+  }
+  voiceAudio.value = new Audio(voiceBlobUrl.value)
+  voiceAudio.value.ontimeupdate = () => {
+    const audio = voiceAudio.value
+    if (audio && audio.duration && !isNaN(audio.duration)) {
+      voicePlayProgress.value = (audio.currentTime / audio.duration) * 100
+    }
+  }
+  voiceAudio.value.onended = () => {
+    isPlayingVoice.value = false
+    voicePlayProgress.value = 0
+  }
+
+  // Stop main qari player before playing own voice
+  pauseAudio()
+
+  voiceAudio.value.play().catch((err) => {
+    console.error('Voice playback error:', err)
+    isPlayingVoice.value = false
+  })
+  isPlayingVoice.value = true
 }
 
-const deleteVoice = () => {
+const deleteVoice = async () => {
+  await deleteVoiceRecording(currentVoiceKey.value)
   cleanupVoice()
 }
 
+const downloadVoice = () => {
+  if (!voiceBlobUrl.value) return
+  triggerHaptic(40)
+  // Determine correct file extension based on actual recorded mime type
+  const mime = voiceMimeType.value
+  let ext = 'webm'
+  if (mime.includes('mp4') || mime.includes('m4a')) ext = 'm4a'
+  else if (mime.includes('ogg')) ext = 'ogg'
+  else if (mime.includes('wav')) ext = 'wav'
+  const a = document.createElement('a')
+  a.href = voiceBlobUrl.value
+  a.download = `murojaah-${surahName.value}-ayat-${currentAyahNumber.value}.${ext}`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  showToast?.('Rekaman berhasil diunduh!', 'fluent')
+}
+
+// cleanupVoice: only clears in-memory/UI state — does NOT delete from IndexedDB
 const cleanupVoice = () => {
-  if (recordingInterval) {
-    clearInterval(recordingInterval)
+  if (recordingInterval) clearInterval(recordingInterval)
+  if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+    mediaRecorder.value.stop()
   }
   if (voiceAudio.value) {
     voiceAudio.value.pause()
+    voiceAudio.value.ontimeupdate = null
+    voiceAudio.value.onended = null
     voiceAudio.value = null
   }
   if (voiceBlobUrl.value) {
@@ -1101,6 +1234,7 @@ const cleanupVoice = () => {
   voiceState.value = 'idle'
   isPlayingVoice.value = false
   voiceDuration.value = 0
+  voicePlayProgress.value = 0
 }
 
 const buildRemoteRoute = (targetSurahId: number, targetAyahNumber: number) => ({
@@ -1339,6 +1473,19 @@ const fetchAyah = async (ayahNum: number, options: { skipAutoplay?: boolean, ski
     if (isListeningMode.value && !skipScroll) {
       await scrollListeningAyahIntoView()
     }
+
+    // Load saved recording from IndexedDB (only in Uji Hafalan mode)
+    if (!isListeningMode.value) {
+      const saved = await loadVoiceRecording(`recording-${surahId.value}-${ayahNum}`)
+      if (saved) {
+        if (voiceBlobUrl.value) URL.revokeObjectURL(voiceBlobUrl.value)
+        voiceBlobUrl.value = URL.createObjectURL(saved.blob)
+        voiceDuration.value = saved.duration
+        voiceAudio.value = null
+        voiceState.value = 'review'
+        voicePlayProgress.value = 0
+      }
+    }
   } catch (e) {
     console.error('Failed to fetch ayah:', e)
   }
@@ -1387,7 +1534,7 @@ const hideAyah = () => {
 
 const openSurahPicker = () => {
   triggerHaptic(40)
-  if (isListeningMode.value) pauseAudio()
+  // Do NOT pause — murotal keeps playing while surah picker is open
   pickerSearch.value = ''
   pendingPickerSurahId.value = null
   showSurahPicker.value = true
@@ -1395,7 +1542,7 @@ const openSurahPicker = () => {
 
 const openNavigator = async () => {
   triggerHaptic(40)
-  if (isListeningMode.value) pauseAudio()
+  // Do NOT pause — murotal keeps playing while navigator is open
   if (!surahList.value.length) await fetchSurahList()
   // Pre-select current surah + ayah
   navigatorSurahId.value = surahId.value
@@ -1442,7 +1589,7 @@ const closeSurahPicker = () => {
 
 const openAyahPicker = () => {
   triggerHaptic(40)
-  if (isListeningMode.value) pauseAudio()
+  // Do NOT pause — murotal keeps playing while ayah picker is open
   showAyahPicker.value = true
 }
 
@@ -1655,6 +1802,8 @@ watch(currentAyahNumber, async () => {
 })
 
 watch(isListeningMode, async (active) => {
+  // Always stop audio when switching modes to prevent audio leaking
+  stopAudio()
   if (active) {
     await initializeListeningAyahs(currentAyahNumber.value)
   } else {
@@ -2041,9 +2190,63 @@ useHead({
 
 /* Hint zone — fixed min-height keeps layout stable when toggling */
 .rh-hint-zone {
-  min-height: 60px;
+  min-height: 80px;
   display: grid;
   place-items: center;
+  width: 100%;
+  padding: 8px 24px;
+}
+
+/* Floating hint card that replaces the old inline layout */
+.rh-hint-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 14px 40px 14px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 260px;
+  animation: fadeSlideUp 0.25s ease;
+}
+
+.rh-hint-card__label {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.rh-hint-card__arabic {
+  font-size: 1.6rem;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.rh-hint-card__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.rh-hint-card__close:active {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .rh-hint-btn {
@@ -2194,63 +2397,245 @@ useHead({
   animation: rhRecordPulse 1.2s ease-in-out infinite;
 }
 
+.rh-voice-indicator--lg {
+  width: 10px;
+  height: 10px;
+}
+
 @keyframes rhRecordPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.5); opacity: 0.5; }
 }
 
-.rh-voice-player {
+/* ─── MIC BAR (New WhatsApp VN-style) ─── */
+.rh-mic-bar {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 0 8px;
+}
+
+.rh-mic-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 4px;
+}
+
+.rh-mic-btn__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  display: grid;
+  place-items: center;
+  color: white;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45), 0 2px 6px rgba(0,0,0,0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rh-mic-btn:active .rh-mic-btn__icon {
+  transform: scale(0.92);
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
+}
+
+.rh-mic-btn__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Recording row */
+.rh-mic-recording-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 99px;
+  padding: 10px 16px;
+  animation: fadeSlideUp 0.2s ease;
+  width: 100%;
+}
+
+.rh-mic-timer {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fca5a5;
+  font-variant-numeric: tabular-nums;
+  flex: 1;
+}
+
+.rh-mic-stop-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 99px;
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.rh-mic-stop-btn:active {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+/* Voice note review bar */
+.rh-vn-bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 99px;
+  padding: 10px 14px;
+  width: 100%;
   animation: fadeSlideUp 0.22s ease;
 }
 
-.rh-voice-status {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.55);
+.rh-vn-play-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  color: #032d1d;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.rh-voice-control-btn {
-  width: 28px;
-  height: 28px;
+.rh-vn-play-btn:active { transform: scale(0.88); }
+
+.rh-vn-waveform {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rh-vn-progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.rh-vn-progress-fill {
+  height: 100%;
+  background: #34d399;
+  border-radius: 99px;
+  transition: width 0.1s linear;
+}
+
+.rh-vn-time {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 30px;
+  text-align: right;
+}
+
+.rh-vn-delete-btn,
+.rh-vn-download-btn {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: none;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: all 0.18s;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
 }
 
-.rh-voice-control-btn:active {
-  transform: scale(0.9);
-}
-
-.rh-voice-control-btn--play {
-  background: #FFF;
-  color: #032d1d;
-}
-
-.rh-voice-control-btn--play:active {
-  background: rgba(255, 255, 255, 0.85);
-}
-
-.rh-voice-control-btn--delete {
-  background: rgba(239, 68, 68, 0.1);
+.rh-vn-delete-btn {
+  background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.rh-voice-control-btn--delete:active {
-  background: rgba(239, 68, 68, 0.25);
+.rh-vn-delete-btn:active { background: rgba(239, 68, 68, 0.3); }
+
+.rh-vn-download-btn {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+}
+
+.rh-vn-download-btn:active { background: rgba(255,255,255,0.22); }
+
+/* Bottom bar hint when ayah is hidden */
+.action-bar-reveal-hint {
+  flex: 1;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Mic dock in bottom action bar — takes full width, centered */
+.action-bar-mic-dock {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 16px;
+}
+
+.action-bar-mic-dock .rh-mic-btn--docked {
+  flex-direction: row;
+  gap: 12px;
+  padding: 10px 24px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 99px;
+  width: 100%;
+  justify-content: center;
+}
+
+.action-bar-mic-dock .rh-mic-btn--docked .rh-mic-btn__icon {
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5);
+}
+
+.action-bar-mic-dock .rh-mic-btn__label {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.action-bar-mic-dock .rh-mic-recording-row,
+.action-bar-mic-dock .rh-vn-bar {
+  width: 100%;
 }
 
 
@@ -2271,15 +2656,12 @@ useHead({
   background: #F5F1E8;
   border: 1.5px solid #DDD5C0;
   border-radius: var(--radius-lg);
-  padding: 20px 12px;
+  padding: 14px 14px 18px;
   margin-bottom: 16px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06), inset 0 1px 3px rgba(0,0,0,0.02);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: flow-root; /* enables float containment like listening card */
   width: 100%;
+  text-align: left;
 }
 
 .remote-ayah-number-badge {
@@ -2322,6 +2704,28 @@ useHead({
   user-select: none;
   flex-shrink: 0;
   vertical-align: middle;
+}
+
+/* Ornament in revealed card — float left, matching listening-ayah-card__badge */
+.remote-ayah-card {
+  position: relative;
+  width: 100%;
+}
+
+.remote-ayah-card__ornament {
+  float: left;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 2px 0;
+  z-index: 1;
+}
+
+.remote-ayah-card__ornament :deep(.ayah-ornament),
+.remote-ayah-card__ornament ::v-deep(.ayah-ornament) {
+  margin: 0;
 }
 
 :deep(.ayah-ornament__svg) {
@@ -2776,13 +3180,15 @@ useHead({
 }
 
 :deep(.ayah-ornament--mini) {
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   margin: 0;
 }
 
 :deep(.ayah-ornament--mini .ayah-ornament__num) {
-  font-size: 0.72rem;
+  font-size: 0.65rem; /* slightly smaller to fit 3-digit numbers */
+  font-weight: 900;
+  letter-spacing: -0.03em; /* tighter kerning for 3 digits */
 }
 
 .listening-ayah-card--active .listening-ayah-card__badge {
@@ -3570,7 +3976,7 @@ useHead({
 }
 
 .navigator-field--ayah {
-  width: 80px;
+  width: 96px;
   flex-shrink: 0;
 }
 
@@ -3610,6 +4016,14 @@ useHead({
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Ayat number must always be fully visible — no ellipsis */
+.navigator-field--ayah .navigator-selector strong {
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .navigator-selector small {
