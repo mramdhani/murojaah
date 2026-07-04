@@ -1,0 +1,299 @@
+{
+  "page": 1,
+  "verses": [
+    {
+      "sura": 1,
+      "ayah": 1,
+      "glyphs": [
+        {
+          "line": 2,
+          "min_x": 741,
+          "max_x": 854,
+          "min_y": 690,
+          "max_y": 767
+        },
+        {
+          "line": 2,
+          "min_x": 695,
+          "max_x": 742,
+          "min_y": 666,
+          "max_y": 755
+        },
+        {
+          "line": 2,
+          "min_x": 607,
+          "max_x": 695,
+          "min_y": 661,
+          "max_y": 760
+        },
+        {
+          "line": 2,
+          "min_x": 502,
+          "max_x": 602,
+          "min_y": 671,
+          "max_y": 764
+        },
+        {
+          "line": 2,
+          "min_x": 410,
+          "max_x": 488,
+          "min_y": 663,
+          "max_y": 759
+        }
+      ]
+    },
+    {
+      "sura": 1,
+      "ayah": 2,
+      "glyphs": [
+        {
+          "line": 3,
+          "min_x": 805,
+          "max_x": 945,
+          "min_y": 811,
+          "max_y": 885
+        },
+        {
+          "line": 3,
+          "min_x": 753,
+          "max_x": 796,
+          "min_y": 811,
+          "max_y": 900
+        },
+        {
+          "line": 3,
+          "min_x": 642,
+          "max_x": 746,
+          "min_y": 815,
+          "max_y": 913
+        },
+        {
+          "line": 3,
+          "min_x": 410,
+          "max_x": 638,
+          "min_y": 811,
+          "max_y": 903
+        },
+        {
+          "line": 3,
+          "min_x": 318,
+          "max_x": 396,
+          "min_y": 810,
+          "max_y": 905
+        }
+      ]
+    },
+    {
+      "sura": 1,
+      "ayah": 3,
+      "glyphs": [
+        {
+          "line": 4,
+          "min_x": 874,
+          "max_x": 1009,
+          "min_y": 959,
+          "max_y": 1061
+        },
+        {
+          "line": 4,
+          "min_x": 736,
+          "max_x": 871,
+          "min_y": 956,
+          "max_y": 1056
+        },
+        {
+          "line": 4,
+          "min_x": 648,
+          "max_x": 725,
+          "min_y": 956,
+          "max_y": 1052
+        }
+      ]
+    },
+    {
+      "sura": 1,
+      "ayah": 4,
+      "glyphs": [
+        {
+          "line": 4,
+          "min_x": 544,
+          "max_x": 649,
+          "min_y": 972,
+          "max_y": 1053
+        },
+        {
+          "line": 4,
+          "min_x": 471,
+          "max_x": 533,
+          "min_y": 967,
+          "max_y": 1056
+        },
+        {
+          "line": 4,
+          "min_x": 336,
+          "max_x": 468,
+          "min_y": 956,
+          "max_y": 1053
+        },
+        {
+          "line": 4,
+          "min_x": 254,
+          "max_x": 331,
+          "min_y": 956,
+          "max_y": 1052
+        }
+      ]
+    },
+    {
+      "sura": 1,
+      "ayah": 5,
+      "glyphs": [
+        {
+          "line": 5,
+          "min_x": 922,
+          "max_x": 999,
+          "min_y": 1097,
+          "max_y": 1198
+        },
+        {
+          "line": 5,
+          "min_x": 818,
+          "max_x": 914,
+          "min_y": 1103,
+          "max_y": 1190
+        },
+        {
+          "line": 5,
+          "min_x": 696,
+          "max_x": 809,
+          "min_y": 1097,
+          "max_y": 1202
+        },
+        {
+          "line": 5,
+          "min_x": 474,
+          "max_x": 686,
+          "min_y": 1100,
+          "max_y": 1204
+        },
+        {
+          "line": 5,
+          "min_x": 387,
+          "max_x": 464,
+          "min_y": 1103,
+          "max_y": 1198
+        }
+      ]
+    },
+    {
+      "sura": 1,
+      "ayah": 6,
+      "glyphs": [
+        {
+          "line": 5,
+          "min_x": 268,
+          "max_x": 388,
+          "min_y": 1101,
+          "max_y": 1201
+        },
+        {
+          "line": 6,
+          "min_x": 864,
+          "max_x": 1004,
+          "min_y": 1238,
+          "max_y": 1343
+        },
+        {
+          "line": 6,
+          "min_x": 679,
+          "max_x": 859,
+          "min_y": 1241,
+          "max_y": 1375
+        },
+        {
+          "line": 6,
+          "min_x": 598,
+          "max_x": 677,
+          "min_y": 1249,
+          "max_y": 1345
+        }
+      ]
+    },
+    {
+      "sura": 1,
+      "ayah": 7,
+      "glyphs": [
+        {
+          "line": 6,
+          "min_x": 487,
+          "max_x": 599,
+          "min_y": 1240,
+          "max_y": 1343
+        },
+        {
+          "line": 6,
+          "min_x": 401,
+          "max_x": 483,
+          "min_y": 1233,
+          "max_y": 1350
+        },
+        {
+          "line": 6,
+          "min_x": 267,
+          "max_x": 391,
+          "min_y": 1236,
+          "max_y": 1324
+        },
+        {
+          "line": 7,
+          "min_x": 791,
+          "max_x": 899,
+          "min_y": 1394,
+          "max_y": 1514
+        },
+        {
+          "line": 7,
+          "min_x": 723,
+          "max_x": 790,
+          "min_y": 1394,
+          "max_y": 1494
+        },
+        {
+          "line": 7,
+          "min_x": 495,
+          "max_x": 723,
+          "min_y": 1393,
+          "max_y": 1499
+        },
+        {
+          "line": 7,
+          "min_x": 363,
+          "max_x": 485,
+          "min_y": 1390,
+          "max_y": 1499
+        },
+        {
+          "line": 8,
+          "min_x": 735,
+          "max_x": 788,
+          "min_y": 1543,
+          "max_y": 1632
+        },
+        {
+          "line": 8,
+          "min_x": 555,
+          "max_x": 721,
+          "min_y": 1538,
+          "max_y": 1643
+        },
+        {
+          "line": 8,
+          "min_x": 472,
+          "max_x": 549,
+          "min_y": 1542,
+          "max_y": 1637
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,12 @@
 <template>
-  <div class="mushaf-page" @click.self="toggleFullscreen">
+  <div 
+    class="mushaf-page" 
+    :class="{ 
+      'mushaf-page--nabawiyyah': mushafTheme === 'nabawiyyah', 
+      'mushaf-page--classic': mushafTheme === 'classic' 
+    }" 
+    @click.self="toggleFullscreen"
+  >
     <header class="mushaf-header" :class="{ 'mushaf-header--hidden': isFullscreenMode }">
       <button type="button" class="mushaf-header__back" aria-label="Kembali" @click="router.push('/')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
@@ -1388,7 +1395,25 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   display: flex;
   flex-direction: column;
   overflow: hidden; /* Lock scroll at root level */
-  background: #fffefa;
+}
+
+/* Theme-specific background colors for page wrappers */
+.mushaf-page--nabawiyyah {
+  background: #f1f7f4; /* Soft premium green background */
+}
+.mushaf-page--nabawiyyah .mushaf-content,
+.mushaf-page--nabawiyyah .mushaf-viewport,
+.mushaf-page--nabawiyyah .mushaf-slide {
+  background: #f1f7f4;
+}
+
+.mushaf-page--classic {
+  background: #eef4f8; /* Soft premium blue background */
+}
+.mushaf-page--classic .mushaf-content,
+.mushaf-page--classic .mushaf-viewport,
+.mushaf-page--classic .mushaf-slide {
+  background: #eef4f8;
 }
 
 .mushaf-header {
