@@ -5,9 +5,9 @@
       <div class="drawer-backdrop" @click="close"></div>
 
       <!-- Drawer Panel -->
-      <div class="drawer-panel animate-slide-up">
+      <div class="drawer-panel" :style="murojaahSheet.sheetStyle.value">
         <!-- Drag handle indicator -->
-        <div class="drawer-handle-bar">
+        <div class="drawer-handle-bar" v-bind="murojaahSheet.bindHandle">
           <div class="drawer-handle"></div>
         </div>
 
@@ -186,6 +186,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 const { isOpen, mode, format, close } = useMurojaahDrawer()
 const { apiFetch } = useApi()
 
+const murojaahSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 90,
+  onClose: close,
+})
+
+watch(isOpen, (val) => { if (val) murojaahSheet.reset() })
+
 interface SurahItem {
   id: number
   number: number
@@ -351,14 +359,8 @@ const selectSurah = (surahId: number) => {
   display: flex;
   flex-direction: column;
   max-height: 86dvh;
-  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   border-top: 1.5px solid rgba(212, 175, 55, 0.25);
   overflow: hidden;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
 }
 
 .drawer-handle-bar {
@@ -366,7 +368,10 @@ const selectSurah = (surahId: number) => {
   justify-content: center;
   padding: 10px 0;
   cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
+.drawer-handle-bar:active { cursor: grabbing; }
 
 .drawer-handle {
   width: 48px;
@@ -769,6 +774,16 @@ const selectSurah = (surahId: number) => {
 .drawer-fade-enter-from,
 .drawer-fade-leave-to {
   opacity: 0;
+}
+
+.drawer-fade-enter-active .drawer-panel,
+.drawer-fade-leave-active .drawer-panel {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-fade-enter-from .drawer-panel,
+.drawer-fade-leave-to .drawer-panel {
+  transform: translateY(100%);
 }
 
 </style>

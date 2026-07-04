@@ -250,9 +250,9 @@
       <div class="drawer-backdrop" @click="closeBadgeDrawer"></div>
 
       <!-- Drawer Panel -->
-      <div class="drawer-panel animate-slide-up">
+      <div class="drawer-panel" :style="badgeSheet.sheetStyle.value">
         <!-- Drag handle indicator -->
-        <div class="drawer-handle-bar">
+        <div class="drawer-handle-bar" v-bind="badgeSheet.bindHandle">
           <div class="drawer-handle"></div>
         </div>
 
@@ -351,6 +351,16 @@ const { getBadge, getNextBadge, getAyahsToNext, getProgressToNext, badges } = us
 
 const isBadgeDrawerOpen = ref(false)
 const selectedBadge = ref<Badge | null>(null)
+
+const badgeSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { isBadgeDrawerOpen.value = false }
+})
+
+watch(isBadgeDrawerOpen, (val) => {
+  if (val) badgeSheet.reset()
+})
 
 const openBadgeDetail = (badge: Badge) => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -1085,6 +1095,13 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
   display: flex;
   justify-content: center;
   padding: 12px 0 8px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.badge-drawer-wrapper .drawer-handle-bar:active {
+  cursor: grabbing;
 }
 
 .badge-drawer-wrapper .drawer-handle {
@@ -1463,8 +1480,13 @@ useHead({ title: 'Progress Hafalan — Murojaah' })
   opacity: 0;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+.drawer-fade-enter-active .drawer-panel,
+.drawer-fade-leave-active .drawer-panel {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-fade-enter-from .drawer-panel,
+.drawer-fade-leave-to .drawer-panel {
+  transform: translateY(100%);
 }
 </style>

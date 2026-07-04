@@ -23,6 +23,14 @@
         </button>
       </div>
 
+      <!-- Translate & Display Settings Button -->
+      <button type="button" class="mushaf-header__translate" aria-label="Pengaturan Tampilan & Terjemahan" @click="showTranslationDrawer = true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+          <path d="M6 6h10M6 10h10M6 14h6"/>
+        </svg>
+      </button>
+
       <button type="button" class="mushaf-header__browse" aria-label="Pilih surat, ayat, atau halaman" @click="openNavigator">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <path d="M4 6h16M4 12h16M4 18h10"/>
@@ -44,16 +52,18 @@
       >
         <div class="mushaf-track" :class="{ 'mushaf-track--animating': swipeAnimating }" :style="trackStyle">
           <div v-for="(slidePage, index) in carouselPages" :key="slidePage + '-' + index" class="mushaf-slide">
-            <img
-              :src="localImageUrl(slidePage)"
-              :alt="'Mushaf Al-Quran halaman ' + slidePage"
-              class="mushaf-image"
-              :class="'mushaf-image--' + mushafTheme"
-              decoding="async"
-              :fetchpriority="index === 1 ? 'high' : 'low'"
-              @load="index === 1 && handleImageLoad()"
-              @error="index === 1 && handleImageError()"
-            >
+            <!-- Page Box wraps the image in the exact same aspect ratio of the physical book scans -->
+            <div class="mushaf-page-box">
+              <img
+                :src="localImageUrl(slidePage)"
+                :alt="'Mushaf Al-Quran halaman ' + slidePage"
+                class="mushaf-page-img"
+                decoding="async"
+                :fetchpriority="index === 1 ? 'high' : 'low'"
+                @load="index === 1 && handleImageLoad()"
+                @error="index === 1 && handleImageError()"
+              >
+            </div>
           </div>
         </div>
 
@@ -132,8 +142,8 @@
     <!-- Settings Bottom Sheet -->
     <Transition name="sheet">
       <div v-if="showAudioSettings" class="qari-overlay" @click="closeAudioSettings">
-        <section class="qari-sheet animate-slide-up" role="dialog" aria-modal="true" @click.stop>
-          <div class="qari-sheet__handle"></div>
+        <section class="qari-sheet" role="dialog" aria-modal="true" :style="audioSettingsSheet.sheetStyle.value" @click.stop>
+          <div class="qari-sheet__handle" v-bind="audioSettingsSheet.bindHandle"></div>
 
           <template v-if="activePickerType === 'none'">
             <header class="qari-sheet__header">
@@ -282,8 +292,8 @@
 
     <Transition name="sheet">
       <div v-if="showQariPicker" class="qari-overlay" @click="closeQariPicker">
-        <section class="qari-sheet" role="dialog" aria-modal="true" aria-labelledby="qari-picker-title" @click.stop>
-          <div class="qari-sheet__handle"></div>
+        <section class="qari-sheet" role="dialog" aria-modal="true" aria-labelledby="qari-picker-title" :style="qariPickerSheet.sheetStyle.value" @click.stop>
+          <div class="qari-sheet__handle" v-bind="qariPickerSheet.bindHandle"></div>
           <header class="qari-sheet__header">
             <div>
               <span>Murottal</span>
@@ -305,10 +315,73 @@
       </div>
     </Transition>
 
+    <Transition name="translate-sheet">
+      <div v-if="showTranslationDrawer" class="translation-bottom-sheet" :style="translationSheet.sheetStyle.value" @click.stop>
+        <!-- Drag handle -->
+        <div 
+          class="translation-sheet-handle"
+          v-bind="translationSheet.bindHandle"
+        >
+          <div class="translation-sheet-handle__bar"></div>
+        </div>
+
+        <!-- Header -->
+        <header class="translation-sheet-header">
+          <div class="translation-sheet-header__left">
+            <span class="translation-sheet-badge">Tampilan & Terjemahan</span>
+            <p class="translation-sheet-subtitle">Hal {{ pageNumber }} &middot; Kemenag RI</p>
+          </div>
+          <button type="button" class="translation-sheet-close" aria-label="Tutup terjemahan" @click="showTranslationDrawer = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </header>
+
+        <!-- Mushaf Type Selector -->
+        <div class="translation-sheet-settings">
+          <div class="mushaf-theme-selector">
+            <span class="theme-selector-label">Jenis Mushaf</span>
+            <div class="theme-selector-options">
+              <button 
+                type="button" 
+                class="theme-selector-btn" 
+                :class="{ 'theme-selector-btn--active': mushafTheme === 'nabawiyyah' }"
+                @click="mushafTheme = 'nabawiyyah'"
+              >
+                Nabawiyyah (Teks)
+              </button>
+              <button 
+                type="button" 
+                class="theme-selector-btn" 
+                :class="{ 'theme-selector-btn--active': mushafTheme === 'classic' }"
+                @click="mushafTheme = 'classic'"
+              >
+                Classic (Gambar)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable list -->
+        <div ref="translationListRef" class="translation-sheet-list">
+          <div 
+            v-for="ayah in pageData?.ayahs" 
+            :key="ayah.id"
+            :ref="el => { if (el && ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}`) activeTranslationItemRef = el as HTMLElement }"
+            class="translation-sheet-item"
+            :class="{ 'translation-sheet-item--active': ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}` }"
+            @click="selectAyahFromTranslation(ayah.ayah_number)"
+          >
+            <span class="translation-sheet-item__number">{{ ayah.ayah_number }}</span>
+            <p class="translation-sheet-item__text">{{ ayah.translation_id || 'Terjemahan tidak tersedia.' }}</p>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <Transition name="sheet">
       <div v-if="navigatorOpen" class="navigator-overlay" @click="closeNavigator">
-        <section class="navigator-sheet" role="dialog" aria-modal="true" aria-labelledby="navigator-title" @click.stop>
-          <div class="navigator-sheet__handle"></div>
+        <section class="navigator-sheet" role="dialog" aria-modal="true" aria-labelledby="navigator-title" :style="navigatorSheet.sheetStyle.value" @click.stop>
+          <div class="navigator-sheet__handle" v-bind="navigatorSheet.bindHandle"></div>
 
           <div class="navigator-sheet__content">
             <header class="navigator-sheet__header">
@@ -317,10 +390,8 @@
                 <h2 id="navigator-title">Pilih Bacaan</h2>
                 <p>Surat, ayat, atau halaman yang ingin dibuka</p>
               </div>
-              <button type="button" aria-label="Tutup navigasi" @click="closeNavigator">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="m6 6 12 12M18 6 6 18"/>
-                </svg>
+              <button type="button" aria-label="Tutup pilihan bacaan" @click="closeNavigator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
               </button>
             </header>
 
@@ -364,28 +435,6 @@
                   <span><strong>{{ sectionDisplayValue }}</strong></span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
                 </button>
-              </div>
-
-              <div class="navigator-field navigator-field--wide" style="margin-top: 14px; margin-bottom: 8px;">
-                <label>Tema Gambar Mushaf</label>
-                <div class="theme-segmented-control">
-                  <button 
-                    type="button" 
-                    class="theme-segment-btn" 
-                    :class="{ 'theme-segment-btn--active': mushafTheme === 'nabawiyyah' }"
-                    @click="mushafTheme = 'nabawiyyah'"
-                  >
-                    Nabawiyyah (HD)
-                  </button>
-                  <button 
-                    type="button" 
-                    class="theme-segment-btn" 
-                    :class="{ 'theme-segment-btn--active': mushafTheme === 'classic' }"
-                    @click="mushafTheme = 'classic'"
-                  >
-                    Klasik
-                  </button>
-                </div>
               </div>
 
               <button type="submit" class="navigator-primary" :disabled="navigatorLoading || (navigationType === 'surah' && !selectedSurah)">
@@ -525,6 +574,7 @@ interface MushafPageData {
     ayah_number: number
     page: number
     progress_status: string
+    translation_id?: string
   }>
 }
 
@@ -560,6 +610,7 @@ const suppressNextLineTap = ref(false)
 const navigatorOpen = ref(false)
 const navigatorLoading = ref(false)
 const navigatorError = ref('')
+const showTranslationDrawer = ref(false)
 const selectedSurahId = ref(1)
 const selectedAyah = ref(1)
 const directPage = ref(1)
@@ -609,6 +660,10 @@ const mushafTheme = useCookie<'classic' | 'nabawiyyah'>('mushaf_theme', {
   path: '/'
 })
 
+watch(mushafTheme, () => {
+  prefetchPages()
+})
+
 let playerAudio: HTMLAudioElement | null = null
 let preloadedAudio: HTMLAudioElement | null = null
 let preloadedAudioUrl = ''
@@ -646,6 +701,132 @@ const carouselPages = computed(() => [
   pageNumber.value,
   Math.max(1, pageNumber.value - 1),
 ])
+
+// Coordinates loading state and methods for page highlight alignment (Disabled for image-based mushaf)
+/*
+const loadedCoordinates = ref<Record<number, any>>({})
+
+const loadPageCoordinates = async (page: number) => {
+  if (process.server) return // Prevent relative URL SSR fetch errors on Node server side
+  if (page < 1 || page > 604) return
+  if (loadedCoordinates.value[page]) return
+  
+  try {
+    const res = await fetch(`/mushaf/coordinates/page-${String(page).padStart(3, '0')}.json`)
+    if (res.ok) {
+      const data = await res.json()
+      loadedCoordinates.value[page] = data
+    }
+  } catch (e) {
+    console.error('Gagal memuat koordinat halaman', page, e)
+  }
+}
+
+const preloadCoordinates = () => {
+  carouselPages.value.forEach(page => {
+    loadPageCoordinates(page)
+  })
+}
+*/
+
+// Active verse to highlight on the page, dynamically following the audio player or manual selection
+const activeHighlightVerse = computed(() => {
+  if (isPlaying.value) {
+    if (isCustomRangeActive.value) {
+      const qv = activeMurottalQueue.value[queueIndex.value]
+      if (qv) return { surah: qv.surah, ayah: qv.ayah }
+    } else {
+      const ayah = playerAyah.value
+      if (ayah) {
+        const [surah, number] = ayah.verse_key.split(':').map(Number)
+        return { surah, ayah: number }
+      }
+    }
+  }
+  return { surah: selectedSurahId.value, ayah: selectedAyah.value }
+})
+
+const activeVerseTranslation = computed(() => {
+  if (!pageData.value || !pageData.value.ayahs) return ''
+  const active = pageData.value.ayahs.find(
+    x => x.verse_key === `${activeHighlightVerse.value.surah}:${activeHighlightVerse.value.ayah}`
+  )
+  return active?.translation_id || 'Terjemahan tidak tersedia untuk ayat ini.'
+})
+
+const selectAyahFromTranslation = (ayahNumber: number) => {
+  selectedAyah.value = ayahNumber
+  if (!isCustomRangeActive.value && pageData.value?.ayahs) {
+    const idx = pageData.value.ayahs.findIndex(x => x.ayah_number === ayahNumber)
+    if (idx !== -1) {
+      playerAyahIndex.value = idx
+      playPlayerAyah()
+    }
+  }
+}
+
+
+// ── Bottom Sheet instances (drag + swipe-to-close) ───────────────────────────
+const translationListRef = ref<HTMLElement | null>(null)
+const activeTranslationItemRef = ref<HTMLElement | null>(null)
+
+// Translation: resize mode — user can drag to see more/less
+const translationSheet = useBottomSheet({
+  mode: 'resize',
+  initialHeight: 320,
+  minHeight: 130,
+  maxHeight: () => Math.round(window.innerHeight * 0.88),
+  closeThreshold: 70,
+  onClose: () => { showTranslationDrawer.value = false },
+})
+
+// Dismiss-only (iOS style) for fixed-content drawers
+const navigatorSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { navigatorOpen.value = false },
+})
+
+const qariPickerSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { showQariPicker.value = false },
+})
+
+const audioSettingsSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { showAudioSettings.value = false },
+})
+
+// Reset sheet state when drawers open
+watch(showTranslationDrawer, (val) => { if (val) translationSheet.reset() })
+watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
+watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
+watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
+
+// Auto-scroll active ayah into view when murottal changes
+watch(activeHighlightVerse, async () => {
+  if (!showTranslationDrawer.value) return
+  await nextTick()
+  if (activeTranslationItemRef.value && translationListRef.value) {
+    activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+}, { deep: true })
+
+/*
+const getPageHighlights = (page: number) => {
+  const pageData = loadedCoordinates.value[page]
+  if (!pageData || !pageData.verses) return []
+  
+  const activeVerse = pageData.verses.find(
+    (v: any) => v.sura === activeHighlightVerse.value.surah && v.ayah === activeHighlightVerse.value.ayah
+  )
+  return activeVerse ? activeVerse.glyphs : []
+}
+
+watch(carouselPages, preloadCoordinates, { immediate: true })
+*/
 const trackStyle = computed(() => ({ transform: `translate3d(calc(-33.333333% + ${swipeOffset.value}px), 0, 0)` }))
 const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffset.value) > 1)
 const primarySurah = computed(() => pageData.value?.surahs[0] || null)
@@ -1489,8 +1670,35 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   flex: 0 0 auto;
   border: 0;
   border-radius: 50%;
-  color: #087d59;
-  background: #eef7f3;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.15s ease;
+}
+
+.mushaf-header__browse:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.mushaf-header__translate {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.15s ease;
+}
+
+.mushaf-header__translate:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.mushaf-header__translate svg {
+  width: 20px;
+  height: 20px;
 }
 
 .mushaf-header__browse svg {
@@ -1561,6 +1769,249 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-image--nabawiyyah {
   transform: scale(1.0); /* Nabawiyyah GIF already fits perfectly */
 }
+
+/* Golden Rule Centering Page Box */
+.mushaf-page-box {
+  position: relative;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dynamic aspect ratio lock matching the exact scan file dimensions */
+.mushaf-page--nabawiyyah .mushaf-page-box {
+  aspect-ratio: 699 / 1020; /* Nabawiyyah GIF aspect ratio */
+}
+
+.mushaf-page--classic .mushaf-page-box {
+  aspect-ratio: 599 / 920; /* Classic JPG aspect ratio */
+  /* For classic theme, we scale 1.08 to crop empty boundaries if needed, or keep 1.0 */
+  transform: scale(1.08); 
+}
+
+.mushaf-page-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain; /* Preserves natural image details and aspect ratio */
+  image-rendering: -webkit-optimize-contrast; /* Sharp scan contrast on iOS */
+  image-rendering: crisp-edges; /* Prevents blurriness on high-DPI displays */
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+
+/* ── Draggable Translation Bottom Sheet ────────────────────────────────── */
+.translation-bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  background: #fff;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: height 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: height;
+  /* Allow tap-through to Quran behind when collapsed */
+  pointer-events: all;
+}
+
+.translation-sheet-handle {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 0 6px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.translation-sheet-handle:active {
+  cursor: grabbing;
+}
+
+.translation-sheet-handle__bar {
+  width: 40px;
+  height: 4px;
+  background: #d4dbd8;
+  border-radius: 99px;
+}
+
+.translation-sheet-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px 10px;
+  border-bottom: 1px solid #f0f4f2;
+}
+
+.translation-sheet-settings {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f4f2;
+  background: #fcfdfe;
+  flex: 0 0 auto;
+}
+
+.mushaf-theme-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.theme-selector-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #3b5249;
+}
+
+.theme-selector-options {
+  display: flex;
+  background: #eef2f0;
+  padding: 3px;
+  border-radius: 99px;
+  gap: 2px;
+}
+
+.theme-selector-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #56706a;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-selector-btn--active {
+  background: #fff;
+  color: #0a6b4f;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.translation-sheet-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.translation-sheet-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0a6b4f;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.translation-sheet-subtitle {
+  font-size: 0.72rem;
+  color: #8a9e97;
+  font-weight: 500;
+}
+
+.translation-sheet-close {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: #f0f4f2;
+  color: #56706a;
+  flex: 0 0 auto;
+}
+
+.translation-sheet-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.translation-sheet-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 12px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.translation-sheet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fafcfb;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.translation-sheet-item:active {
+  background: #f0f7f4;
+}
+
+.translation-sheet-item--active {
+  background: rgba(10, 107, 79, 0.06);
+  border-color: #0a6b4f;
+}
+
+.translation-sheet-item__number {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: #0a6b4f;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.translation-sheet-item--active .translation-sheet-item__number {
+  background: #0a6b4f;
+  box-shadow: 0 0 0 3px rgba(10, 107, 79, 0.2);
+}
+
+.translation-sheet-item__text {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #1e2e28;
+  font-weight: 450;
+}
+
+.translation-sheet-item--active .translation-sheet-item__text {
+  color: #0a3d2e;
+  font-weight: 550;
+}
+
+/* Slide-up animation for sheet */
+.translate-sheet-enter-active {
+  transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.2s ease;
+}
+.translate-sheet-leave-active {
+  transition: transform 0.25s ease-in, opacity 0.2s ease;
+}
+.translate-sheet-enter-from,
+.translate-sheet-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 
 .image-loading,
 .image-error {
@@ -1639,16 +2090,17 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   position: relative;
   width: 100%;
   max-width: 620px;
-  min-height: 460px;
-  max-height: 90dvh;
   overflow: hidden;
-  padding: 10px 20px calc(16px + var(--safe-bottom));
+  padding: 0 20px calc(16px + var(--safe-bottom));
   border-radius: 26px 26px 0 0;
   background: #fffdfa;
   box-shadow: 0 -18px 50px rgba(17, 35, 28, .2);
   display: flex;
   flex-direction: column;
+  /* Height driven by content in dismiss mode */
+  max-height: 92dvh;
 }
+
 
 .navigator-sheet__content {
   flex: 1;
@@ -1657,12 +2109,26 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .navigator-sheet__handle {
+  width: 100%;
+  padding: 8px 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+.navigator-sheet__handle::before {
+  content: '';
+  display: block;
   width: 42px;
   height: 4px;
-  margin: 0 auto 15px;
   border-radius: 999px;
   background: #d5d9d6;
 }
+.navigator-sheet__handle:active { cursor: grabbing; }
+
 
 .navigator-sheet__header {
   display: flex;
@@ -2074,7 +2540,9 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .sheet-enter-active .navigator-sheet,
-.sheet-leave-active .navigator-sheet {
+.sheet-leave-active .navigator-sheet,
+.sheet-enter-active .qari-sheet,
+.sheet-leave-active .qari-sheet {
   transition: transform .24s ease;
 }
 
@@ -2084,7 +2552,9 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .sheet-enter-from .navigator-sheet,
-.sheet-leave-to .navigator-sheet {
+.sheet-leave-to .navigator-sheet,
+.sheet-enter-from .qari-sheet,
+.sheet-leave-to .qari-sheet {
   transform: translateY(100%);
 }
 
@@ -2636,7 +3106,26 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   flex-direction: column;
 }
 
-.qari-sheet__handle { width: 42px; height: 4px; margin: 0 auto 15px; border-radius: 999px; background: #d5d9d6; }
+.qari-sheet__handle { 
+  width: 100%;
+  padding: 4px 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.qari-sheet__handle::before {
+  content: '';
+  display: block;
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d5d9d6;
+}
+.qari-sheet__handle:active { cursor: grabbing; }
+
 .qari-sheet__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .qari-sheet__header span { color: #087d59; font-size: .65rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .qari-sheet__header h2 { margin: 2px 0 0; color: #1f2e28; font-size: 1.2rem; }

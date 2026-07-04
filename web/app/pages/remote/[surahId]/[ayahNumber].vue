@@ -279,8 +279,8 @@
     <!-- Mushaf-style Navigator Sheet (Pilih Bacaan) -->
     <Transition name="sheet">
       <div v-if="navigatorOpen" class="navigator-overlay" @click="closeNavigator">
-        <section class="navigator-sheet animate-slide-up" role="dialog" aria-modal="true" aria-labelledby="remote-navigator-title" @click.stop>
-          <div class="navigator-sheet__handle"></div>
+        <section class="navigator-sheet" role="dialog" aria-modal="true" aria-labelledby="remote-navigator-title" :style="navigatorSheet.sheetStyle.value" @click.stop>
+          <div class="navigator-sheet__handle" v-bind="navigatorSheet.bindHandle"></div>
 
           <div class="navigator-sheet__content">
             <header class="navigator-sheet__header">
@@ -408,8 +408,8 @@
     <!-- Shared Murottal Range Settings -->
     <Transition name="sheet">
       <div v-if="showAudioSettings" class="picker-overlay" @click="closeAudioSettings">
-        <section class="picker-sheet listening-settings-sheet animate-slide-up" role="dialog" aria-modal="true" aria-labelledby="listening-settings-title" @click.stop>
-          <div class="picker-sheet__indicator"></div>
+        <section class="picker-sheet listening-settings-sheet" role="dialog" aria-modal="true" aria-labelledby="listening-settings-title" :style="audioSettingsSheet.sheetStyle.value" @click.stop>
+          <div class="picker-sheet__indicator" v-bind="audioSettingsSheet.bindHandle"></div>
           <template v-if="settingsPickerType === 'none'">
             <header class="listening-settings__header"><h3 id="listening-settings-title">Pengaturan Murotal</h3></header>
             <div class="audio-settings-body">
@@ -444,9 +444,9 @@
     </Transition>    <!-- iOS-style Qari Picker Sheet -->
     <Transition name="sheet">
       <div v-if="showQariPicker" class="picker-overlay" @click="closeQariPicker">
-        <div class="picker-sheet animate-slide-up" @click.stop>
+        <div class="picker-sheet" :style="qariPickerSheet.sheetStyle.value" @click.stop>
           <div class="picker-sheet__header">
-            <div class="picker-sheet__indicator"></div>
+            <div class="picker-sheet__indicator" v-bind="qariPickerSheet.bindHandle"></div>
             <div class="picker-sheet__title-row">
               <h3>Pilih Qori Murottal</h3>
               <button class="picker-sheet__close" @click="closeQariPicker">Selesai</button>
@@ -623,7 +623,7 @@ if (selectedQari.value === 'MaherAlMuaiqly_64kbps') {
   selectedQari.value = 'Maher_AlMuaiqly_64kbps'
 }
 
-
+const closeAudioSettings = () => { showAudioSettings.value = false; settingsPickerType.value = 'none'; settingsSurahSearch.value = '' }
 
 const qariList = [
   { id: 'Maher_AlMuaiqly_64kbps', shortName: 'Maher Al-Muaiqly', name: 'Syekh Maher bin Hamad Al-Muaiqly', country: 'Arab Saudi', image: '/images/qori/syekh-maher-al-muaiqly.png' },
@@ -685,7 +685,6 @@ const openAudioSettings = async () => {
   // Do NOT pause — murotal keeps playing while settings is open
   showAudioSettings.value = true
 }
-const closeAudioSettings = () => { showAudioSettings.value = false; settingsPickerType.value = 'none'; settingsSurahSearch.value = '' }
 
 const selectSettingsSurah = (number: number) => {
   if (settingsPickerType.value === 'startSurah') { settingsStartSurah.value = number; settingsStartAyah.value = 1; if (settingsEndSurah.value < number) settingsEndSurah.value = number }
@@ -1817,6 +1816,29 @@ watch(learningRevealMode, () => {
 })
 
 // Initial fetches
+// Bottom sheet instances
+const navigatorSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: closeNavigator
+})
+
+const audioSettingsSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: closeAudioSettings
+})
+
+const qariPickerSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: closeQariPicker
+})
+
+watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
+watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
+watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
+
 onMounted(async () => {
   isInitialized = true
   fetchSurahList()
@@ -3229,12 +3251,27 @@ useHead({
 }
 
 .picker-sheet__indicator {
+  width: 100%;
+  padding: 8px 0;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  margin-bottom: 4px;
+}
+
+.picker-sheet__indicator::before {
+  content: '';
   width: 40px;
   height: 5px;
   background: var(--color-text-muted);
   border-radius: var(--radius-full);
-  margin: 0 auto 4px;
   opacity: 0.5;
+}
+
+.picker-sheet__indicator:active {
+  cursor: grabbing;
 }
 
 .picker-sheet__title-row {
@@ -3409,12 +3446,16 @@ useHead({
 }
 
 .sheet-enter-active .picker-sheet,
-.sheet-leave-active .picker-sheet {
+.sheet-leave-active .picker-sheet,
+.sheet-enter-active .navigator-sheet,
+.sheet-leave-active .navigator-sheet {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sheet-enter-from .picker-sheet,
-.sheet-leave-to .picker-sheet {
+.sheet-leave-to .picker-sheet,
+.sheet-enter-from .navigator-sheet,
+.sheet-leave-to .navigator-sheet {
   transform: translateY(100%);
 }
 
@@ -3859,26 +3900,31 @@ useHead({
   background: #FFFDF7;
   border-radius: 24px 24px 0 0;
   overflow: hidden;
-  height: 92dvh;
   max-height: 92dvh;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .navigator-sheet__handle {
   flex: 0 0 auto;
   display: flex;
   justify-content: center;
-  padding: 10px 0 2px;
+  padding: 12px 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
 .navigator-sheet__handle::before {
   content: '';
-  width: 40px;
+  width: 42px;
   height: 4px;
-  border-radius: 99px;
-  background: rgba(0,0,0,0.12);
+  border-radius: 999px;
+  background: rgba(0,0,0,0.15);
+}
+
+.navigator-sheet__handle:active {
+  cursor: grabbing;
 }
 
 .navigator-sheet__content {

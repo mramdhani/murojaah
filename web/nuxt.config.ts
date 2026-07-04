@@ -3,7 +3,88 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
 
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', '@vite-pwa/nuxt'],
+
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'Murojaah — Hafalan Qur\'an',
+      short_name: 'Murojaah',
+      description: 'Aplikasi hafalan Qur\'an dengan remote fullscreen — menghafal dan murajaah per ayat dengan mudah',
+      theme_color: '#064E3B',
+      background_color: '#FFFDF8',
+      display: 'standalone',
+      orientation: 'portrait',
+      start_url: '/',
+      icons: [
+        {
+          src: '/web-app-manifest-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any maskable'
+        },
+        {
+          src: '/web-app-manifest-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable'
+        }
+      ]
+    },
+    workbox: {
+      navigateFallback: '/',
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}'],
+      maximumFileSizeToCacheInBytes: 3000000,
+      runtimeCaching: [
+        {
+          urlPattern: /^https:\/\/fonts\.googleapis\.com/,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'google-fonts-stylesheets'
+          }
+        },
+        {
+          urlPattern: /^https:\/\/fonts\.gstatic\.com/,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'google-fonts-webfonts',
+            expiration: {
+              maxEntries: 30,
+              maxAgeSeconds: 60 * 60 * 24 * 365
+            }
+          }
+        },
+        {
+          urlPattern: /^\/mushaf\/(madinah-classic|madinah-nabawiyyah)\/.*/,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'mushaf-images',
+            expiration: {
+              maxEntries: 1300,
+              maxAgeSeconds: 60 * 60 * 24 * 180
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
+        {
+          urlPattern: /\/api\/(mushaf\/pages|surahs)/,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'api-cache',
+            expiration: {
+              maxEntries: 700,
+              maxAgeSeconds: 60 * 60 * 24 * 30
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        }
+      ]
+    }
+  },
 
   runtimeConfig: {
     public: {
