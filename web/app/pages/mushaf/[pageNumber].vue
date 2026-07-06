@@ -472,7 +472,7 @@
             :ref="el => { if (el && ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}`) activeTranslationItemRef = el as HTMLElement }"
             class="translation-sheet-item"
             :class="{ 'translation-sheet-item--active': ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}` }"
-            @click="selectAyahFromTranslation(ayah.ayah_number)"
+            @click="selectAyahFromTranslation(ayah.surah_id, ayah.ayah_number)"
           >
             <span class="translation-sheet-item__number">{{ ayah.ayah_number }}</span>
             <p class="translation-sheet-item__text">{{ ayah.translation_id || 'Terjemahan tidak tersedia.' }}</p>
@@ -817,7 +817,7 @@ const openAyahOptions = (verseKey: string) => {
 const playAyahFromDrawer = () => {
   showAyahDrawer.value = false
   if (selectedAyahForDrawer.value) {
-    selectAyahFromTranslation(selectedAyahForDrawer.value.ayah)
+    selectAyahFromTranslation(selectedAyahForDrawer.value.surah, selectedAyahForDrawer.value.ayah)
   }
 }
 
@@ -959,15 +959,33 @@ const activeVerseTranslation = computed(() => {
   return active?.translation_id || 'Terjemahan tidak tersedia untuk ayat ini.'
 })
 
-const selectAyahFromTranslation = (ayahNumber: number) => {
+const selectAyahFromTranslation = (surahId: number, ayahNumber: number) => {
   selectedAyah.value = ayahNumber
+  selectedSurahId.value = surahId
+  
   if (!isCustomRangeActive.value && pageData.value?.ayahs) {
-    const idx = pageData.value.ayahs.findIndex(x => x.ayah_number === ayahNumber)
+    const idx = pageData.value.ayahs.findIndex(x => x.surah_id === surahId && x.ayah_number === ayahNumber)
     if (idx !== -1) {
       playingPageNumber.value = pageNumber.value
       playingAyahsList.value = [...pageData.value.ayahs]
       playerAyahIndex.value = idx
       playPlayerAyah()
+    }
+  } else if (isCustomRangeActive.value) {
+    const idx = activeMurottalQueue.value.findIndex(x => x.surah === surahId && x.ayah === ayahNumber)
+    if (idx !== -1) {
+      queueIndex.value = idx
+      currentLocalAyahRepeatCount.value = 1
+      playPlayerAyah()
+    } else {
+      isCustomRangeActive.value = false
+      const pgIdx = pageData.value?.ayahs?.findIndex(x => x.surah_id === surahId && x.ayah_number === ayahNumber) ?? -1
+      if (pgIdx !== -1 && pageData.value?.ayahs) {
+        playingPageNumber.value = pageNumber.value
+        playingAyahsList.value = [...pageData.value.ayahs]
+        playerAyahIndex.value = pgIdx
+        playPlayerAyah()
+      }
     }
   }
 }
@@ -1082,7 +1100,7 @@ const loadQcfFont = (page: number) => {
   loadedFonts.value.add(page)
   const fontUrl = `/fonts/qcf/p${page}.woff2?v=2`
   const style = document.createElement('style')
-  style.textContent = `@font-face { font-family: "QCF-p${page}"; src: url("${fontUrl}") format("woff2"); font-display: swap; }`
+  style.textContent = `@font-face { font-family: "QCF-p${page}"; src: url("${fontUrl}") format("woff2"); font-display: block; }`
   document.head.appendChild(style)
   document.fonts?.load(`16px "QCF-p${page}"`).then(() => fitQcfLines())
 }
@@ -1200,9 +1218,14 @@ watch(activeHighlightVerse, async (newVerse) => {
   
   // Auto-update the single Ayah Options Drawer (Terjemahan) to follow Murottal
   if (showAyahDrawer.value) {
-    const activeAyahData = pageData.value?.ayahs.find(a => a.surah === newVerse.surah && a.ayah === newVerse.ayah)
+    const activeAyahData = pageData.value?.ayahs.find(a => a.surah_id === newVerse.surah && a.ayah_number === newVerse.ayah)
     if (activeAyahData) {
-      selectedAyahForDrawer.value = activeAyahData
+      selectedAyahForDrawer.value = {
+        surah: activeAyahData.surah_id,
+        ayah: activeAyahData.ayah_number,
+        verse_key: activeAyahData.verse_key,
+        text: (activeAyahData as any).text_imlaei_simple || (activeAyahData as any).text_uthmani || ''
+      }
     }
   }
 }, { deep: true })
@@ -1454,7 +1477,6 @@ const handlePointerDown = (event: PointerEvent) => {
   swipeStartTime.value = performance.now()
   swipeOffset.value = 0
   suppressNextLineTap.value = false
-  ;(event.currentTarget as HTMLElement)?.setPointerCapture?.(event.pointerId)
 }
 
 const handlePointerMove = (event: PointerEvent) => {
@@ -2177,6 +2199,14 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   text-align: left;
 }
 
+.mushaf-page--fullscreen .mushaf-content {
+  padding-top: calc(var(--safe-top) + 12px);
+  padding-bottom: calc(var(--safe-bottom) + 12px);
+}
+
+.mushaf-header--hidden { transform: translateY(-100%); opacity: 0; }
+.mushaf-player--hidden { transform: translateY(100%); opacity: 0; }
+
 .mushaf-header__edition {
   color: #087d59;
   font-size: .61rem;
@@ -2269,6 +2299,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   width: 100%;
   max-width: 100%; /* Stretch fully to left and right */
   flex: 1;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   background: #fffefa;
@@ -2277,6 +2308,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .mushaf-track {
+  position: absolute;
+  inset: 0;
   width: 300%;
   height: 100%;
   display: flex;
@@ -5270,6 +5303,9 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 
 /* ── Mobile Landscape Full-Width Override ─── */
 @media (orientation: landscape) and (max-height: 600px) {
+  .mushaf-content {
+    overflow: hidden !important;
+  }
   .mushaf-viewport {
     max-width: none !important;
     width: 100% !important;
@@ -5281,6 +5317,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   .mushaf-slide {
     display: block !important;
     overflow-y: auto !important;
+    overscroll-behavior: contain !important;
     -webkit-overflow-scrolling: touch;
   }
   .mushaf-page-box {
