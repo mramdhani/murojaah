@@ -985,8 +985,8 @@ const surahNumber = computed(() => currentAyah.value?.surah_number || lastSurahS
 const totalAyah = computed(() => currentAyah.value?.total_ayah || lastSurahSnapshot.value?.total_ayah || currentSurahMeta.value?.total_ayah || 0)
 const isListeningMode = computed(() => sessionMode.value === 'listening')
 const isHiddenState = computed(() => !isListeningMode.value && !isRevealed.value)
-const shouldAutoplayAudio = computed(() => isListeningMode.value || learningAutoplayAudio.value)
-const shouldAutoAdvance = computed(() => isListeningMode.value && listeningAutoNextAyah.value)
+const shouldAutoplayAudio = computed(() => isListeningMode.value)
+const shouldAutoAdvance = computed(() => isListeningMode.value)
 const remoteRouteQuery = computed(() => ({ mode: sessionMode.value }))
 
 const showFirstWordHint = ref(false)

@@ -778,6 +778,8 @@ const playerAyahIndex = ref(0)
 const playerCurrentTime = ref(0)
 const playerDuration = ref(0)
 const shouldAutoplayNextPage = useState<boolean>('shouldAutoplayNextPage', () => false)
+const playingPageNumber = ref<number | null>(null)
+const playingAyahsList = ref<any[]>([])
 
 const legacyAutoNextAyah = useCookie<boolean>('auto_next_ayah', {
   default: () => false,
@@ -902,6 +904,8 @@ const selectAyahFromTranslation = (ayahNumber: number) => {
   if (!isCustomRangeActive.value && pageData.value?.ayahs) {
     const idx = pageData.value.ayahs.findIndex(x => x.ayah_number === ayahNumber)
     if (idx !== -1) {
+      playingPageNumber.value = pageNumber.value
+      playingAyahsList.value = [...pageData.value.ayahs]
       playerAyahIndex.value = idx
       playPlayerAyah()
     }
@@ -975,9 +979,9 @@ const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffse
 
 // ── QCF V2 Rendering Logic ─────────────────────────────────────────────────
 
-// Cache: page number → {lines, surahs, juz}
-const qcfPageCache = ref<Record<number, { lines: MushafLine[], surahs: MushafSurah[], juz: number[] }>>({})
-const qcfLoading = ref(true) // true while current page is loading
+// Cache: page number → {lines, surahs, juz} (persisted globally across route transitions via Nuxt useState)
+const qcfPageCache = useState<Record<number, { lines: MushafLine[], surahs: MushafSurah[], juz: number[] }>>('qcfPageCache', () => ({}))
+const qcfLoading = ref(!qcfPageCache.value[pageNumber.value]) // true while current page is loading
 let qcfFitFrame: number | null = null
 
 const fitQcfLines = async () => {
@@ -990,10 +994,16 @@ const fitQcfLines = async () => {
       const content = line.querySelector<HTMLElement>('.mushaf-line__qcf-content')
       if (!content) return
 
-      content.style.setProperty('--qcf-line-scale', '1')
-      if (line.closest('.mushaf-page-box--opening, .mushaf-page-box--closing')) return
+      if (line.closest('.mushaf-page-box--opening, .mushaf-page-box--closing')) {
+        content.style.removeProperty('--qcf-line-scale')
+        return
+      }
 
+      // Override transform to none to measure the true untransformed width
+      content.style.transform = 'none'
       const naturalWidth = content.getBoundingClientRect().width
+      content.style.transform = ''
+
       const availableWidth = line.clientWidth
       if (!naturalWidth || !availableWidth) return
 
@@ -1023,9 +1033,15 @@ const loadQcfPage = async (page: number) => {
 
 // Load current + adjacent pages
 const loadQcfPages = async () => {
-  qcfLoading.value = true
+  const needsLoading = !qcfPageCache.value[pageNumber.value]
+  if (needsLoading) {
+    qcfLoading.value = true
+  }
   await loadQcfPage(pageNumber.value)
-  qcfLoading.value = false
+  if (needsLoading) {
+    qcfLoading.value = false
+  }
+  fitQcfLines()
   // Preload adjacent
   loadQcfPage(Math.max(1, pageNumber.value - 1))
   loadQcfPage(Math.min(604, pageNumber.value + 1))
@@ -1230,22 +1246,31 @@ const sectionDisplayValue = computed(() => navigationType.value === 'page' ? Str
 const sectionPickerHint = computed(() => navigationType.value === 'page' ? 'Pilih nomor tujuan' : `Pilih ${navigationTypeLabel.value.toLowerCase()} tujuan`)
 const activeQari = computed(() => qariList.find(qari => qari.id === selectedQari.value) || qariList[0])
 const activeQariName = computed(() => activeQari.value.name)
-const playerAyahs = computed(() => pageData.value?.ayahs || [])
+const playerAyahs = computed(() => {
+  if (isPlaying.value && playingAyahsList.value.length > 0) {
+    return playingAyahsList.value
+  }
+  return pageData.value?.ayahs || []
+})
 
 const playerAyah = computed(() => {
   if (isCustomRangeActive.value && activeMurottalQueue.value[queueIndex.value]) {
     const qv = activeMurottalQueue.value[queueIndex.value]
-    return pageData.value?.ayahs.find(x => x.verse_key === qv.verse_key) || null
+    const list = playingAyahsList.value.length > 0 ? playingAyahsList.value : (pageData.value?.ayahs || [])
+    const found = list.find(x => x.verse_key === qv.verse_key)
+    if (found) return found
+    return { verse_key: qv.verse_key }
   }
   return playerAyahs.value[playerAyahIndex.value] || playerAyahs.value[0]
 })
 
 const playerAyahLabel = computed(() => {
+  const pNum = playingPageNumber.value || pageNumber.value
   if (isCustomRangeActive.value && activeMurottalQueue.value[queueIndex.value]) {
     const qv = activeMurottalQueue.value[queueIndex.value]
-    return `Ayat ${qv.verse_key} \u00B7 Halaman ${pageNumber.value}`
+    return `Ayat ${qv.verse_key} \u00B7 Halaman ${pNum}`
   }
-  return playerAyah.value ? `Ayat ${playerAyah.value.verse_key} \u00B7 Halaman ${pageNumber.value}` : `Halaman ${pageNumber.value}`
+  return playerAyah.value ? `Ayat ${playerAyah.value.verse_key} \u00B7 Halaman ${pNum}` : `Halaman ${pNum}`
 })
 
 const playerProgress = computed(() => playerDuration.value > 0 ? Math.min(100, (playerCurrentTime.value / playerDuration.value) * 100) : 0)
@@ -1303,8 +1328,14 @@ const prefetchPages = () => {
 
 const loadPageMetadata = async () => {
   try {
-    const response = await apiFetch<{ data: MushafPageData }>('/mushaf/pages/' + pageNumber.value)
-    pageData.value = response.data
+    const cached = qcfPageCache.value[pageNumber.value]
+    if (cached) {
+      pageData.value = cached as any
+    } else {
+      const response = await apiFetch<{ data: MushafPageData }>('/mushaf/pages/' + pageNumber.value)
+      pageData.value = response.data
+      qcfPageCache.value[pageNumber.value] = response.data as any
+    }
 
     await loadSurahOptions()
     const querySurah = Number(route.query.surah)
@@ -1336,6 +1367,8 @@ const loadPageMetadata = async () => {
       shouldAutoplayNextPage.value = false
       if (!isCustomRangeActive.value) {
         playerAyahIndex.value = 0
+        playingPageNumber.value = pageNumber.value
+        playingAyahsList.value = [...(pageData.value?.ayahs || [])]
       }
       playPlayerAyah()
     }
@@ -1360,7 +1393,9 @@ const handlePageChange = () => {
   const savedQueue = [...activeMurottalQueue.value]
   const savedIndex = queueIndex.value
 
-  resetPlayer()
+  if (!isPlaying.value) {
+    resetPlayer()
+  }
 
   if (wasAutoplay) {
     shouldAutoplayNextPage.value = true
@@ -1506,6 +1541,12 @@ const stopPlayer = () => {
 }
 
 const playPlayerAyah = () => {
+  // Sync playing page and verses if they are empty
+  if (playingAyahsList.value.length === 0 && pageData.value?.ayahs) {
+    playingPageNumber.value = pageNumber.value
+    playingAyahsList.value = [...pageData.value.ayahs]
+  }
+
   const src = playerAudioUrl()
   if (!src) return
   if (preloadedAudio && preloadedAudioUrl === src) {
@@ -1559,9 +1600,11 @@ const playPlayerAyah = () => {
           playerAyahIndex.value += 1
           playPlayerAyah()
         } else {
-          if (listeningAutoNextAyah.value && pageNumber.value < 604) {
+          // Always auto-advance to the next page when the current page's verses finish playing
+          const nextTargetPage = (playingPageNumber.value || pageNumber.value) + 1
+          if (nextTargetPage <= 604) {
             shouldAutoplayNextPage.value = true
-            slideToPage(pageNumber.value + 1)
+            slideToPage(nextTargetPage)
           } else {
             isPlaying.value = false
             playerCurrentTime.value = playerDuration.value
@@ -1583,6 +1626,11 @@ const togglePlayer = () => {
     playerAudio.play().catch(() => { isPlaying.value = false })
     return
   }
+  
+  if (!isCustomRangeActive.value && pageData.value?.ayahs) {
+    playingPageNumber.value = pageNumber.value
+    playingAyahsList.value = [...pageData.value.ayahs]
+  }
   playPlayerAyah()
 }
 
@@ -1592,6 +1640,8 @@ const resetPlayer = () => {
   shouldAutoplayNextPage.value = false
   isCustomRangeActive.value = false
   currentLocalAyahRepeatCount.value = 1
+  playingPageNumber.value = null
+  playingAyahsList.value = []
 }
 
 const audioUrlForVerse = (verse: { surah: number; ayah: number }) =>
@@ -1875,7 +1925,7 @@ const openNavigator = () => {
   syncNavigationSelection()
   if (primarySurah.value) {
     selectedSurahId.value = primarySurah.value.id
-    const currentAyah = pageData.value?.ayahs[0]?.ayah_number
+    const currentAyah = pageData.value?.ayahs?.[0]?.ayah_number
     selectedAyah.value = currentAyah || 1
   }
   navigatorOpen.value = true
@@ -4905,15 +4955,12 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   border-bottom: 0 !important;
 }
 
-/* Larger, denser Quran setting. The page box now follows the actual reading
-   viewport, so line 1 (Al-Baqarah 6 on page 3) is never hidden by the app
-   header and the 15 canonical lines remain visible above the player. */
 .mushaf-line--qcf {
   gap: 0;
   overflow: visible !important;
   justify-content: center !important;
-  font-size: clamp(21px, 5.55cqw, 29px) !important;
-  line-height: 1.28 !important;
+  font-size: clamp(23px, 5.95cqw, 31.5px) !important;
+  line-height: 1.56 !important;
   white-space: nowrap;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -4940,10 +4987,9 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 .mushaf-page-box--opening .mushaf-line--qcf {
-  font-size: clamp(23px, 6.15cqw, 32px) !important;
-  line-height: 1.3 !important;
+  font-size: clamp(25px, 6.55cqw, 34.5px) !important;
+  line-height: 1.6 !important;
 }
-
 /* Page 604 follows the printed closing-page composition: three compact,
    centered surahs, each with its own banner and basmalah. */
 .mushaf-page-box--closing .mushaf-text-frame__inner {
@@ -4992,7 +5038,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 .mushaf-page-box--multi-surah .mushaf-line--qcf {
-  line-height: 1.14 !important;
+  line-height: 1.46 !important;
 }
 
 .mushaf-ayah-ornament {

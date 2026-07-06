@@ -320,44 +320,6 @@
               </label>
             </div>
           </div>
-
-          <div class="settings-item">
-            <div class="settings-item__info">
-              <span class="settings-item__title">Putar audio otomatis saat belajar</span>
-              <span class="settings-item__desc">Audio Qori diputar otomatis saat ayat tampil di mode murojaah.</span>
-            </div>
-            <div class="settings-item__action">
-              <label class="switch">
-                <input type="checkbox" v-model="learningAutoplayAudio" @change="handleLearningAutoplayChange" />
-                <span class="slider round"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-card settings-card--stacked">
-          <div class="settings-card__group-head">
-            <h3>Preferensi Mendengarkan</h3>
-            <p>Untuk sesi murottal yang tidak menilai hafalan dan tidak menyimpan progress.</p>
-          </div>
-
-
-          <div class="settings-item">
-            <div class="settings-item__info">
-              <span class="settings-item__title">Lanjut otomatis lintas surat</span>
-              <span class="settings-item__desc">Setelah audio selesai, lanjut ke ayat atau surat berikutnya di mode mendengarkan.</span>
-            </div>
-            <div class="settings-item__action">
-              <label class="switch">
-                <input type="checkbox" v-model="listeningAutoNextAyah" @change="handleListeningAutoNextChange" />
-                <span class="slider round"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="settings-note">
-            Mode mendengarkan dipakai untuk menyimak audio. Progress murojaah tidak dicatat di mode ini.
-          </div>
         </div>
 
         <div class="settings-card settings-card--stacked">
@@ -574,32 +536,8 @@ const legacyRevealMode = useCookie<string>('reveal_mode', {
   path: '/'
 })
 
-const legacyAutoplayAudio = useCookie<boolean>('autoplay_audio', {
-  default: () => false,
-  maxAge: 60 * 60 * 24 * 365,
-  path: '/'
-})
-
-const legacyAutoNextAyah = useCookie<boolean>('auto_next_ayah', {
-  default: () => false,
-  maxAge: 60 * 60 * 24 * 365,
-  path: '/'
-})
-
 const learningRevealMode = useCookie<string>('learning_reveal_mode', {
   default: () => legacyRevealMode.value || 'hidden',
-  maxAge: 60 * 60 * 24 * 365,
-  path: '/'
-})
-
-const learningAutoplayAudio = useCookie<boolean>('learning_autoplay_audio', {
-  default: () => legacyAutoplayAudio.value ?? false,
-  maxAge: 60 * 60 * 24 * 365,
-  path: '/'
-})
-
-const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
-  default: () => legacyAutoNextAyah.value ?? false,
   maxAge: 60 * 60 * 24 * 365,
   path: '/'
 })
@@ -743,20 +681,6 @@ const handleLearningRevealModeChange = () => {
   triggerHaptic()
   if (showToast) {
     showToast('Preferensi murojaah disimpan!', 'fluent')
-  }
-}
-
-const handleLearningAutoplayChange = () => {
-  triggerHaptic()
-  if (showToast) {
-    showToast('Audio otomatis untuk murojaah disimpan!', 'fluent')
-  }
-}
-
-const handleListeningAutoNextChange = () => {
-  triggerHaptic()
-  if (showToast) {
-    showToast('Preferensi mendengarkan disimpan!', 'fluent')
   }
 }
 
