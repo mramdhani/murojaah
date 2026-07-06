@@ -72,7 +72,7 @@ export default defineNuxtConfig({
           urlPattern: /\/api\/(mushaf\/pages|surahs)/,
           handler: 'StaleWhileRevalidate',
           options: {
-            cacheName: 'api-cache',
+            cacheName: 'api-cache-v2',
             expiration: {
               maxEntries: 700,
               maxAgeSeconds: 60 * 60 * 24 * 30

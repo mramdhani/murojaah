@@ -1177,7 +1177,23 @@ watch(activeHighlightVerse, async (newVerse) => {
     activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 }, { deep: true })
-const primarySurah = computed(() => pageData.value?.surahs[0] || null)
+const primarySurah = computed(() => {
+  if (!pageData.value?.surahs) return null
+
+  // 1. If there is a query surah targeted explicitly by the user, prioritize it
+  const querySurahId = Number(route.query.surah)
+  if (querySurahId) {
+    const found = pageData.value.surahs.find(s => s.id === querySurahId || s.number === querySurahId)
+    if (found) return found
+  }
+
+  // 2. Otherwise, find the first surah that actually starts on this page (has a banner)
+  const startingSurah = pageData.value.surahs.find(s => s.starts_at_line !== null && s.starts_at_line !== undefined)
+  if (startingSurah) return startingSurah
+
+  // 3. Fallback to the first surah on this page (e.g. continuation from previous page)
+  return pageData.value.surahs[0] || null
+})
 const currentSurahTitle = computed(() =>
   primarySurah.value
     ? primarySurah.value.number + '. ' + primarySurah.value.name_latin
@@ -1290,17 +1306,30 @@ const loadPageMetadata = async () => {
     const response = await apiFetch<{ data: MushafPageData }>('/mushaf/pages/' + pageNumber.value)
     pageData.value = response.data
 
-    const hasValidSettings = Number.isFinite(settingsStartSurah.value) && Number.isFinite(settingsEndSurah.value)
-    if ((!isSettingsInitialized.value || !hasValidSettings) && pageData.value?.ayahs.length) {
-      await loadSurahOptions()
-      const currentSurah = pageData.value.ayahs[0]
-      const sNum = Number(currentSurah.verse_key.split(':')[0])
-      settingsStartSurah.value = sNum
-      settingsEndSurah.value = sNum
-      const surahMeta = surahOptions.value.find(s => s.number === sNum)
-      settingsStartAyah.value = 1
-      settingsEndAyah.value = surahMeta ? surahMeta.total_ayah : 7
-      isSettingsInitialized.value = true
+    await loadSurahOptions()
+    const querySurah = Number(route.query.surah)
+    const queryAyah = Number(route.query.ayah)
+    if (querySurah) {
+      const surahMeta = surahOptions.value.find(s => s.number === querySurah || s.id === querySurah)
+      if (surahMeta) {
+        settingsStartSurah.value = surahMeta.number
+        settingsEndSurah.value = surahMeta.number
+        settingsStartAyah.value = queryAyah || 1
+        settingsEndAyah.value = surahMeta.total_ayah
+        isSettingsInitialized.value = true
+      }
+    } else {
+      const hasValidSettings = Number.isFinite(settingsStartSurah.value) && Number.isFinite(settingsEndSurah.value)
+      if ((!isSettingsInitialized.value || !hasValidSettings) && pageData.value?.ayahs.length) {
+        const currentSurah = pageData.value.ayahs[0]
+        const sNum = Number(currentSurah.verse_key.split(':')[0])
+        settingsStartSurah.value = sNum
+        settingsEndSurah.value = sNum
+        const surahMeta = surahOptions.value.find(s => s.number === sNum)
+        settingsStartAyah.value = 1
+        settingsEndAyah.value = surahMeta ? surahMeta.total_ayah : 7
+        isSettingsInitialized.value = true
+      }
     }
 
     if (shouldAutoplayNextPage.value) {
@@ -1359,7 +1388,7 @@ const handlePageChange = () => {
 
 const goToPage = (page: number) => {
   if (page < 1 || page > 604 || page === pageNumber.value) return
-  return router.push({ path: '/mushaf/' + page, query: route.query })
+  return router.push({ path: '/mushaf/' + page })
 }
 
 const settleSwipe = () => {
@@ -1887,7 +1916,14 @@ const openSelectedAyah = async () => {
     )
     if (!response.data.page) throw new Error('Page mapping missing')
     closeNavigator()
-    goToPage(response.data.page)
+    
+    const surahMeta = surahOptions.value.find(s => s.id === selectedSurahId.value)
+    const surahNum = surahMeta ? surahMeta.number : 1
+
+    router.push({
+      path: '/mushaf/' + response.data.page,
+      query: { surah: surahNum, ayah: selectedAyah.value }
+    })
   } catch (error) {
     console.error('Failed to find ayah page:', error)
     navigatorError.value = 'Ayat belum dapat ditemukan.'

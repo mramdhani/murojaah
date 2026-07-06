@@ -92,27 +92,8 @@ class AyahController extends Controller
             ];
         }
 
-        // Sort lines by line_number to ensure correct physical page order.
-        // Some pages (e.g. 585) have a wrapped layout where line 1 appears
-        // last in the word_id order (lines 2..15 followed by line 1). Detect
-        // this wrap: if the first line inserted (from word_id order) is not 1
-        // and the last line inserted is 1, then line 1 belongs at the end.
-        $insertedLineNumbers = array_keys($linesMap);
-        $firstInserted = reset($insertedLineNumbers);
-        $lastInserted = end($insertedLineNumbers);
-        $isWrapped = $firstInserted !== 1 && $lastInserted === 1;
-
-        if ($isWrapped) {
-            // Wrapped layout: sort so line 1 comes last
-            uksort($linesMap, function ($a, $b) {
-                if ($a === 1) return 1;
-                if ($b === 1) return -1;
-                return $a <=> $b;
-            });
-        } else {
-            // Normal layout: sort ascending
-            ksort($linesMap);
-        }
+        // Sort lines by line_number ascending to ensure correct physical page order (from top to bottom).
+        ksort($linesMap);
 
         // Build a verse_key → progress map for word-level highlight
         $verseProgressMap = [];
@@ -141,22 +122,9 @@ class AyahController extends Controller
         }
         unset($lineWords);
 
-        // QCF glyphs must be unique within one page font. Some legacy seeded
-        // rows contain a wrapped line whose glyph codes restart from the
-        // beginning of the page (page 585 is one example). Rendering those
-        // codes would draw the wrong ayahs. Flag the affected line and use
-        // the verified Arabic text stored with the ayah instead.
-        $seenGlyphCodes = [];
+        // With the font_page database column now successfully migrated and seeded,
+        // page fonts are isolated properly so glyph collisions are solved at the database level.
         $unicodeFallbackLines = [];
-        foreach ($mushafWords as $word) {
-            $fontPage = $word->font_page ?? $word->page_number;
-            $key = $fontPage . '_' . $word->code_v2;
-            if (isset($seenGlyphCodes[$key]) && $seenGlyphCodes[$key] !== $word->word_id) {
-                $unicodeFallbackLines[$word->line_number] = true;
-            } else {
-                $seenGlyphCodes[$key] = $word->word_id;
-            }
-        }
 
         // Build surah boundaries: which line does each surah start on?
         // Some surahs have a wrapped layout where they start at a high line

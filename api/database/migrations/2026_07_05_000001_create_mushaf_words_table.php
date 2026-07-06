@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('ayah_number');     // ayat ke-n
             $table->unsignedTinyInteger('position');         // posisi kata dalam ayat
             $table->unsignedSmallInteger('page_number');     // 1–604
+            $table->unsignedSmallInteger('font_page')->nullable(); // halaman font QCF
             $table->unsignedTinyInteger('line_number');      // 1–15
             $table->enum('char_type', ['word', 'end']);      // word = kata, end = nomor ayat
             $table->string('code_v2', 8);                   // karakter PUA font QCF V2

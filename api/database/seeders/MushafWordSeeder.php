@@ -92,6 +92,18 @@ class MushafWordSeeder extends Seeder
                 $ayahNum  = (int) $parts[1];
                 $words    = $verse['words'] ?? [];
 
+                // Sync the ayahs table page column to match the V2 target page
+                $firstWord = $words[0] ?? null;
+                if ($firstWord) {
+                    $firstWordPage = (int) ($firstWord['page_number'] ?? $page);
+                    
+                    DB::table('ayahs')
+                        ->join('surahs', 'ayahs.surah_id', '=', 'surahs.id')
+                        ->where('surahs.number', $surahNum)
+                        ->where('ayahs.ayah_number', $ayahNum)
+                        ->update(['ayahs.page' => $firstWordPage]);
+                }
+
                 foreach ($words as $word) {
                     $charType = $word['char_type_name'] ?? 'word';
 
@@ -107,31 +119,10 @@ class MushafWordSeeder extends Seeder
                         continue;
                     }
 
-                    $pageOverrides = [
-                        90  => array_fill_keys(range(19, 20), 594),
-                        92  => array_fill_keys(range(10, 14), 595),
-                        94  => array_fill_keys(range(3, 8), 596),
-                        96  => array_fill_keys(range(13, 19), 597),
-                        98  => array_fill_keys(range(6, 7), 598),
-                        100 => array_fill_keys(range(10, 11), 599),
-                    ];
-
-                    $lineOverrides = [
-                        90  => [19 => 14, 20 => 15],
-                        92  => [10 => 14, 11 => 14, 12 => 14, 13 => 15, 14 => 15],
-                        94  => [3 => 14, 4 => 14, 5 => 14, 6 => 15, 7 => 15, 8 => 15],
-                        100 => [10 => 15, 11 => 15],
-                    ];
-
-                    $targetPage = $page;
-                    if (isset($pageOverrides[$surahNum][$ayahNum])) {
-                        $targetPage = $pageOverrides[$surahNum][$ayahNum];
-                    }
-
-                    $targetLine = (int) ($word['line_number'] ?? 0);
-                    if (isset($lineOverrides[$surahNum][$ayahNum])) {
-                        $targetLine = $lineOverrides[$surahNum][$ayahNum];
-                    } elseif ($targetPage === 600 && in_array($surahNum, [101, 102])) {
+                    $targetPage = (int) ($word['page_number'] ?? $page);
+                    $targetLine = (int) ($word['line_number_v2'] ?? $word['line_number'] ?? 0);
+                    
+                    if ($targetPage === 600 && in_array($surahNum, [101, 102])) {
                         $targetLine = max(1, $targetLine - 1);
                     }
 

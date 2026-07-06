@@ -4596,37 +4596,44 @@ useHead({
     max-height: 50vh !important;
     overflow-y: auto !important;
   }
-
   /* ─── 2-Column Grid Layout for Landscape Uji Ayat / listening mode ─── */
   .remote-page {
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
+    display: grid !important;
+    grid-template-rows: auto 1fr !important;
+    grid-template-columns: 60% 40% !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
   }
   .remote-header {
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    height: 48px !important;
-    padding: 4px 16px !important;
+    grid-row: 1 !important;
+    grid-column: 1 / span 2 !important;
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 6px 16px !important;
+    flex: none !important;
   }
   .remote-content {
-    flex: 0 0 60% !important;
-    width: 60% !important;
-    height: calc(100dvh - 48px) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    grid-row: 2 !important;
+    grid-column: 1 !important;
+    height: 100% !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    overflow-y: auto !important;
   }
   .remote-action-bar {
-    position: relative !important;
-    left: 0 !important;
+    grid-row: 2 !important;
+    grid-column: 2 !important;
+    height: 100% !important;
+    position: static !important;
     transform: none !important;
-    flex: 0 0 40% !important;
-    width: 40% !important;
-    height: calc(100dvh - 48px) !important;
+    display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
-    padding: 12px 16px !important;
-    gap: 8px !important;
+    justify-content: space-evenly !important; /* Space items evenly to never overflow */
+    padding: 10px 16px !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
     border-top: none !important;
     border-left: 1px solid rgba(0, 0, 0, 0.06) !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
   .remote-page--hidden .remote-action-bar {
     border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -4635,22 +4642,28 @@ useHead({
   .action-btn {
     width: 100% !important;
     flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
     gap: 8px !important;
-    height: 42px !important;
+    height: auto !important;
+    flex: 1 !important;
+    max-height: 44px !important; /* Cap the max height of each button so they fit nicely */
     padding: 0 16px !important;
-    flex: 0 0 auto !important;
   }
   .action-btn--back {
-    height: 38px !important;
+    max-height: 36px !important;
   }
   .listening-player {
     flex-direction: column !important;
     gap: 10px !important;
     width: 100% !important;
+    height: 100% !important;
+    justify-content: space-evenly !important;
   }
   .listening-player__controls {
     width: 100% !important;
     justify-content: center !important;
+    gap: 12px !important;
   }
   .listening-player__qari {
     width: 100% !important;
