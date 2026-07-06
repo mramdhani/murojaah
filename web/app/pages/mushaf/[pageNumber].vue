@@ -668,6 +668,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  key: 'mushaf-page'
+})
+
 interface MushafSurah {
   id: number
   number: number
@@ -812,6 +816,7 @@ watch(mushafTheme, () => {
 let playerAudio: HTMLAudioElement | null = null
 let preloadedAudio: HTMLAudioElement | null = null
 let preloadedAudioUrl = ''
+let idleReturnTimer: number | null = null
 
 const showAudioSettings = ref(false)
 const isCustomRangeActive = useState<boolean>('mushafMurottalRangeActive', () => false)
@@ -979,8 +984,8 @@ const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffse
 
 // ── QCF V2 Rendering Logic ─────────────────────────────────────────────────
 
-// Cache: page number → {lines, surahs, juz} (persisted globally across route transitions via Nuxt useState)
-const qcfPageCache = useState<Record<number, { lines: MushafLine[], surahs: MushafSurah[], juz: number[] }>>('qcfPageCache', () => ({}))
+// Cache: page number → {lines, surahs, juz, ayahs, verse_progress} (persisted globally across route transitions via Nuxt useState)
+const qcfPageCache = useState<Record<number, MushafPageData>>('qcfPageCache', () => ({}))
 const qcfLoading = ref(!qcfPageCache.value[pageNumber.value]) // true while current page is loading
 let qcfFitFrame: number | null = null
 
@@ -1019,11 +1024,7 @@ const loadQcfPage = async (page: number) => {
   try {
     const data = await apiFetch<{ data: MushafPageData }>(`/mushaf/pages/${page}`)
     if (data?.data?.lines) {
-      qcfPageCache.value[page] = {
-        lines:  data.data.lines,
-        surahs: data.data.surahs,
-        juz:    data.data.juz,
-      }
+      qcfPageCache.value[page] = data.data
       fitQcfLines()
     }
   } catch (e) {
@@ -1185,7 +1186,8 @@ watch(activeHighlightVerse, async (newVerse) => {
   if (process.server) return
   await nextTick()
   const key = `${newVerse.surah}:${newVerse.ayah}`
-  const el = document.querySelector(`.mushaf-word--active[data-verse="${key}"]`) as HTMLElement | null
+  const centerSlide = document.querySelector('.mushaf-slide:nth-child(2)')
+  const el = centerSlide?.querySelector(`.mushaf-word--active[data-verse="${key}"]`) as HTMLElement | null
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
   // Also update translation sheet
@@ -1247,7 +1249,7 @@ const sectionPickerHint = computed(() => navigationType.value === 'page' ? 'Pili
 const activeQari = computed(() => qariList.find(qari => qari.id === selectedQari.value) || qariList[0])
 const activeQariName = computed(() => activeQari.value.name)
 const playerAyahs = computed(() => {
-  if (isPlaying.value && playingAyahsList.value.length > 0) {
+  if (playingAyahsList.value.length > 0) {
     return playingAyahsList.value
   }
   return pageData.value?.ayahs || []
@@ -1392,12 +1394,14 @@ const handlePageChange = () => {
   const wasRangeActive = isCustomRangeActive.value
   const savedQueue = [...activeMurottalQueue.value]
   const savedIndex = queueIndex.value
+  const wasPlaying = isPlaying.value
 
-  if (!isPlaying.value) {
-    resetPlayer()
-  }
-
+  // Only stop player if this was an automatic page turn triggered by the audio
   if (wasAutoplay) {
+    stopPlayer()
+    playerAyahIndex.value = 0
+    playingPageNumber.value = null
+    playingAyahsList.value = []
     shouldAutoplayNextPage.value = true
   }
   if (wasRangeActive) {
@@ -1419,7 +1423,11 @@ const handlePageChange = () => {
       if (p) loadQcfFont(p)
     })
   }
+
+  // Start idle timer to return to playing page if we wandered off
+  startIdleTimer()
 }
+
 
 const goToPage = (page: number) => {
   if (page < 1 || page > 604 || page === pageNumber.value) return
@@ -1434,6 +1442,7 @@ const settleSwipe = () => {
 
 const handlePointerDown = (event: PointerEvent) => {
   if (swipeAnimating.value) return
+  clearIdleTimer()
   swipeStartX.value = event.clientX
   swipeStartTime.value = performance.now()
   swipeOffset.value = 0
@@ -1465,6 +1474,7 @@ const handlePointerUp = async (event: PointerEvent) => {
 
   if (!shouldMove) {
     settleSwipe()
+    startIdleTimer()
     return
   }
 
@@ -1476,6 +1486,7 @@ const handlePointerUp = async (event: PointerEvent) => {
     await goToPage(targetPage)
     swipeAnimating.value = false
     swipeOffset.value = 0
+    startIdleTimer()
   }, 235)
 }
 
@@ -1483,6 +1494,7 @@ const cancelSwipe = () => {
   if (swipeStartX.value === null) return
   swipeStartX.value = null
   settleSwipe()
+  startIdleTimer()
 }
 
 const openModeDrawer = () => openMurojaahDrawer('learning', 'mushaf')
@@ -1529,16 +1541,37 @@ const openNavigationTarget = async () => {
   goToPage(targetPage)
 }
 
+const clearIdleTimer = () => {
+  if (idleReturnTimer) {
+    window.clearTimeout(idleReturnTimer)
+    idleReturnTimer = null
+  }
+}
+
+const startIdleTimer = () => {
+  clearIdleTimer()
+  if (isPlaying.value && playingPageNumber.value && playingPageNumber.value !== pageNumber.value) {
+    idleReturnTimer = window.setTimeout(() => {
+      if (isPlaying.value && playingPageNumber.value && playingPageNumber.value !== pageNumber.value) {
+        slideToPage(playingPageNumber.value)
+      }
+    }, 5000)
+  }
+}
+
 const stopPlayer = () => {
+  clearIdleTimer()
   if (playerAudio) {
     playerAudio.pause()
     playerAudio.removeAttribute('src')
     playerAudio.load()
+    playerAudio = null
   }
   isPlaying.value = false
   playerCurrentTime.value = 0
   playerDuration.value = 0
 }
+
 
 const playPlayerAyah = () => {
   // Sync playing page and verses if they are empty
@@ -1562,8 +1595,12 @@ const playPlayerAyah = () => {
   playerAudio.onloadedmetadata = () => { playerDuration.value = Number.isFinite(playerAudio?.duration) ? (playerAudio?.duration || 0) : 0 }
   playerAudio.onplay = () => { isPlaying.value = true }
   playerAudio.onpause = () => { isPlaying.value = false }
-  playerAudio.onerror = () => { isPlaying.value = false }
+  playerAudio.onerror = (e) => { 
+    console.error('Audio error:', e)
+    isPlaying.value = false 
+  }
   playerAudio.onended = () => {
+
     if (isCustomRangeActive.value) {
       if (currentAyahRepeatCount.value < settingsAyahRepeat.value) {
         currentAyahRepeatCount.value += 1
@@ -1604,7 +1641,11 @@ const playPlayerAyah = () => {
           const nextTargetPage = (playingPageNumber.value || pageNumber.value) + 1
           if (nextTargetPage <= 604) {
             shouldAutoplayNextPage.value = true
-            slideToPage(nextTargetPage)
+            if (nextTargetPage === pageNumber.value) {
+              loadPageMetadata()
+            } else {
+              slideToPage(nextTargetPage)
+            }
           } else {
             isPlaying.value = false
             playerCurrentTime.value = playerDuration.value
@@ -1627,9 +1668,16 @@ const togglePlayer = () => {
     return
   }
   
-  if (!isCustomRangeActive.value && pageData.value?.ayahs) {
+  // If page data hasn't loaded yet, wait for it via autoplay mechanism
+  if (!pageData.value?.ayahs) {
+    shouldAutoplayNextPage.value = true
+    return
+  }
+  
+  if (!isCustomRangeActive.value) {
     playingPageNumber.value = pageNumber.value
     playingAyahsList.value = [...pageData.value.ayahs]
+    playerAyahIndex.value = 0
   }
   playPlayerAyah()
 }
@@ -2009,6 +2057,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearIdleTimer()
   stopPlayer()
   window.removeEventListener('resize', fitQcfLines)
   if (qcfFitFrame !== null) cancelAnimationFrame(qcfFitFrame)
