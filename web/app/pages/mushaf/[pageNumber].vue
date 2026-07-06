@@ -785,6 +785,8 @@ const lineCount = 15
 const revealedLines = ref<boolean[]>(Array(lineCount).fill(true))
 const viewportRef = ref<HTMLElement | null>(null)
 const swipeStartX = ref<number | null>(null)
+const swipeStartY = ref<number | null>(null)
+const swipeDirection = ref<'horizontal' | 'vertical' | null>(null)
 const swipeStartTime = ref(0)
 const swipeOffset = ref(0)
 const swipeAnimating = ref(false)
@@ -795,6 +797,7 @@ const navigatorLoading = ref(false)
 const navigatorError = ref('')
 const showTranslationDrawer = ref(false)
 const translationListRef = ref<HTMLElement | null>(null)
+const activeTranslationItemRef = ref<HTMLElement | null>(null)
 
 const showAyahDrawer = ref(false)
 const selectedAyahForDrawer = ref<{surah: number, ayah: number, verse_key: string, text?: string} | null>(null)
@@ -1008,14 +1011,6 @@ watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
 watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
 watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
 
-watch(activeHighlightVerse, async () => {
-  if (!showTranslationDrawer.value) return
-  await nextTick()
-  if (activeTranslationItemRef.value && translationListRef.value) {
-    activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }
-}, { deep: true })
-
 const trackStyle = computed(() => ({ transform: `translate3d(calc(-33.333333% + ${swipeOffset.value}px), 0, 0)` }))
 const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffset.value) > 1)
 
@@ -1198,8 +1193,17 @@ watch(activeHighlightVerse, async (newVerse) => {
   const el = centerSlide?.querySelector(`.mushaf-word--active[data-verse="${key}"]`) as HTMLElement | null
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
+  // Auto-scroll the full translation list to center
   if (showTranslationDrawer.value && activeTranslationItemRef.value && translationListRef.value) {
-    activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+  
+  // Auto-update the single Ayah Options Drawer (Terjemahan) to follow Murottal
+  if (showAyahDrawer.value) {
+    const activeAyahData = pageData.value?.ayahs.find(a => a.surah === newVerse.surah && a.ayah === newVerse.ayah)
+    if (activeAyahData) {
+      selectedAyahForDrawer.value = activeAyahData
+    }
   }
 }, { deep: true })
 const primarySurah = computed(() => {
@@ -1445,6 +1449,8 @@ const handlePointerDown = (event: PointerEvent) => {
   if (swipeAnimating.value) return
   clearIdleTimer()
   swipeStartX.value = event.clientX
+  swipeStartY.value = event.clientY
+  swipeDirection.value = null
   swipeStartTime.value = performance.now()
   swipeOffset.value = 0
   suppressNextLineTap.value = false
@@ -1452,13 +1458,32 @@ const handlePointerDown = (event: PointerEvent) => {
 }
 
 const handlePointerMove = (event: PointerEvent) => {
-  if (swipeStartX.value === null || swipeAnimating.value) return
-  let distance = event.clientX - swipeStartX.value
-  const pullingPastFirst = pageNumber.value === 1 && distance < 0
-  const pullingPastLast = pageNumber.value === 604 && distance > 0
-  if (pullingPastFirst || pullingPastLast) distance *= .24
-  swipeOffset.value = distance
-  if (Math.abs(distance) > 20) suppressNextLineTap.value = true
+  if (swipeStartX.value === null || swipeStartY.value === null || swipeAnimating.value) return
+  
+  const deltaX = event.clientX - swipeStartX.value
+  const deltaY = event.clientY - swipeStartY.value
+  
+  if (!swipeDirection.value) {
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 0.8) {
+        swipeDirection.value = 'horizontal'
+      } else {
+        swipeDirection.value = 'vertical'
+      }
+    } else {
+      return
+    }
+  }
+  
+  if (swipeDirection.value === 'horizontal') {
+    if (event.cancelable) event.preventDefault() // Stop iOS Safari from stealing the gesture for edge swiping
+    let distance = deltaX
+    const pullingPastFirst = pageNumber.value === 1 && distance < 0
+    const pullingPastLast = pageNumber.value === 604 && distance > 0
+    if (pullingPastFirst || pullingPastLast) distance *= .24
+    swipeOffset.value = distance
+    if (Math.abs(distance) > 20) suppressNextLineTap.value = true
+  }
 }
 
 const handlePointerUp = async (event: PointerEvent) => {
@@ -1470,14 +1495,17 @@ const handlePointerUp = async (event: PointerEvent) => {
   const direction = distance > 0 ? 1 : -1
   const targetPage = pageNumber.value + direction
   const canMove = targetPage >= 1 && targetPage <= 604
-  const shouldMove = canMove && (Math.abs(distance) > viewportWidth * .18 || Math.abs(velocity) > .42)
+  
+  const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .18 || Math.abs(velocity) > .42)
+  
   swipeStartX.value = null
+  swipeStartY.value = null
+  swipeDirection.value = null
 
   if (!shouldMove) {
     settleSwipe()
     startIdleTimer()
 
-    // Reliable tap detection: prefer event.target, fallback to elementFromPoint
     let target = event.target as HTMLElement
     let wordEl = target?.closest('.mushaf-word') as HTMLElement
     
@@ -1487,7 +1515,6 @@ const handlePointerUp = async (event: PointerEvent) => {
       target = fromPoint
     }
     
-    // If they tapped an unrevealed mask, let its native @click handle the reveal
     if (target?.closest('.line-mask:not(.line-mask--revealed)')) {
       return
     }
@@ -1519,6 +1546,8 @@ const handlePointerUp = async (event: PointerEvent) => {
 const cancelSwipe = () => {
   if (swipeStartX.value === null) return
   swipeStartX.value = null
+  swipeStartY.value = null
+  swipeDirection.value = null
   settleSwipe()
   startIdleTimer()
 }
@@ -2263,6 +2292,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   height: 100%;
   flex: 0 0 33.333333%;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Momentum scrolling for iOS */
   background: #fffefa;
   container-type: size;
   display: flex;
@@ -2430,6 +2460,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   margin: 0;
   transition: background 0.15s ease, color 0.15s ease;
   flex-shrink: 0; /* Never squish the pre-justified font! */
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 /* Verse number marker (end glyph) */
@@ -2564,7 +2596,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 500;
+  z-index: 1200;
   background: #fff;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.18);
@@ -5250,13 +5282,12 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
     display: block !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
-    container-type: inline-size !important;
   }
   .mushaf-page-box {
     display: block !important;
     max-width: none !important;
     width: 100% !important;
-    height: max-content !important;
+    height: auto !important;
     min-height: 100% !important;
     border: none !important;
     box-shadow: none !important;
@@ -5268,15 +5299,16 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   .mushaf-text-frame__inner,
   .mushaf-qcf-content {
     display: block !important;
-    height: max-content !important;
+    height: auto !important;
     overflow: visible !important;
   }
-  /* Force typography to scale fully with screen width in landscape */
+  /* Force typography to scale fully with screen width in landscape. 
+     Using vw instead of cqw for Safari iOS compatibility */
   .mushaf-line,
   .mushaf-line--qcf,
   .mushaf-qcf-content--short .mushaf-line,
   .mushaf-qcf-content--short .mushaf-line--qcf {
-    font-size: 6.2cqw !important;
+    font-size: 6.2vw !important;
     width: 100% !important;
   }
 }
