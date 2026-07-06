@@ -48,7 +48,6 @@
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
         @pointercancel="cancelSwipe"
-        @click.stop="toggleFullscreen"
       >
         <div class="mushaf-track" :class="{ 'mushaf-track--animating': swipeAnimating }" :style="trackStyle">
           <div v-for="(slidePage, index) in carouselPages" :key="slidePage + '-' + index" class="mushaf-slide">
@@ -482,6 +481,49 @@
       </div>
     </Transition>
 
+    <Transition name="fade">
+      <div v-if="showAyahDrawer" class="navigator-overlay" @click="showAyahDrawer = false"></div>
+    </Transition>
+
+    <Transition name="translate-sheet">
+      <div v-if="showAyahDrawer" class="translation-bottom-sheet ayah-options-sheet" :style="ayahDrawerSheet.sheetStyle.value" @click.stop>
+        <div class="translation-sheet-handle" v-bind="ayahDrawerSheet.bindHandle">
+          <div class="translation-sheet-handle__bar"></div>
+        </div>
+
+        <header class="translation-sheet-header">
+          <div class="translation-sheet-header__left">
+            <span class="translation-sheet-badge">Opsi Ayat</span>
+            <p class="translation-sheet-subtitle">Surat {{ selectedAyahForDrawer?.surah }}, Ayat {{ selectedAyahForDrawer?.ayah }}</p>
+          </div>
+          <button type="button" class="translation-sheet-close" aria-label="Tutup opsi" @click="showAyahDrawer = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </header>
+
+        <div class="ayah-options-content">
+          <p class="ayah-options-text" dir="rtl" style="font-family: 'Uthmanic Hafs', 'Amiri', serif;">
+            {{ selectedAyahForDrawer?.text }}
+          </p>
+
+          <div class="ayah-options-actions">
+            <button type="button" class="ayah-action-btn" @click="playAyahFromDrawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Putar Murottal Khusus Ayat Ini</span>
+            </button>
+            <button type="button" class="ayah-action-btn" @click="viewTranslationFromDrawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Lihat Terjemahan Lengkap</span>
+            </button>
+            <button type="button" class="ayah-action-btn" @click="copyAyahText">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Salin Teks Arab</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <Transition name="sheet">
       <div v-if="navigatorOpen" class="navigator-overlay" @click="closeNavigator">
         <section
@@ -752,6 +794,46 @@ const navigatorOpen = ref(false)
 const navigatorLoading = ref(false)
 const navigatorError = ref('')
 const showTranslationDrawer = ref(false)
+const translationListRef = ref<HTMLElement | null>(null)
+
+const showAyahDrawer = ref(false)
+const selectedAyahForDrawer = ref<{surah: number, ayah: number, verse_key: string, text?: string} | null>(null)
+
+const openAyahOptions = (verseKey: string) => {
+  const [surah, ayah] = verseKey.split(':').map(Number)
+  const ayahData = pageData.value?.ayahs.find(a => a.verse_key === verseKey)
+  selectedAyahForDrawer.value = { 
+    surah, 
+    ayah, 
+    verse_key: verseKey, 
+    text: ayahData?.text_imlaei_simple || ayahData?.text_uthmani || '' 
+  }
+  showAyahDrawer.value = true
+}
+
+const playAyahFromDrawer = () => {
+  showAyahDrawer.value = false
+  if (selectedAyahForDrawer.value) {
+    selectAyahFromTranslation(selectedAyahForDrawer.value.ayah)
+  }
+}
+
+const openTranslationForAyah = () => {
+  showAyahDrawer.value = false
+  showTranslationDrawer.value = true
+}
+
+const copyAyahText = async () => {
+  if (selectedAyahForDrawer.value?.text) {
+    try {
+      await navigator.clipboard.writeText(selectedAyahForDrawer.value.text)
+    } catch (e) {
+      console.error('Failed to copy', e)
+    }
+  }
+  showAyahDrawer.value = false
+}
+
 const selectedSurahId = ref(1)
 const selectedAyah = ref(1)
 const directPage = ref(1)
@@ -803,8 +885,6 @@ const mushafTheme = useCookie<'classic' | 'nabawiyyah'>('mushaf_theme', {
   path: '/'
 })
 
-// Classic is temporarily unavailable. Migrate existing saved selections to
-// the current plain/default mushaf presentation.
 if (mushafTheme.value === 'classic') {
   mushafTheme.value = 'nabawiyyah'
 }
@@ -852,34 +932,6 @@ const carouselPages = computed(() => [
   pageNumber.value > 1 ? pageNumber.value - 1 : null,
 ])
 
-// Coordinates loading state and methods for page highlight alignment (Disabled for image-based mushaf)
-/*
-const loadedCoordinates = ref<Record<number, any>>({})
-
-const loadPageCoordinates = async (page: number) => {
-  if (process.server) return // Prevent relative URL SSR fetch errors on Node server side
-  if (page < 1 || page > 604) return
-  if (loadedCoordinates.value[page]) return
-  
-  try {
-    const res = await fetch(`/mushaf/coordinates/page-${String(page).padStart(3, '0')}.json`)
-    if (res.ok) {
-      const data = await res.json()
-      loadedCoordinates.value[page] = data
-    }
-  } catch (e) {
-    console.error('Gagal memuat koordinat halaman', page, e)
-  }
-}
-
-const preloadCoordinates = () => {
-  carouselPages.value.forEach(page => {
-    loadPageCoordinates(page)
-  })
-}
-*/
-
-// Active verse to highlight on the page, dynamically following the audio player or manual selection
 const activeHighlightVerse = computed(() => {
   if (isPlaying.value) {
     if (isCustomRangeActive.value) {
@@ -917,12 +969,6 @@ const selectAyahFromTranslation = (ayahNumber: number) => {
   }
 }
 
-
-// ── Bottom Sheet instances (drag + swipe-to-close) ───────────────────────────
-const translationListRef = ref<HTMLElement | null>(null)
-const activeTranslationItemRef = ref<HTMLElement | null>(null)
-
-// Translation: resize mode — user can drag to see more/less
 const translationSheet = useBottomSheet({
   mode: 'resize',
   initialHeight: 320,
@@ -932,7 +978,12 @@ const translationSheet = useBottomSheet({
   onClose: () => { showTranslationDrawer.value = false },
 })
 
-// Dismiss-only (iOS style) for fixed-content drawers
+const ayahDrawerSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { showAyahDrawer.value = false },
+})
+
 const navigatorSheet = useBottomSheet({
   mode: 'dismiss',
   closeThreshold: 80,
@@ -951,13 +1002,12 @@ const audioSettingsSheet = useBottomSheet({
   onClose: () => { showAudioSettings.value = false },
 })
 
-// Reset sheet state when drawers open
 watch(showTranslationDrawer, (val) => { if (val) translationSheet.reset() })
+watch(showAyahDrawer, (val) => { if (val) ayahDrawerSheet.reset() })
 watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
 watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
 watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
 
-// Auto-scroll active ayah into view when murottal changes
 watch(activeHighlightVerse, async () => {
   if (!showTranslationDrawer.value) return
   await nextTick()
@@ -966,27 +1016,11 @@ watch(activeHighlightVerse, async () => {
   }
 }, { deep: true })
 
-/*
-const getPageHighlights = (page: number) => {
-  const pageData = loadedCoordinates.value[page]
-  if (!pageData || !pageData.verses) return []
-  
-  const activeVerse = pageData.verses.find(
-    (v: any) => v.sura === activeHighlightVerse.value.surah && v.ayah === activeHighlightVerse.value.ayah
-  )
-  return activeVerse ? activeVerse.glyphs : []
-}
-
-watch(carouselPages, preloadCoordinates, { immediate: true })
-*/
 const trackStyle = computed(() => ({ transform: `translate3d(calc(-33.333333% + ${swipeOffset.value}px), 0, 0)` }))
 const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffset.value) > 1)
 
-// ── QCF V2 Rendering Logic ─────────────────────────────────────────────────
-
-// Cache: page number → {lines, surahs, juz, ayahs, verse_progress} (persisted globally across route transitions via Nuxt useState)
 const qcfPageCache = useState<Record<number, MushafPageData>>('qcfPageCache', () => ({}))
-const qcfLoading = ref(!qcfPageCache.value[pageNumber.value]) // true while current page is loading
+const qcfLoading = ref(!qcfPageCache.value[pageNumber.value])
 let qcfFitFrame: number | null = null
 
 const fitQcfLines = async () => {
@@ -1004,7 +1038,6 @@ const fitQcfLines = async () => {
         return
       }
 
-      // Override transform to none to measure the true untransformed width
       content.style.transform = 'none'
       const naturalWidth = content.getBoundingClientRect().width
       content.style.transform = ''
@@ -1032,7 +1065,6 @@ const loadQcfPage = async (page: number) => {
   }
 }
 
-// Load current + adjacent pages
 const loadQcfPages = async () => {
   const needsLoading = !qcfPageCache.value[pageNumber.value]
   if (needsLoading) {
@@ -1043,19 +1075,16 @@ const loadQcfPages = async () => {
     qcfLoading.value = false
   }
   fitQcfLines()
-  // Preload adjacent
   loadQcfPage(Math.max(1, pageNumber.value - 1))
   loadQcfPage(Math.min(604, pageNumber.value + 1))
 }
 
-// Load font for a given page lazily via a dynamic @font-face
 const loadedFonts = ref<Set<number>>(new Set())
 const loadQcfFont = (page: number) => {
   if (!page || page < 1 || page > 604) return
   if (loadedFonts.value.has(page) || process.server) return
   if (typeof document === 'undefined') return
   loadedFonts.value.add(page)
-  // Add ?v=2 to bust browser cache from the old V1 fonts
   const fontUrl = `/fonts/qcf/p${page}.woff2?v=2`
   const style = document.createElement('style')
   style.textContent = `@font-face { font-family: "QCF-p${page}"; src: url("${fontUrl}") format("woff2"); font-display: swap; }`
@@ -1063,19 +1092,14 @@ const loadQcfFont = (page: number) => {
   document.fonts?.load(`16px "QCF-p${page}"`).then(() => fitQcfLines())
 }
 
-// Returns the CSS font-family string for a given page
 const qcfFontFamily = (page: number): string => {
   if (!page) return 'serif'
   if (process.client) loadQcfFont(page)
   return `"QCF-p${page}", serif`
 }
 
-// Get lines for a given page (from cache or current pageData)
 const getPageLines = (page: number): MushafLine[] => {
   const lines = qcfPageCache.value[page]?.lines || pageData.value?.lines || []
-  // The closing pages contain several compact surahs. Their Quran.com word
-  // IDs can be interleaved, while printed mushaf order follows physical line
-  // number (e.g. page 603: Al-Kafirun, An-Nasr, then Al-Masad).
   return page >= 600
     ? [...lines].sort((a, b) => Number(a.line_number) - Number(b.line_number))
     : lines
@@ -1093,10 +1117,6 @@ const tajweedClassesForWord = (text?: string | null): string[] => {
   for (const match of text.matchAll(/\[([a-z])(?::\d+)?\[/gi)) {
     rules.add(match[1].toLowerCase())
   }
-
-  // A QCF glyph is one complete word, so choose one strong tajweed colour.
-  // Silent-letter rules (h/s/l) stay black; colouring the whole glyph grey
-  // would make otherwise pronounced letters look disabled.
   const priority = ['q', 'f', 'c', 'i', 'g', 'u', 'a', 'w', 'm', 'o', 'p', 'n']
   const rule = priority.find(candidate => rules.has(candidate))
   return rule ? [`tajweed-${rule}`] : []
@@ -1113,20 +1133,14 @@ const formatTajweedText = (text: string): string => {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 
-  // Some AlQuran Cloud rules close at the next token boundary instead of
-  // carrying a literal `]`, so the closing bracket is intentionally optional.
   const tajweedPattern = /\[([a-z0-9:]+)\[([^\]]*?)(?:\]|$)/g
 
   const removeMarkupArtifacts = (value: string): string => value
-    // Defensive cleanup for malformed/cross-word AlQuran Cloud tags. These
-    // markers are metadata, never Quran text, and must never reach the page.
     .replace(/\[?[a-z](?::\d+)?\[/gi, '')
     .replace(/\]?[a-z](?::\d+)?\]/gi, '')
     .replace(/\b[a-z]:\d+\b/gi, '')
     .replace(/[\[\]]/g, '')
 
-  // Keep the coloured spans on Safari/iOS as well. Each span stays inside a
-  // single Arabic word, so line pagination and word order remain stable.
   return removeMarkupArtifacts(cleanText.replace(tajweedPattern, (_match, ruleInfo, characters) => {
     if (!characters) return ''
     const rule = String(ruleInfo).split(':')[0]
@@ -1153,7 +1167,6 @@ const getPageSurah = (page: number): string => {
 const getPageSurahCount = (page: number): number =>
   (qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []).length
 
-// Get surah banner metadata to show above a line (when a surah starts there)
 const getSurahBannerAtLine = (lineNumber: any, page: number): MushafSurah | null => {
   const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
   return surahs.find(s => s.starts_at_line !== null && s.starts_at_line !== undefined && Number(s.starts_at_line) === Number(lineNumber)) || null
@@ -1161,18 +1174,14 @@ const getSurahBannerAtLine = (lineNumber: any, page: number): MushafSurah | null
 
 const shouldShowBismillahAtLine = (lineNumber: number, page: number): boolean => {
   const surah = getSurahBannerAtLine(lineNumber, page)
-  // Al-Fatihah already contains the basmalah as ayah 1. At-Tawbah is the
-  // single surah that conventionally begins without it.
   return Boolean(surah && surah.number !== 1 && surah.number !== 9)
 }
 
-// Active verse highlight
 const isActiveVerse = (verseKey: string): boolean => {
   const active = activeHighlightVerse.value
   return verseKey === `${active.surah}:${active.ayah}`
 }
 
-// Verse progress CSS class (for word-level progress coloring)
 const getVerseProgressClass = (verseKey: string): string => {
   const progress = pageData.value?.verse_progress?.[verseKey] || 'unreviewed'
   if (progress === 'fluent') return 'mushaf-word--fluent'
@@ -1181,7 +1190,6 @@ const getVerseProgressClass = (verseKey: string): string => {
   return ''
 }
 
-// Scroll active verse word into view on murottal advance
 watch(activeHighlightVerse, async (newVerse) => {
   if (process.server) return
   await nextTick()
@@ -1190,7 +1198,6 @@ watch(activeHighlightVerse, async (newVerse) => {
   const el = centerSlide?.querySelector(`.mushaf-word--active[data-verse="${key}"]`) as HTMLElement | null
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
-  // Also update translation sheet
   if (showTranslationDrawer.value && activeTranslationItemRef.value && translationListRef.value) {
     activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
@@ -1198,18 +1205,15 @@ watch(activeHighlightVerse, async (newVerse) => {
 const primarySurah = computed(() => {
   if (!pageData.value?.surahs) return null
 
-  // 1. If there is a query surah targeted explicitly by the user, prioritize it
   const querySurahId = Number(route.query.surah)
   if (querySurahId) {
     const found = pageData.value.surahs.find(s => s.id === querySurahId || s.number === querySurahId)
     if (found) return found
   }
 
-  // 2. Otherwise, find the first surah that actually starts on this page (has a banner)
   const startingSurah = pageData.value.surahs.find(s => s.starts_at_line !== null && s.starts_at_line !== undefined)
   if (startingSurah) return startingSurah
 
-  // 3. Fallback to the first surah on this page (e.g. continuation from previous page)
   return pageData.value.surahs[0] || null
 })
 const currentSurahTitle = computed(() =>
@@ -1396,7 +1400,6 @@ const handlePageChange = () => {
   const savedIndex = queueIndex.value
   const wasPlaying = isPlaying.value
 
-  // Only stop player if this was an automatic page turn triggered by the audio
   if (wasAutoplay) {
     stopPlayer()
     playerAyahIndex.value = 0
@@ -1416,7 +1419,6 @@ const handlePageChange = () => {
   loadPageMetadata()
   nextTick(prefetchPages)
 
-  // Load QCF page data and fonts for current + adjacent pages
   loadQcfPages()
   if (process.client) {
     carouselPages.value.forEach(p => {
@@ -1424,7 +1426,6 @@ const handlePageChange = () => {
     })
   }
 
-  // Start idle timer to return to playing page if we wandered off
   startIdleTimer()
 }
 
@@ -1475,6 +1476,31 @@ const handlePointerUp = async (event: PointerEvent) => {
   if (!shouldMove) {
     settleSwipe()
     startIdleTimer()
+
+    // Reliable tap detection: prefer event.target, fallback to elementFromPoint
+    let target = event.target as HTMLElement
+    let wordEl = target?.closest('.mushaf-word') as HTMLElement
+    
+    if (!wordEl && event.clientX && event.clientY) {
+      const fromPoint = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement
+      wordEl = fromPoint?.closest('.mushaf-word') as HTMLElement
+      target = fromPoint
+    }
+    
+    // If they tapped an unrevealed mask, let its native @click handle the reveal
+    if (target?.closest('.line-mask:not(.line-mask--revealed)')) {
+      return
+    }
+
+    if (wordEl) {
+      const verseKey = wordEl.getAttribute('data-verse')
+      if (verseKey) {
+        openAyahOptions(verseKey)
+        return
+      }
+    }
+
+    toggleFullscreen()
     return
   }
 
@@ -1574,7 +1600,6 @@ const stopPlayer = () => {
 
 
 const playPlayerAyah = () => {
-  // Sync playing page and verses if they are empty
   if (playingAyahsList.value.length === 0 && pageData.value?.ayahs) {
     playingPageNumber.value = pageNumber.value
     playingAyahsList.value = [...pageData.value.ayahs]
@@ -1637,7 +1662,6 @@ const playPlayerAyah = () => {
           playerAyahIndex.value += 1
           playPlayerAyah()
         } else {
-          // Always auto-advance to the next page when the current page's verses finish playing
           const nextTargetPage = (playingPageNumber.value || pageNumber.value) + 1
           if (nextTargetPage <= 604) {
             shouldAutoplayNextPage.value = true
@@ -1668,7 +1692,6 @@ const togglePlayer = () => {
     return
   }
   
-  // If page data hasn't loaded yet, wait for it via autoplay mechanism
   if (!pageData.value?.ayahs) {
     shouldAutoplayNextPage.value = true
     return
@@ -1821,8 +1844,6 @@ const toggleFullscreen = () => {
   isFullscreenMode.value = !isFullscreenMode.value
 }
 
-
-
 const startCustomRangePlayback = async () => {
   if (settingsStartSurah.value > settingsEndSurah.value) return
   if (settingsStartSurah.value === settingsEndSurah.value && settingsStartAyah.value > settingsEndAyah.value) {
@@ -1860,7 +1881,6 @@ const toggleRepeatMode = () => {
   currentLocalAyahRepeatCount.value = 1
 }
 
-// Custom select helper values
 const startSurahName = computed(() => {
   const s = surahOptions.value.find(x => x.number === settingsStartSurah.value)
   return s ? `${s.number}. ${s.name_latin}` : 'Pilih Surat'
@@ -2207,7 +2227,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   margin: 0 auto;
   flex: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: center;
   overflow-y: auto; /* Isolated scroll on the content container */
   -webkit-overflow-scrolling: touch;
@@ -2219,10 +2239,11 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   position: relative;
   width: 100%;
   max-width: 100%; /* Stretch fully to left and right */
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  aspect-ratio: 750 / 1075;
   background: #fffefa;
-  touch-action: pan-y;
+  touch-action: pan-y pinch-zoom;
   user-select: none;
 }
 
@@ -2241,11 +2262,11 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   width: 33.333333%;
   height: 100%;
   flex: 0 0 33.333333%;
-  overflow: hidden;
+  overflow-y: auto;
   background: #fffefa;
   container-type: size;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -2276,13 +2297,14 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 /* Page box container — maintains mushaf aspect ratio */
 .mushaf-page-box {
   position: relative;
-  height: 100%;
+  height: auto;
+  min-height: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 4px;
-  max-width: 520px;
+  max-width: 860px;
   width: 100%;
   flex: 1;
   container-type: inline-size; /* For responsive typography */
@@ -2420,6 +2442,11 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-word--active {
   color: #065F46 !important;
   background: rgba(16, 185, 129, 0.18) !important;
+}
+
+.mushaf-word:not(.mushaf-word--end):active {
+  background: var(--active-word-bg);
+  border-radius: 4px;
 }
 
 .mushaf-word--active.mushaf-word--end {
@@ -2788,6 +2815,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 .line-mask--revealed {
   opacity: 0;
+  pointer-events: none;
 }
 
 .navigator-overlay {
@@ -5158,4 +5186,98 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 /* End of CSS */
+/* ── Ayah Options Drawer ─── */
+.ayah-options-sheet {
+  height: auto;
+  min-height: 200px;
+  max-height: 85vh;
+}
+.ayah-options-content {
+  padding: 16px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+.ayah-options-text {
+  font-size: 1.6rem;
+  line-height: 1.6;
+  text-align: right;
+  color: #1a1b1a;
+  margin-bottom: 8px;
+}
+.ayah-options-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ayah-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: #f7f9f7;
+  border: 1px solid #e0e5e2;
+  color: #1a1b1a;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+.ayah-action-btn:active {
+  background: #eef2f0;
+  transform: scale(0.98);
+}
+.ayah-action-btn svg {
+  width: 22px;
+  height: 22px;
+  color: #087d59;
+}
+
+/* ── Mobile Landscape Full-Width Override ─── */
+@media (orientation: landscape) and (max-height: 600px) {
+  .mushaf-viewport {
+    max-width: none !important;
+    width: 100% !important;
+    height: calc(100dvh - 146px - var(--safe-top) - var(--safe-bottom)) !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    aspect-ratio: auto !important;
+  }
+  .mushaf-slide {
+    display: block !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    container-type: inline-size !important;
+  }
+  .mushaf-page-box {
+    display: block !important;
+    max-width: none !important;
+    width: 100% !important;
+    height: max-content !important;
+    min-height: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    aspect-ratio: auto !important;
+    container-type: normal !important;
+  }
+  .mushaf-text-frame,
+  .mushaf-text-frame__inner,
+  .mushaf-qcf-content {
+    display: block !important;
+    height: max-content !important;
+    overflow: visible !important;
+  }
+  /* Force typography to scale fully with screen width in landscape */
+  .mushaf-line,
+  .mushaf-line--qcf,
+  .mushaf-qcf-content--short .mushaf-line,
+  .mushaf-qcf-content--short .mushaf-line--qcf {
+    font-size: 6.2cqw !important;
+    width: 100% !important;
+  }
+}
 </style>
