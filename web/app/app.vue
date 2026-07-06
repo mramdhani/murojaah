@@ -95,7 +95,11 @@ onMounted(() => {
 
 <style scoped>
 #app {
-  min-height: 100dvh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .app-loading {

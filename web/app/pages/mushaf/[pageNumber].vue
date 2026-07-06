@@ -3,7 +3,8 @@
     class="mushaf-page" 
     :class="{ 
       'mushaf-page--nabawiyyah': mushafTheme === 'nabawiyyah', 
-      'mushaf-page--classic': mushafTheme === 'classic' 
+      'mushaf-page--classic': mushafTheme === 'classic',
+      'mushaf-page--fullscreen': isFullscreenMode
     }" 
     @click.self="toggleFullscreen"
   >
@@ -804,6 +805,8 @@ const selectedAyahForDrawer = ref<{surah: number, ayah: number, verse_key: strin
 
 const openAyahOptions = (verseKey: string) => {
   const [surah, ayah] = verseKey.split(':').map(Number)
+  selectedSurahId.value = surah
+  selectedAyah.value = ayah
   const ayahData = pageData.value?.ayahs.find(a => a.verse_key === verseKey)
   selectedAyahForDrawer.value = { 
     surah, 
@@ -964,7 +967,7 @@ const selectAyahFromTranslation = (surahId: number, ayahNumber: number) => {
   selectedSurahId.value = surahId
   
   if (!isCustomRangeActive.value && pageData.value?.ayahs) {
-    const idx = pageData.value.ayahs.findIndex(x => x.surah_id === surahId && x.ayah_number === ayahNumber)
+    const idx = pageData.value.ayahs.findIndex(x => x.verse_key === `${surahId}:${ayahNumber}`)
     if (idx !== -1) {
       playingPageNumber.value = pageNumber.value
       playingAyahsList.value = [...pageData.value.ayahs]
@@ -979,7 +982,7 @@ const selectAyahFromTranslation = (surahId: number, ayahNumber: number) => {
       playPlayerAyah()
     } else {
       isCustomRangeActive.value = false
-      const pgIdx = pageData.value?.ayahs?.findIndex(x => x.surah_id === surahId && x.ayah_number === ayahNumber) ?? -1
+      const pgIdx = pageData.value?.ayahs?.findIndex(x => x.verse_key === `${surahId}:${ayahNumber}`) ?? -1
       if (pgIdx !== -1 && pageData.value?.ayahs) {
         playingPageNumber.value = pageNumber.value
         playingAyahsList.value = [...pageData.value.ayahs]
@@ -1487,7 +1490,7 @@ const handlePointerMove = (event: PointerEvent) => {
   
   if (!swipeDirection.value) {
     if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-      if (Math.abs(deltaX) > Math.abs(deltaY) * 0.8) {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
         swipeDirection.value = 'horizontal'
       } else {
         swipeDirection.value = 'vertical'
@@ -2325,6 +2328,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   height: 100%;
   flex: 0 0 33.333333%;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch; /* Momentum scrolling for iOS */
   background: #fffefa;
   container-type: size;
@@ -2863,6 +2867,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   inset: 3.8% 2.8% 4%;
   display: grid;
   grid-template-rows: repeat(15, 1fr);
+  pointer-events: none; /* Let scroll wheel and clicks pass through */
 }
 
 .line-mask {
@@ -2872,6 +2877,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   background: rgba(251, 249, 242, .99);
   cursor: pointer;
   transition: opacity .16s ease;
+  pointer-events: auto; /* Active mask blocks events to reveal on interaction */
 }
 
 .line-mask:nth-child(odd) {
@@ -4528,6 +4534,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .mushaf-frame {
+  position: absolute;
   inset: 42px 11px 10px;
 }
 
@@ -4558,12 +4565,12 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  font-size: clamp(18px, 4.45cqw, 25px);
+  font-size: clamp(11px, 4.45cqw, 25px);
   line-height: 1.48;
 }
 
 .mushaf-qcf-content--short .mushaf-line {
-  font-size: clamp(18px, 4.45cqw, 25px);
+  font-size: clamp(11px, 4.45cqw, 25px);
 }
 
 .mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-qcf-content--short .mushaf-text-frame__inner {
@@ -4581,7 +4588,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   overflow: visible;
   direction: rtl;
   font-family: 'Uthmanic Hafs', 'Amiri Quran', 'Amiri', serif !important;
-  font-size: clamp(18px, 4.25cqw, 24px);
+  font-size: clamp(11px, 4.25cqw, 24px);
   line-height: 1.65;
   white-space: nowrap;
 }
@@ -4623,7 +4630,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__name {
-  font-size: clamp(28px, 6cqw, 38px);
+  font-size: clamp(14px, 6cqw, 38px);
 }
 
 /* The plaque is decorative only; the Quran glyph line remains untouched. */
@@ -4679,7 +4686,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   gap: 1.7cqw;
   color: #14100a;
   font-family: 'Amiri Quran', 'Uthmanic Hafs', 'Amiri', serif;
-  font-size: clamp(29px, 6.15cqw, 39px);
+  font-size: clamp(15px, 6.15cqw, 39px);
   font-weight: 400;
   font-kerning: normal;
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
@@ -5036,7 +5043,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 
 .mushaf-surah-banner__name {
   color: #1a4f32 !important; /* Darker green text */
-  font-size: clamp(28px, 6.7cqw, 40px) !important;
+  font-size: clamp(14px, 6.7cqw, 40px) !important;
   text-shadow: none !important;
   background: white !important;
   padding: 5px 22px !important;
@@ -5103,7 +5110,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   gap: 0;
   overflow: visible !important;
   justify-content: center !important;
-  font-size: clamp(23px, 5.95cqw, 31.5px) !important;
+  font-size: clamp(12px, 5.95cqw, 31.5px) !important;
   line-height: 1.56 !important;
   white-space: nowrap;
   text-rendering: optimizeLegibility;
@@ -5131,7 +5138,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 .mushaf-page-box--opening .mushaf-line--qcf {
-  font-size: clamp(25px, 6.55cqw, 34.5px) !important;
+  font-size: clamp(13px, 6.55cqw, 34.5px) !important;
   line-height: 1.6 !important;
 }
 /* Page 604 follows the printed closing-page composition: three compact,
@@ -5159,7 +5166,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   margin: .5cqw 0 4.5cqw;
   color: #15110b;
   font-family: 'Amiri', 'Amiri Quran', serif;
-  font-size: clamp(22px, 6cqw, 30px);
+  font-size: clamp(12px, 6cqw, 30px);
   font-weight: 400;
   line-height: 1.65;
   text-align: center;
@@ -5173,15 +5180,18 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 .mushaf-page-box--multi-surah .mushaf-surah-banner {
+  padding: 1.8cqw 0 !important;
   margin: .65cqw 0 .8cqw !important;
 }
 
 .mushaf-page-box--multi-surah .mushaf-bismillah-calligraphy {
+  font-size: clamp(11px, 5cqw, 24px) !important;
   margin-top: .4cqw;
-  margin-bottom: 4.5cqw;
+  margin-bottom: 2.5cqw !important;
 }
 
 .mushaf-page-box--multi-surah .mushaf-line--qcf {
+  font-size: clamp(11px, 4.6cqw, 26px) !important;
   line-height: 1.46 !important;
 }
 
