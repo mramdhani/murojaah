@@ -39,7 +39,7 @@
         </svg>
       </button>
     </header>
-    <main class="mushaf-content" @click.self="toggleFullscreen">
+    <main class="mushaf-content">
       <section
         ref="viewportRef"
         class="mushaf-viewport"
@@ -449,20 +449,12 @@
         <!-- Header -->
         <header class="translation-sheet-header">
           <div class="translation-sheet-header__left">
-            <span class="translation-sheet-badge">Tampilan & Terjemahan</span>
             <p class="translation-sheet-subtitle">Hal {{ pageNumber }} &middot; Kemenag RI</p>
           </div>
           <button type="button" class="translation-sheet-close" aria-label="Tutup terjemahan" @click="showTranslationDrawer = false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
           </button>
         </header>
-
-        <div class="translation-sheet-settings">
-          <div class="mushaf-theme-selector">
-            <span class="theme-selector-label">Tema Mushaf</span>
-            <span class="theme-selector-value">Default</span>
-          </div>
-        </div>
 
 
         <!-- Scrollable list -->
@@ -488,37 +480,76 @@
 
     <Transition name="translate-sheet">
       <div v-if="showAyahDrawer" class="translation-bottom-sheet ayah-options-sheet" :style="ayahDrawerSheet.sheetStyle.value" @click.stop>
+        <!-- Drag handle -->
         <div class="translation-sheet-handle" v-bind="ayahDrawerSheet.bindHandle">
           <div class="translation-sheet-handle__bar"></div>
         </div>
 
+        <!-- Header -->
         <header class="translation-sheet-header">
           <div class="translation-sheet-header__left">
-            <span class="translation-sheet-badge">Opsi Ayat</span>
-            <p class="translation-sheet-subtitle">Surat {{ selectedAyahForDrawer?.surah }}, Ayat {{ selectedAyahForDrawer?.ayah }}</p>
+            <h3 class="ayah-drawer-title">Surat {{ selectedAyahForDrawer?.surah }}, Ayat {{ selectedAyahForDrawer?.ayah }}</h3>
+            <p class="ayah-drawer-subtitle">{{ selectedAyahSurahName }} &middot; Juz {{ juzLabel }}</p>
           </div>
           <button type="button" class="translation-sheet-close" aria-label="Tutup opsi" @click="showAyahDrawer = false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
           </button>
         </header>
 
-        <div class="ayah-options-content">
-          <p class="ayah-options-text" dir="rtl" style="font-family: 'Uthmanic Hafs', 'Amiri', serif;">
-            {{ selectedAyahForDrawer?.text }}
-          </p>
+        <!-- Divider with Star Ornament -->
+        <div class="ayah-drawer-divider">
+          <span class="ayah-drawer-divider__ornament">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width: 12px; height: 12px;">
+              <path d="M12 2l2.4 4.8 4.8 2.4-4.8 2.4-2.4 4.8-2.4-4.8-4.8-2.4 4.8-2.4z"/>
+            </svg>
+          </span>
+        </div>
 
-          <div class="ayah-options-actions">
-            <button type="button" class="ayah-action-btn" @click="playAyahFromDrawer">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              <span>Putar Murottal Khusus Ayat Ini</span>
+        <div class="ayah-options-content">
+          <!-- Primary play action card -->
+          <button type="button" class="ayah-primary-card" @click="playAyahFromDrawer">
+            <svg class="play-icon-simple" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6 3 20 12 6 21 6 3"/>
+            </svg>
+            <span class="ayah-primary-card__text">Putar ayat ini</span>
+          </button>
+
+          <!-- Secondary list actions -->
+          <div class="ayah-list-actions">
+            <!-- 1. Terjemahan -->
+            <button type="button" class="ayah-list-item" @click="openTranslationForAyah">
+              <div class="ayah-list-item__icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              </div>
+              <span class="ayah-list-item__label">Lihat Terjemahan Lengkap</span>
+              <svg class="ayah-list-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
             </button>
-            <button type="button" class="ayah-action-btn" @click="viewTranslationFromDrawer">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              <span>Lihat Terjemahan Lengkap</span>
+
+            <!-- 2. Salin -->
+            <button type="button" class="ayah-list-item" @click="copyAyahText">
+              <div class="ayah-list-item__icon-wrapper Arabic-symbol">
+                <span>ع</span>
+              </div>
+              <span class="ayah-list-item__label">Salin Teks Arab</span>
+              <svg class="ayah-list-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
             </button>
-            <button type="button" class="ayah-action-btn" @click="copyAyahText">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span>Salin Teks Arab</span>
+
+            <!-- 3. Tandai Terakhir Baca -->
+            <button type="button" class="ayah-list-item" @click="markLastRead">
+              <div class="ayah-list-item__icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              </div>
+              <span class="ayah-list-item__label">Tandai Terakhir Baca</span>
+              <svg class="ayah-list-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+
+            <!-- 4. Bagikan -->
+            <button type="button" class="ayah-list-item" @click="shareAyah">
+              <div class="ayah-list-item__icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </div>
+              <span class="ayah-list-item__label">Bagikan Ayat</span>
+              <svg class="ayah-list-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
             </button>
           </div>
         </div>
@@ -792,6 +823,8 @@ const swipeStartTime = ref(0)
 const swipeOffset = ref(0)
 const swipeAnimating = ref(false)
 const suppressNextLineTap = ref(false)
+const longPressTimeout = ref<number | null>(null)
+const isLongPressActive = ref(false)
 
 const navigatorOpen = ref(false)
 const navigatorLoading = ref(false)
@@ -807,12 +840,27 @@ const openAyahOptions = (verseKey: string) => {
   const [surah, ayah] = verseKey.split(':').map(Number)
   selectedSurahId.value = surah
   selectedAyah.value = ayah
-  const ayahData = pageData.value?.ayahs.find(a => a.verse_key === verseKey)
+  
+  // Extract full Arabic text from line fallbacks (reconstruct lines segments)
+  let arabicText = ''
+  if (pageData.value?.lines) {
+    const segments = []
+    for (const line of pageData.value.lines) {
+      if (line.unicode_fallback) {
+        const fb = line.unicode_fallback.find(f => f.verse_key === verseKey)
+        if (fb && fb.text) {
+          segments.push(fb.text.trim())
+        }
+      }
+    }
+    arabicText = segments.join(' ')
+  }
+  
   selectedAyahForDrawer.value = { 
     surah, 
     ayah, 
     verse_key: verseKey, 
-    text: ayahData?.text_imlaei_simple || ayahData?.text_uthmani || '' 
+    text: arabicText || ''
   }
   showAyahDrawer.value = true
 }
@@ -829,13 +877,96 @@ const openTranslationForAyah = () => {
   showTranslationDrawer.value = true
 }
 
+const selectedAyahSurahName = computed(() => {
+  if (!selectedAyahForDrawer.value) return ''
+  const surah = surahOptions.value.find(s => s.id === selectedAyahForDrawer.value.surah)
+  return surah ? surah.name_latin : ''
+})
+
+const markLastRead = () => {
+  if (!selectedAyahForDrawer.value) return
+  localStorage.setItem('murojaah_last_read', JSON.stringify({
+    surah: selectedAyahForDrawer.value.surah,
+    ayah: selectedAyahForDrawer.value.ayah,
+    verse_key: selectedAyahForDrawer.value.verse_key,
+    page: pageNumber.value
+  }))
+  showToast?.(`Surat ${selectedAyahSurahName.value} Ayat ${selectedAyahForDrawer.value.ayah} ditandai sebagai terakhir baca`, 'success')
+  showAyahDrawer.value = false
+}
+
+const fallbackCopyText = (text: string) => {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.top = '0'
+  textArea.style.left = '0'
+  textArea.style.position = 'fixed'
+  textArea.style.opacity = '0'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+  try {
+    const successful = document.execCommand('copy')
+    document.body.removeChild(textArea)
+    return successful
+  } catch (err) {
+    document.body.removeChild(textArea)
+    return false
+  }
+}
+
+const shareAyah = async () => {
+  if (!selectedAyahForDrawer.value) return
+  const text = `Surat ${selectedAyahSurahName.value} Ayat ${selectedAyahForDrawer.value.ayah}: ${selectedAyahForDrawer.value.text || ''}`
+  showAyahDrawer.value = false
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Murojaah',
+        text: text,
+        url: window.location.href
+      })
+    } catch (e) {
+      console.error('Share failed', e)
+    }
+  } else {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text)
+      } else {
+        fallbackCopyText(text)
+      }
+      showToast?.('Teks ayat disalin untuk dibagikan!', 'success')
+    } catch (e) {
+      if (fallbackCopyText(text)) {
+        showToast?.('Teks ayat disalin untuk dibagikan!', 'success')
+      } else {
+        console.error('Copy failed', e)
+      }
+    }
+  }
+}
+
 const copyAyahText = async () => {
   if (selectedAyahForDrawer.value?.text) {
+    const textToCopy = selectedAyahForDrawer.value.text
     try {
-      await navigator.clipboard.writeText(selectedAyahForDrawer.value.text)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        fallbackCopyText(textToCopy)
+      }
+      showToast?.('Teks Arab berhasil disalin!', 'success')
     } catch (e) {
-      console.error('Failed to copy', e)
+      if (fallbackCopyText(textToCopy)) {
+        showToast?.('Teks Arab berhasil disalin!', 'success')
+      } else {
+        console.error('Failed to copy', e)
+        showToast?.('Gagal menyalin teks Arab', 'error')
+      }
     }
+  } else {
+    showToast?.('Tidak ada teks Arab untuk disalin', 'warning')
   }
   showAyahDrawer.value = false
 }
@@ -963,6 +1094,11 @@ const activeVerseTranslation = computed(() => {
 })
 
 const selectAyahFromTranslation = (surahId: number, ayahNumber: number) => {
+  // If the audio is already playing this exact verse, do not restart it
+  if (isPlaying.value && activeHighlightVerse.value.surah === surahId && activeHighlightVerse.value.ayah === ayahNumber) {
+    return
+  }
+
   selectedAyah.value = ayahNumber
   selectedSurahId.value = surahId
   
@@ -1026,7 +1162,17 @@ const audioSettingsSheet = useBottomSheet({
   onClose: () => { showAudioSettings.value = false },
 })
 
-watch(showTranslationDrawer, (val) => { if (val) translationSheet.reset() })
+watch(showTranslationDrawer, async (val) => {
+  if (val) {
+    translationSheet.reset()
+    await nextTick()
+    setTimeout(() => {
+      if (activeTranslationItemRef.value) {
+        activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 150)
+  }
+})
 watch(showAyahDrawer, (val) => { if (val) ayahDrawerSheet.reset() })
 watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
 watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
@@ -1480,6 +1626,37 @@ const handlePointerDown = (event: PointerEvent) => {
   swipeStartTime.value = performance.now()
   swipeOffset.value = 0
   suppressNextLineTap.value = false
+
+  // Set up long press timer (e.g., 400ms)
+  isLongPressActive.value = false
+  if (longPressTimeout.value) {
+    clearTimeout(longPressTimeout.value)
+    longPressTimeout.value = null
+  }
+  
+  // Find mushaf word element at down coordinates
+  let target = event.target as HTMLElement
+  let wordEl = target?.closest('.mushaf-word') as HTMLElement
+  if (!wordEl && event.clientX && event.clientY) {
+    const fromPoint = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement
+    wordEl = fromPoint?.closest('.mushaf-word') as HTMLElement
+    target = fromPoint
+  }
+
+  // Trigger long press if we clicked a word
+  if (wordEl) {
+    const verseKey = wordEl.getAttribute('data-verse')
+    if (verseKey) {
+      longPressTimeout.value = window.setTimeout(() => {
+        isLongPressActive.value = true
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(24) // 24ms haptic vibration
+        }
+        openAyahOptions(verseKey)
+        longPressTimeout.value = null
+      }, 450)
+    }
+  }
 }
 
 const handlePointerMove = (event: PointerEvent) => {
@@ -1488,6 +1665,14 @@ const handlePointerMove = (event: PointerEvent) => {
   const deltaX = event.clientX - swipeStartX.value
   const deltaY = event.clientY - swipeStartY.value
   
+  // Cancel long press if user moves mouse/finger more than 8px (to allow swiping/panning)
+  if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+    if (longPressTimeout.value) {
+      clearTimeout(longPressTimeout.value)
+      longPressTimeout.value = null
+    }
+  }
+
   if (!swipeDirection.value) {
     if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
       if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
@@ -1521,6 +1706,12 @@ const handlePointerUp = async (event: PointerEvent) => {
   const targetPage = pageNumber.value + direction
   const canMove = targetPage >= 1 && targetPage <= 604
   
+  // Cancel any pending long press
+  if (longPressTimeout.value) {
+    clearTimeout(longPressTimeout.value)
+    longPressTimeout.value = null
+  }
+
   const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .18 || Math.abs(velocity) > .42)
   
   swipeStartX.value = null
@@ -1531,27 +1722,14 @@ const handlePointerUp = async (event: PointerEvent) => {
     settleSwipe()
     startIdleTimer()
 
-    let target = event.target as HTMLElement
-    let wordEl = target?.closest('.mushaf-word') as HTMLElement
-    
-    if (!wordEl && event.clientX && event.clientY) {
-      const fromPoint = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement
-      wordEl = fromPoint?.closest('.mushaf-word') as HTMLElement
-      target = fromPoint
-    }
-    
-    if (target?.closest('.line-mask:not(.line-mask--revealed)')) {
+    // If it was a long press, ignore the release/up click (it already opened the drawer)
+    if (isLongPressActive.value) {
+      isLongPressActive.value = false
       return
     }
 
-    if (wordEl) {
-      const verseKey = wordEl.getAttribute('data-verse')
-      if (verseKey) {
-        openAyahOptions(verseKey)
-        return
-      }
-    }
-
+    // Otherwise, this is a standard SINGLE-TAP!
+    // Single tap on the screen toggles fullscreen!
     toggleFullscreen()
     return
   }
@@ -1569,6 +1747,11 @@ const handlePointerUp = async (event: PointerEvent) => {
 }
 
 const cancelSwipe = () => {
+  if (longPressTimeout.value) {
+    clearTimeout(longPressTimeout.value)
+    longPressTimeout.value = null
+  }
+  isLongPressActive.value = false
   if (swipeStartX.value === null) return
   swipeStartX.value = null
   swipeStartY.value = null
@@ -2306,7 +2489,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   min-height: 0;
   overflow: hidden;
   background: #fffefa;
-  touch-action: pan-y pinch-zoom;
+  touch-action: manipulation;
   user-select: none;
 }
 
@@ -4525,7 +4708,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 .mushaf-page-box {
   width: min(calc(100cqw - 20px), calc((100cqh - 16px) * 941 / 1672));
-  aspect-ratio: 941 / 1672;
+  height: calc(100cqh - 16px);
   flex: 0 0 auto;
   margin: auto;
   padding: 8px 11px 11px;
@@ -5110,7 +5293,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   gap: 0;
   overflow: visible !important;
   justify-content: center !important;
-  font-size: clamp(12px, 5.95cqw, 31.5px) !important;
+  font-size: clamp(12px, 5.5cqw, 31.5px) !important;
   line-height: 1.56 !important;
   white-space: nowrap;
   text-rendering: optimizeLegibility;
@@ -5264,51 +5447,195 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 /* ── Ayah Options Drawer ─── */
 .ayah-options-sheet {
   height: auto;
-  min-height: 200px;
-  max-height: 85vh;
+  min-height: 120px;
+  max-height: 80vh;
+  background: #fdfbf7 !important; /* Soft warm cream */
+  border-top-left-radius: 28px !important;
+  border-top-right-radius: 28px !important;
+  border-top: 1px solid rgba(156, 122, 60, 0.12) !important;
+  box-shadow: 0 -8px 24px rgba(96, 85, 63, 0.08) !important;
 }
-.ayah-options-content {
-  padding: 16px 20px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
+
+.ayah-options-sheet .translation-sheet-header {
+  padding: 14px 20px 4px;
 }
-.ayah-options-text {
-  font-size: 1.6rem;
-  line-height: 1.6;
-  text-align: right;
-  color: #1a1b1a;
-  margin-bottom: 8px;
+
+.ayah-drawer-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0f4c46;
+  margin: 0;
+  line-height: 1.2;
 }
-.ayah-options-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+
+.ayah-drawer-subtitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #9c7a3c;
+  margin: 2px 0 0;
 }
-.ayah-action-btn {
+
+.ayah-drawer-divider {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 20px;
-  border-radius: 12px;
-  background: #f7f9f7;
-  border: 1px solid #e0e5e2;
-  color: #1a1b1a;
-  font-size: 1.05rem;
-  font-weight: 600;
+  justify-content: center;
+  margin: 2px 20px;
+}
+.ayah-drawer-divider::before,
+.ayah-drawer-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #ebdcb9, transparent);
+}
+.ayah-drawer-divider__ornament {
+  margin: 0 12px;
+  color: #9c7a3c;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+}
+
+.ayah-options-content {
+  padding: 8px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Primary Play Card */
+.ayah-primary-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0d5c56 0%, #083c38 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(13, 92, 86, 0.18) !important;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ayah-primary-card:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px rgba(13, 92, 86, 0.25) !important;
+}
+
+.ayah-primary-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.play-icon-simple {
+  width: 14px;
+  height: 14px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.ayah-primary-card__text {
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+/* Secondary list actions */
+.ayah-list-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ayah-list-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #ffffff !important;
+  border: 1px solid #f0f0ee !important;
+  color: #2b3935;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.01);
   text-align: left;
 }
-.ayah-action-btn:active {
-  background: #eef2f0;
-  transform: scale(0.98);
+
+.ayah-list-item:hover {
+  border-color: #ebdcb9 !important;
+  background: #fffefb !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(96, 85, 63, 0.03);
 }
-.ayah-action-btn svg {
-  width: 22px;
-  height: 22px;
-  color: #087d59;
+
+.ayah-list-item:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.ayah-list-item__icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #eaf2ed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  color: #0d5c56;
+}
+
+.ayah-list-item__icon-wrapper svg {
+  width: 16px;
+  height: 16px;
+  color: #0d5c56 !important;
+}
+
+.ayah-list-item__icon-wrapper.Arabic-symbol {
+  font-family: 'Amiri', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ayah-list-item__label {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2b3935;
+}
+
+.ayah-list-item__chevron {
+  width: 16px;
+  height: 16px;
+  color: #bdc5c2 !important;
+  transition: transform 0.2s ease;
+}
+
+.ayah-list-item:hover .ayah-list-item__chevron {
+  transform: translateX(1.5px);
+  color: #9c7a3c !important;
+}
+
+.ayah-options-sheet .translation-sheet-close {
+  background: rgba(96, 85, 63, 0.06) !important;
+  color: #60553f !important;
+  width: 32px;
+  height: 32px;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.ayah-options-sheet .translation-sheet-close:hover {
+  background: rgba(96, 85, 63, 0.12) !important;
+  color: #0f4c46 !important;
+  transform: rotate(90deg) !important;
 }
 
 /* ── Mobile Landscape Full-Width Override ─── */
@@ -5358,5 +5685,10 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
     font-size: 6.2vw !important;
     width: 100% !important;
   }
+}
+
+/* ── Fullscreen Viewport Height Expansion ─── */
+.mushaf-page--fullscreen .mushaf-viewport {
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px) !important;
 }
 </style>
