@@ -52,32 +52,153 @@
       >
         <div class="mushaf-track" :class="{ 'mushaf-track--animating': swipeAnimating }" :style="trackStyle">
           <div v-for="(slidePage, index) in carouselPages" :key="slidePage + '-' + index" class="mushaf-slide">
-            <!-- Page Box wraps the image in the exact same aspect ratio of the physical book scans -->
-            <div class="mushaf-page-box">
-              <img
-                :src="localImageUrl(slidePage)"
-                :alt="'Mushaf Al-Quran halaman ' + slidePage"
-                class="mushaf-page-img"
-                decoding="async"
-                :fetchpriority="index === 1 ? 'high' : 'low'"
-                @load="index === 1 && handleImageLoad()"
-                @error="index === 1 && handleImageError()"
-              >
+            <!-- QCF V2 Font-Based Mushaf Page -->
+            <div
+              class="mushaf-page-box"
+              :class="[
+                'mushaf-theme--' + mushafTheme,
+                {
+                  'mushaf-page-box--loading': index === 1 && qcfLoading,
+                  'mushaf-page-box--opening': slidePage && slidePage <= 2,
+                  'mushaf-page-box--fatihah': slidePage === 1,
+                  'mushaf-page-box--baqarah': slidePage === 2,
+                  'mushaf-page-box--closing': slidePage === 604,
+                  'mushaf-page-box--multi-surah': slidePage && getPageSurahCount(slidePage) > 1,
+                }
+              ]"
+            >
+              <template v-if="slidePage">
+                <!-- Ornamental Frame -->
+                <div class="mushaf-frame" aria-hidden="true">
+                  <!-- Corner ornaments -->
+                  <div class="mushaf-frame__corner mushaf-frame__corner--tl"></div>
+                  <div class="mushaf-frame__corner mushaf-frame__corner--tr"></div>
+                  <div class="mushaf-frame__corner mushaf-frame__corner--bl"></div>
+                  <div class="mushaf-frame__corner mushaf-frame__corner--br"></div>
+                  <!-- Border lines -->
+                  <div class="mushaf-frame__border"></div>
+                </div>
+
+                <!-- Page Meta Header -->
+                <div class="mushaf-meta">
+                  <span class="mushaf-meta__juz">{{ getPageJuz(slidePage) }}</span>
+                  <span class="mushaf-meta__page">{{ slidePage }}</span>
+                  <span class="mushaf-meta__surah">{{ getPageSurah(slidePage) }}</span>
+                </div>
+
+                <!-- QCF V2 Text Content -->
+                <div
+                  class="mushaf-qcf-content"
+                  :class="{ 'mushaf-qcf-content--short': getPageLines(slidePage).length < 15 }"
+                  :style="{ fontFamily: qcfFontFamily(slidePage) }"
+                >
+                  <!-- Loading skeleton -->
+                  <div v-if="index === 1 && qcfLoading" class="qcf-loading">
+                    <div v-for="l in 15" :key="l" class="qcf-skeleton-line"></div>
+                  </div>
+
+                  <!-- Rendered lines -->
+                  <template v-else>
+                    <template v-for="line in getPageLines(slidePage)" :key="line.line_number">
+                      <!-- Surah name banner (shown before the first line of a surah) -->
+                      <div
+                        v-if="getSurahBannerAtLine(line.line_number, slidePage)"
+                        class="mushaf-surah-banner"
+                      >
+                        <div class="mushaf-surah-banner__inner">
+                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--left">
+                            {{ getSurahBannerAtLine(line.line_number, slidePage)?.revelation_place === 'meccan' ? 'Makkiyah' : (getSurahBannerAtLine(line.line_number, slidePage)?.revelation_place === 'medinan' ? 'Madaniyah' : '') }}
+                          </span>
+                          <span
+                            class="mushaf-surah-banner__name"
+                            :aria-label="getSurahBannerAtLine(line.line_number, slidePage)?.name_arabic"
+                          >{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
+                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--right">
+                            <template v-if="getSurahBannerAtLine(line.line_number, slidePage)?.total_ayah">
+                              {{ getSurahBannerAtLine(line.line_number, slidePage)?.total_ayah }} Ayat
+                            </template>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        v-if="shouldShowBismillahAtLine(line.line_number, slidePage)"
+                        class="mushaf-bismillah-calligraphy"
+                        aria-label="Bismillahirrahmanirrahim"
+                      >﷽</div>
+
+                      <!-- Normal text line -->
+                      <div
+                        v-if="line.unicode_fallback?.length"
+                        class="mushaf-line mushaf-line--unicode"
+                        :data-line="line.line_number"
+                      >
+                        <span
+                          v-for="verse in line.unicode_fallback"
+                          :key="verse.verse_key"
+                          class="mushaf-unicode-verse"
+                          :data-verse="verse.verse_key"
+                        >
+                          <span>{{ verse.text }}</span>
+                          <span class="mushaf-unicode-ayah-number">{{ formatArabicNumber(verse.ayah_number) }}</span>
+                        </span>
+                      </div>
+
+                      <div v-else class="mushaf-line mushaf-line--qcf" :data-line="line.line_number">
+                        <span class="mushaf-line__qcf-content">
+                          <template v-for="word in line.words" :key="word.word_id">
+                            <span
+                              :data-verse="word.verse_key"
+                              :class="[
+                                'mushaf-word',
+                                word.char_type === 'end' ? 'mushaf-word--end' : '',
+                                ...tajweedClassesForWord(word.text_tajweed),
+                                index === 1 && isActiveVerse(word.verse_key) ? 'mushaf-word--active' : '',
+                                index === 1 ? getVerseProgressClass(word.verse_key) : ''
+                              ]"
+                            >
+                              <span
+                                v-if="word.char_type === 'end'"
+                                class="mushaf-ayah-ornament"
+                                :aria-label="`Ayat ${ayahNumberFromVerseKey(word.verse_key)}`"
+                              >
+                                <svg viewBox="0 0 100 100" aria-hidden="true">
+                                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/>
+                                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/>
+                                  <circle cx="50" cy="50" r="23" fill="#fff" stroke="currentColor" stroke-width="2.5"/>
+                                  <circle cx="50" cy="50" r="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/>
+                                </svg>
+                                <span>{{ formatArabicNumber(ayahNumberFromVerseKey(word.verse_key)) }}</span>
+                              </span>
+                              <span v-else :style="{ fontFamily: qcfFontFamily(word.page_number || slidePage) }">{{ word.code_v2 }}</span>
+                            </span>
+                          </template>
+                        </span>
+                      </div>
+                    </template>
+                  </template>
+                </div>
+
+                <!-- Opening Page Bottom Banner -->
+                <div v-if="slidePage === 1 || slidePage === 2" class="mushaf-bottom-banner">
+                  <div class="mushaf-bottom-banner__inner">
+                    <span class="mushaf-bottom-banner__text">
+                      {{ slidePage === 1 ? 'وَآيَاتُهَا سَبْعٌ' : 'وَآيَاتُهَا مِائَتَانِ وَسِتٌّ وَثَمَانُونَ' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Page number footer -->
+                <div class="mushaf-page-footer">
+                  <span>{{ slidePage }}</span>
+                </div>
+              </template>
             </div>
           </div>
         </div>
 
-        <div v-if="!hasRenderedPage && !imageError" class="image-loading" aria-hidden="true">
-          <span class="mushaf-state__spinner"></span>
-          <small>Memuat mushaf...</small>
-        </div>
-
-        <div v-if="imageError" class="image-error">
-          <strong>Aset halaman belum tersedia</strong>
-          <small>Jalankan pengunduh aset Mushaf lokal.</small>
-        </div>
-
-        <div v-if="hasRenderedPage && !imageError && !isSwipeActive" class="line-masks" aria-label="Mask hafalan per baris">
+        <!-- Line mask overlay for memorization (works on QCF too) -->
+        <div v-if="!qcfLoading && !isSwipeActive" class="line-masks" aria-label="Mask hafalan per baris">
           <button
             v-for="line in lineCount"
             :key="line"
@@ -336,30 +457,13 @@
           </button>
         </header>
 
-        <!-- Mushaf Type Selector -->
         <div class="translation-sheet-settings">
           <div class="mushaf-theme-selector">
-            <span class="theme-selector-label">Jenis Mushaf</span>
-            <div class="theme-selector-options">
-              <button 
-                type="button" 
-                class="theme-selector-btn" 
-                :class="{ 'theme-selector-btn--active': mushafTheme === 'nabawiyyah' }"
-                @click="mushafTheme = 'nabawiyyah'"
-              >
-                Nabawiyyah (Teks)
-              </button>
-              <button 
-                type="button" 
-                class="theme-selector-btn" 
-                :class="{ 'theme-selector-btn--active': mushafTheme === 'classic' }"
-                @click="mushafTheme = 'classic'"
-              >
-                Classic (Gambar)
-              </button>
-            </div>
+            <span class="theme-selector-label">Tema Mushaf</span>
+            <span class="theme-selector-value">Default</span>
           </div>
         </div>
+
 
         <!-- Scrollable list -->
         <div ref="translationListRef" class="translation-sheet-list">
@@ -380,7 +484,15 @@
 
     <Transition name="sheet">
       <div v-if="navigatorOpen" class="navigator-overlay" @click="closeNavigator">
-        <section class="navigator-sheet" role="dialog" aria-modal="true" aria-labelledby="navigator-title" :style="navigatorSheet.sheetStyle.value" @click.stop>
+        <section
+          class="navigator-sheet"
+          :class="{ 'navigator-sheet--picker-open': showSurahPicker || showAyahPicker || showSectionPicker }"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="navigator-title"
+          :style="navigatorSheet.sheetStyle.value"
+          @click.stop
+        >
           <div class="navigator-sheet__handle" v-bind="navigatorSheet.bindHandle"></div>
 
           <div class="navigator-sheet__content">
@@ -561,12 +673,36 @@ interface MushafSurah {
   number: number
   name_latin: string
   name_arabic: string
+  revelation_place?: string
+  total_ayah?: number
+  starts_at_line?: number | null
+}
+
+interface MushafWord {
+  word_id: number
+  verse_key: string
+  position: number
+  char_type: 'word' | 'end'
+  code_v2: string
+  text_tajweed?: string | null
+}
+
+interface MushafLine {
+  line_number: number
+  words: MushafWord[]
+  unicode_fallback?: Array<{
+    verse_key: string
+    ayah_number: number
+    text: string
+  }>
 }
 
 interface MushafPageData {
   page_number: number
   juz: number[]
   surahs: MushafSurah[]
+  lines: MushafLine[]
+  verse_progress: Record<string, string>
   ayahs: Array<{
     id: number
     surah_id: number
@@ -580,6 +716,7 @@ interface MushafPageData {
 
 interface SurahOption extends MushafSurah {
   total_ayah: number
+  revelation_place: string
   page_start: number | null
 }
 
@@ -660,6 +797,12 @@ const mushafTheme = useCookie<'classic' | 'nabawiyyah'>('mushaf_theme', {
   path: '/'
 })
 
+// Classic is temporarily unavailable. Migrate existing saved selections to
+// the current plain/default mushaf presentation.
+if (mushafTheme.value === 'classic') {
+  mushafTheme.value = 'nabawiyyah'
+}
+
 watch(mushafTheme, () => {
   prefetchPages()
 })
@@ -697,9 +840,9 @@ const pageNumber = computed(() => {
 })
 
 const carouselPages = computed(() => [
-  Math.min(604, pageNumber.value + 1),
+  pageNumber.value < 604 ? pageNumber.value + 1 : null,
   pageNumber.value,
-  Math.max(1, pageNumber.value - 1),
+  pageNumber.value > 1 ? pageNumber.value - 1 : null,
 ])
 
 // Coordinates loading state and methods for page highlight alignment (Disabled for image-based mushaf)
@@ -829,6 +972,211 @@ watch(carouselPages, preloadCoordinates, { immediate: true })
 */
 const trackStyle = computed(() => ({ transform: `translate3d(calc(-33.333333% + ${swipeOffset.value}px), 0, 0)` }))
 const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffset.value) > 1)
+
+// ── QCF V2 Rendering Logic ─────────────────────────────────────────────────
+
+// Cache: page number → {lines, surahs, juz}
+const qcfPageCache = ref<Record<number, { lines: MushafLine[], surahs: MushafSurah[], juz: number[] }>>({})
+const qcfLoading = ref(true) // true while current page is loading
+let qcfFitFrame: number | null = null
+
+const fitQcfLines = async () => {
+  if (process.server) return
+  await nextTick()
+  if (qcfFitFrame !== null) cancelAnimationFrame(qcfFitFrame)
+
+  qcfFitFrame = requestAnimationFrame(() => {
+    document.querySelectorAll<HTMLElement>('.mushaf-line--qcf').forEach(line => {
+      const content = line.querySelector<HTMLElement>('.mushaf-line__qcf-content')
+      if (!content) return
+
+      content.style.setProperty('--qcf-line-scale', '1')
+      if (line.closest('.mushaf-page-box--opening, .mushaf-page-box--closing')) return
+
+      const naturalWidth = content.getBoundingClientRect().width
+      const availableWidth = line.clientWidth
+      if (!naturalWidth || !availableWidth) return
+
+      const scale = Math.min(1.24, Math.max(.88, availableWidth / naturalWidth))
+      content.style.setProperty('--qcf-line-scale', scale.toFixed(4))
+    })
+    qcfFitFrame = null
+  })
+}
+
+const loadQcfPage = async (page: number) => {
+  if (page < 1 || page > 604 || qcfPageCache.value[page]) return
+  try {
+    const data = await apiFetch<{ data: MushafPageData }>(`/mushaf/pages/${page}`)
+    if (data?.data?.lines) {
+      qcfPageCache.value[page] = {
+        lines:  data.data.lines,
+        surahs: data.data.surahs,
+        juz:    data.data.juz,
+      }
+      fitQcfLines()
+    }
+  } catch (e) {
+    console.error(`[QCF] Failed to load page ${page}`, e)
+  }
+}
+
+// Load current + adjacent pages
+const loadQcfPages = async () => {
+  qcfLoading.value = true
+  await loadQcfPage(pageNumber.value)
+  qcfLoading.value = false
+  // Preload adjacent
+  loadQcfPage(Math.max(1, pageNumber.value - 1))
+  loadQcfPage(Math.min(604, pageNumber.value + 1))
+}
+
+// Load font for a given page lazily via a dynamic @font-face
+const loadedFonts = ref<Set<number>>(new Set())
+const loadQcfFont = (page: number) => {
+  if (!page || page < 1 || page > 604) return
+  if (loadedFonts.value.has(page) || process.server) return
+  if (typeof document === 'undefined') return
+  loadedFonts.value.add(page)
+  // Add ?v=2 to bust browser cache from the old V1 fonts
+  const fontUrl = `/fonts/qcf/p${page}.woff2?v=2`
+  const style = document.createElement('style')
+  style.textContent = `@font-face { font-family: "QCF-p${page}"; src: url("${fontUrl}") format("woff2"); font-display: swap; }`
+  document.head.appendChild(style)
+  document.fonts?.load(`16px "QCF-p${page}"`).then(() => fitQcfLines())
+}
+
+// Returns the CSS font-family string for a given page
+const qcfFontFamily = (page: number): string => {
+  if (!page) return 'serif'
+  if (process.client) loadQcfFont(page)
+  return `"QCF-p${page}", serif`
+}
+
+// Get lines for a given page (from cache or current pageData)
+const getPageLines = (page: number): MushafLine[] => {
+  const lines = qcfPageCache.value[page]?.lines || pageData.value?.lines || []
+  // The closing pages contain several compact surahs. Their Quran.com word
+  // IDs can be interleaved, while printed mushaf order follows physical line
+  // number (e.g. page 603: Al-Kafirun, An-Nasr, then Al-Masad).
+  return page >= 600
+    ? [...lines].sort((a, b) => Number(a.line_number) - Number(b.line_number))
+    : lines
+}
+
+const formatArabicNumber = (value: number): string =>
+  new Intl.NumberFormat('ar-EG', { useGrouping: false }).format(value)
+
+const ayahNumberFromVerseKey = (verseKey: string): number =>
+  Number(verseKey.split(':')[1] || 0)
+
+const tajweedClassesForWord = (text?: string | null): string[] => {
+  if (!text) return []
+  const rules = new Set<string>()
+  for (const match of text.matchAll(/\[([a-z])(?::\d+)?\[/gi)) {
+    rules.add(match[1].toLowerCase())
+  }
+
+  // A QCF glyph is one complete word, so choose one strong tajweed colour.
+  // Silent-letter rules (h/s/l) stay black; colouring the whole glyph grey
+  // would make otherwise pronounced letters look disabled.
+  const priority = ['q', 'f', 'c', 'i', 'g', 'u', 'a', 'w', 'm', 'o', 'p', 'n']
+  const rule = priority.find(candidate => rules.has(candidate))
+  return rule ? [`tajweed-${rule}`] : []
+}
+
+const formatTajweedText = (text: string): string => {
+  if (!text) return ''
+
+  let cleanText = text
+    .replace(/^\uFEFF/, '')
+    .replace(/\u0672/g, '\u0670')
+    .replace(/[\u0610-\u061A\u06D6-\u06E4\u06E7-\u06ED\u08A0-\u08FF]/g, '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Some AlQuran Cloud rules close at the next token boundary instead of
+  // carrying a literal `]`, so the closing bracket is intentionally optional.
+  const tajweedPattern = /\[([a-z0-9:]+)\[([^\]]*?)(?:\]|$)/g
+
+  const removeMarkupArtifacts = (value: string): string => value
+    // Defensive cleanup for malformed/cross-word AlQuran Cloud tags. These
+    // markers are metadata, never Quran text, and must never reach the page.
+    .replace(/\[?[a-z](?::\d+)?\[/gi, '')
+    .replace(/\]?[a-z](?::\d+)?\]/gi, '')
+    .replace(/\b[a-z]:\d+\b/gi, '')
+    .replace(/[\[\]]/g, '')
+
+  // Keep the coloured spans on Safari/iOS as well. Each span stays inside a
+  // single Arabic word, so line pagination and word order remain stable.
+  return removeMarkupArtifacts(cleanText.replace(tajweedPattern, (_match, ruleInfo, characters) => {
+    if (!characters) return ''
+    const rule = String(ruleInfo).split(':')[0]
+    return `<span class="tajweed-${rule}">${characters}</span>`
+  }))
+}
+
+const surahNameGlyph = (surahNumber?: number): string =>
+  `surah${String(surahNumber || 1).padStart(3, '0')}`
+
+const getPageJuz = (page: number): string => {
+  const juz = qcfPageCache.value[page]?.juz || pageData.value?.juz || []
+  return juz.length ? 'Juz ' + juz.join('-') : ''
+}
+
+const getPageSurah = (page: number): string => {
+  const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
+  if (!surahs.length) return ''
+  return surahs.length === 1
+    ? surahs[0].number + '. ' + surahs[0].name_latin
+    : surahs[0].name_latin + ' – ' + surahs[surahs.length - 1].name_latin
+}
+
+const getPageSurahCount = (page: number): number =>
+  (qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []).length
+
+// Get surah banner metadata to show above a line (when a surah starts there)
+const getSurahBannerAtLine = (lineNumber: any, page: number): MushafSurah | null => {
+  const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
+  return surahs.find(s => s.starts_at_line !== null && s.starts_at_line !== undefined && Number(s.starts_at_line) === Number(lineNumber)) || null
+}
+
+const shouldShowBismillahAtLine = (lineNumber: number, page: number): boolean => {
+  const surah = getSurahBannerAtLine(lineNumber, page)
+  // Al-Fatihah already contains the basmalah as ayah 1. At-Tawbah is the
+  // single surah that conventionally begins without it.
+  return Boolean(surah && surah.number !== 1 && surah.number !== 9)
+}
+
+// Active verse highlight
+const isActiveVerse = (verseKey: string): boolean => {
+  const active = activeHighlightVerse.value
+  return verseKey === `${active.surah}:${active.ayah}`
+}
+
+// Verse progress CSS class (for word-level progress coloring)
+const getVerseProgressClass = (verseKey: string): string => {
+  const progress = pageData.value?.verse_progress?.[verseKey] || 'unreviewed'
+  if (progress === 'fluent') return 'mushaf-word--fluent'
+  if (progress === 'doubtful') return 'mushaf-word--doubtful'
+  if (progress === 'forgot') return 'mushaf-word--forgot'
+  return ''
+}
+
+// Scroll active verse word into view on murottal advance
+watch(activeHighlightVerse, async (newVerse) => {
+  if (process.server) return
+  await nextTick()
+  const key = `${newVerse.surah}:${newVerse.ayah}`
+  const el = document.querySelector(`.mushaf-word--active[data-verse="${key}"]`) as HTMLElement | null
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+  // Also update translation sheet
+  if (showTranslationDrawer.value && activeTranslationItemRef.value && translationListRef.value) {
+    activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+}, { deep: true })
 const primarySurah = computed(() => pageData.value?.surahs[0] || null)
 const currentSurahTitle = computed(() =>
   primarySurah.value
@@ -999,6 +1347,14 @@ const handlePageChange = () => {
   directPage.value = pageNumber.value
   loadPageMetadata()
   nextTick(prefetchPages)
+
+  // Load QCF page data and fonts for current + adjacent pages
+  loadQcfPages()
+  if (process.client) {
+    carouselPages.value.forEach(p => {
+      if (p) loadQcfFont(p)
+    })
+  }
 }
 
 const goToPage = (page: number) => {
@@ -1563,9 +1919,14 @@ watch(() => route.params.pageNumber, handlePageChange)
 onMounted(() => {
   handlePageChange()
   loadSurahOptions()
+  window.addEventListener('resize', fitQcfLines)
 })
 
-onBeforeUnmount(stopPlayer)
+onBeforeUnmount(() => {
+  stopPlayer()
+  window.removeEventListener('resize', fitQcfLines)
+  if (qcfFitFrame !== null) cancelAnimationFrame(qcfFitFrame)
+})
 
 useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) })
 </script>
@@ -1747,6 +2108,10 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   flex: 0 0 33.333333%;
   overflow: hidden;
   background: #fffefa;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mushaf-viewport--dragging { cursor: grabbing; }
@@ -1771,36 +2136,262 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 /* Golden Rule Centering Page Box */
+/* ── QCF V2 Mushaf Page Rendering ─────────────────────────────────────── */
+
+/* Page box container — maintains mushaf aspect ratio */
 .mushaf-page-box {
   position: relative;
   height: 100%;
   margin: 0 auto;
   display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 4px;
+  max-width: 520px;
+  width: 100%;
+  flex: 1;
+  container-type: inline-size; /* For responsive typography */
+}
+
+/* Nabawiyyah Theme — warm cream like physical Madinah mushaf */
+.mushaf-theme--nabawiyyah {
+  background: #FFF8F0;
+  color: #1A0A00;
+}
+
+/* Classic Theme — clean white, navy accents */
+.mushaf-theme--classic {
+  background: #FFFFFF;
+  color: #000;
+}
+
+/* ── Page Meta Header ─── */
+.mushaf-meta {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  padding: 8px 20px 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.mushaf-theme--nabawiyyah .mushaf-meta { color: #8C6219; }
+.mushaf-theme--classic .mushaf-meta { color: #224b8a; }
+
+.mushaf-meta__page {
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+/* ── QCF Text Content Area ─── */
+.mushaf-qcf-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 6px 10px;
+  direction: rtl;
+}
+
+/* ── Ornamental Text Frame ─── */
+.mushaf-text-frame {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border-radius: 2px;
+  margin: 0 4px;
+}
+
+/* Simulate the thick, multi-layered ornate borders of the Madinah Mushaf */
+.mushaf-theme--nabawiyyah .mushaf-text-frame {
+  border: 4px double #9A6C1D;
+  box-shadow:
+    inset 0 0 0 3px #FFF8F0,
+    inset 0 0 0 4px #C9943A,
+    0 0 0 3px #FFF8F0,
+    0 0 0 4px #C9943A;
+}
+
+.mushaf-theme--classic .mushaf-text-frame {
+  border: 4px double #1a3a6b;
+  box-shadow:
+    inset 0 0 0 3px #FFFFFF,
+    inset 0 0 0 4px #1a3a6b,
+    0 0 0 3px #FFFFFF,
+    0 0 0 4px #1a3a6b;
+}
+
+.mushaf-text-frame__inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* Distribute 15 lines evenly */
+  padding: 8px 12px;
+}
+
+/* For pages with < 15 lines (e.g. Al-Fatihah) */
+.mushaf-qcf-content--short .mushaf-text-frame__inner {
   justify-content: center;
 }
 
-/* Dynamic aspect ratio lock matching the exact scan file dimensions */
-.mushaf-page--nabawiyyah .mushaf-page-box {
-  aspect-ratio: 699 / 1020; /* Nabawiyyah GIF aspect ratio */
-}
-
-.mushaf-page--classic .mushaf-page-box {
-  aspect-ratio: 599 / 920; /* Classic JPG aspect ratio */
-  /* For classic theme, we scale 1.08 to crop empty boundaries if needed, or keep 1.0 */
-  transform: scale(1.08); 
-}
-
-.mushaf-page-img {
+/* Each of the 15 baris / lines */
+.mushaf-line {
+  display: flex;
+  flex-direction: row; /* RTL */
+  justify-content: center; /* Words are pre-justified by font spacing, just center them */
+  align-items: center;
   width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: contain; /* Preserves natural image details and aspect ratio */
-  image-rendering: -webkit-optimize-contrast; /* Sharp scan contrast on iOS */
-  image-rendering: crisp-edges; /* Prevents blurriness on high-DPI displays */
-  pointer-events: none;
-  -webkit-user-drag: none;
+  font-size: 6.2cqw; /* Scaled typography. Slightly smaller to ensure no overflow */
+  line-height: 1.5;
+  white-space: nowrap; /* Prevent wrapping */
 }
+
+/* Bismillah line — centered, slightly larger */
+.mushaf-line--bismillah {
+  margin-bottom: 2cqw;
+}
+
+.mushaf-bismillah-text {
+  font-size: 1.15em;
+  letter-spacing: 0;
+}
+
+/* Individual word spans */
+.mushaf-word {
+  /* Use block so we don't get flex-squished. Just render naturally. */
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0; /* No artificial padding, let the font handle it */
+  margin: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0; /* Never squish the pre-justified font! */
+}
+
+/* Verse number marker (end glyph) */
+.mushaf-word--end {
+  font-size: 0.88em;
+  opacity: 0.9;
+}
+
+/* Active verse highlight — emerald green glow */
+.mushaf-word--active {
+  color: #065F46 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+}
+
+.mushaf-word--active.mushaf-word--end {
+  background: rgba(16, 185, 129, 0.28) !important;
+}
+
+/* Progress status colors */
+.mushaf-word--fluent   { color: #065F46; }
+.mushaf-word--doubtful { color: #92400E; }
+.mushaf-word--forgot   { color: #9F1239; }
+
+/* ── Surah Name Banner ─── */
+.mushaf-surah-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1.5cqw 0 2cqw;
+}
+
+.mushaf-surah-banner__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.2cqw 4cqw;
+  border-radius: 4px;
+  width: 80%;
+  position: relative;
+}
+
+/* Fancy double border for the banner to mimic ornate SVG */
+.mushaf-surah-banner__inner::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 2px;
+  border: 1px dashed;
+  opacity: 0.4;
+}
+
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner {
+  background: linear-gradient(135deg, rgba(201,148,58,0.15) 0%, rgba(201,148,58,0.05) 100%);
+  border: 2px solid #C9943A;
+  box-shadow: 0 2px 4px rgba(201, 148, 58, 0.15);
+}
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner::before { border-color: #C9943A; }
+
+.mushaf-theme--classic .mushaf-surah-banner__inner {
+  background: linear-gradient(135deg, rgba(26,58,107,0.1) 0%, rgba(26,58,107,0.02) 100%);
+  border: 2px solid #1a3a6b;
+  box-shadow: 0 2px 4px rgba(26, 58, 107, 0.1);
+}
+.mushaf-theme--classic .mushaf-surah-banner__inner::before { border-color: #1a3a6b; }
+
+.mushaf-surah-banner__name {
+  font-family: 'UthmanicHafs', serif; /* Use standard font for banner if QCF isn't loading perfectly for this */
+  font-size: 4.5cqw;
+  font-weight: 700;
+}
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__name { color: #7B4E0A; }
+.mushaf-theme--classic .mushaf-surah-banner__name { color: #1a3a6b; }
+
+.mushaf-surah-banner__sub {
+  font-size: 2.2cqw;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 0.5cqw;
+  direction: ltr;
+}
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__sub { color: rgba(122,76,8,0.65); }
+.mushaf-theme--classic .mushaf-surah-banner__sub { color: rgba(26, 58, 107, 0.6); }
+
+/* ── Page Number Footer ─── */
+.mushaf-page-footer {
+  display: flex;
+  justify-content: center;
+  padding: 0 0 6px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.mushaf-theme--nabawiyyah .mushaf-page-footer { color: rgba(107,76,17,0.5); }
+.mushaf-theme--classic .mushaf-page-footer { color: rgba(26, 58, 107, 0.4); }
+
+/* ── Loading Skeleton ─── */
+.qcf-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.8cqw;
+}
+
+.qcf-skeleton-line {
+  height: 4.5cqw;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.05) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.qcf-skeleton-line:nth-child(odd) { width: 100%; }
+.qcf-skeleton-line:nth-child(even) { width: 92%; margin-left: auto; }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 
 
 /* ── Draggable Translation Bottom Sheet ────────────────────────────────── */
@@ -1873,30 +2464,17 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   color: #3b5249;
 }
 
-.theme-selector-options {
-  display: flex;
-  background: #eef2f0;
-  padding: 3px;
-  border-radius: 99px;
-  gap: 2px;
-}
-
-.theme-selector-btn {
-  border: none;
-  background: transparent;
-  padding: 6px 14px;
+.theme-selector-value {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #dce8e3;
+  background: #f3f8f6;
+  padding: 5px 16px;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #56706a;
-  border-radius: 99px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.theme-selector-btn--active {
-  background: #fff;
   color: #0a6b4f;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 99px;
 }
 
 .translation-sheet-header__left {
@@ -2099,6 +2677,11 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   flex-direction: column;
   /* Height driven by content in dismiss mode */
   max-height: 92dvh;
+}
+
+.navigator-sheet--picker-open {
+  height: 96dvh;
+  max-height: 96dvh;
 }
 
 
@@ -2408,6 +2991,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .surah-picker__list {
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -3264,4 +3848,1181 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
     overflow-y: auto !important;
   }
 }
+
+/* ── Madinah illuminated-page treatment ──────────────────────────────── */
+.mushaf-page--nabawiyyah,
+.mushaf-page--nabawiyyah .mushaf-content,
+.mushaf-page--nabawiyyah .mushaf-viewport,
+.mushaf-page--nabawiyyah .mushaf-slide {
+  background:
+    radial-gradient(circle at 50% 12%, rgba(224, 190, 102, .13), transparent 34%),
+    #f7f4e8;
+}
+
+.mushaf-viewport {
+  max-width: 520px;
+  border-radius: 3px;
+  box-shadow:
+    0 18px 48px rgba(25, 56, 50, .12),
+    0 2px 8px rgba(25, 56, 50, .08);
+}
+
+.mushaf-page-box {
+  isolation: isolate;
+  padding: 4px 7px 6px;
+  border: 1px solid rgba(13, 103, 107, .16);
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(231, 196, 106, .13), transparent 24%),
+    #fffdf0;
+}
+
+/* The outer illuminated border sits behind the text frame. */
+.mushaf-frame {
+  position: absolute;
+  z-index: 0;
+  inset: 36px 7px 6px;
+  pointer-events: none;
+}
+
+.mushaf-frame__border {
+  position: absolute;
+  inset: 0;
+  border: 2px solid #0a6c73;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 2px #f8edbd,
+    0 0 0 4px #d7a83d,
+    0 0 0 6px #0b7880,
+    inset 0 0 0 2px #f8edbd,
+    inset 0 0 0 4px rgba(11, 120, 128, .72);
+}
+
+.mushaf-frame__border::before,
+.mushaf-frame__border::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.mushaf-frame__border::before {
+  inset: 7px;
+  border: 1px solid rgba(199, 143, 41, .72);
+}
+
+.mushaf-frame__border::after {
+  inset: -4px;
+  opacity: .76;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 17px, #d04f3e 17px 20px, transparent 20px 36px) top / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 12px, #dfb23d 12px 16px, transparent 16px 29px) bottom / 100% 3px no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 17px, #d04f3e 17px 20px, transparent 20px 36px) left / 3px 100% no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 12px, #dfb23d 12px 16px, transparent 16px 29px) right / 3px 100% no-repeat;
+}
+
+.mushaf-frame__corner {
+  position: absolute;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e1b644;
+  background:
+    radial-gradient(circle, #d74f3d 0 18%, #f4d467 19% 34%, #087985 35% 58%, #fff4c9 59% 100%);
+  box-shadow: 0 0 0 2px #087985;
+  transform: rotate(45deg);
+}
+
+.mushaf-frame__corner--tl { top: -8px; left: -8px; }
+.mushaf-frame__corner--tr { top: -8px; right: -8px; }
+.mushaf-frame__corner--bl { bottom: -8px; left: -8px; }
+.mushaf-frame__corner--br { right: -8px; bottom: -8px; }
+
+/* Page metadata follows the three cartouches used in printed Madinah pages. */
+.mushaf-meta {
+  z-index: 3;
+  gap: 8px;
+  min-height: 28px;
+  padding: 3px 8px 7px;
+  color: #143e3e !important;
+  letter-spacing: .015em;
+}
+
+.mushaf-meta > span {
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #176a6d;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: rgba(255, 253, 235, .97);
+  box-shadow:
+    0 0 0 2px #fff8d8,
+    0 0 0 3px rgba(23, 106, 109, .58);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mushaf-meta__juz,
+.mushaf-meta__surah {
+  width: 34%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mushaf-meta__page {
+  width: 48px;
+  flex: 0 0 48px;
+  font-size: .65rem;
+}
+
+.mushaf-qcf-content {
+  z-index: 1;
+  padding: 0 8px 8px;
+}
+
+.mushaf-text-frame {
+  margin: 0 3px;
+  border: 2px solid #087780 !important;
+  border-radius: 2px;
+  padding: 12px;
+  background:
+    radial-gradient(circle at 50% 50%, #d94e3d 0 10%, #efc451 11% 22%, #fff6cb 23% 31%, transparent 32%) 0 0 / 24px 24px,
+    radial-gradient(ellipse at 50% 0, #f3d776 0 17%, transparent 18%) 12px 12px / 24px 24px,
+    conic-gradient(from 45deg, #087984, #e9c254 22%, #f7edc3 23% 31%, #0a6872 32% 50%, #e9c254 51% 72%, #087984 73%) 0 0 / 24px 24px;
+  box-shadow:
+    0 0 0 2px #f8efbf,
+    0 0 0 4px #c7962f,
+    0 0 0 6px #087780,
+    0 0 0 7px rgba(237, 205, 112, .72),
+    inset 0 0 0 2px rgba(255, 248, 209, .96),
+    inset 0 0 0 4px rgba(5, 89, 98, .5);
+}
+
+.mushaf-text-frame__inner {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  border: 1px solid rgba(176, 127, 33, .74);
+  padding: 7px 8px;
+  background: #fffdf0;
+  box-shadow: inset 0 0 18px rgba(204, 157, 56, .06);
+}
+
+.mushaf-line {
+  position: relative;
+  z-index: 2;
+  max-width: 100%;
+  font-size: 4.95cqw;
+  line-height: 1.42;
+}
+
+.mushaf-qcf-content--short .mushaf-text-frame__inner {
+  gap: 1.15cqw;
+  justify-content: center;
+  padding-top: 3cqw;
+  padding-bottom: 3cqw;
+}
+
+.mushaf-qcf-content--short .mushaf-line {
+  font-size: 6.05cqw;
+  line-height: 1.52;
+}
+
+.mushaf-line--bismillah {
+  min-height: 7cqw;
+  margin: 0 0 1cqw;
+  color: #17120b;
+}
+
+/* A proper illuminated surah plaque for Al-Fatihah, Al-Baqarah, and every
+   surah opening supplied by the page API. */
+.mushaf-surah-banner {
+  position: relative;
+  z-index: 2;
+  margin: 1.2cqw 0 2.2cqw;
+  padding: 1.25cqw 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(239, 199, 91, .86) 17%, rgba(239, 199, 91, .86) 83%, transparent),
+    repeating-linear-gradient(90deg, #086f79 0 10px, #0b8890 10px 18px, #e5b848 18px 21px);
+  box-shadow:
+    inset 0 1px #fff2b7,
+    inset 0 -1px #fff2b7;
+}
+
+.mushaf-surah-banner::before,
+.mushaf-surah-banner::after {
+  content: '◆';
+  position: absolute;
+  top: 50%;
+  color: #f9dc7a;
+  font-size: 3.4cqw;
+  text-shadow: 0 0 0 #a66f18, 0 1px 1px rgba(0, 0, 0, .2);
+  transform: translateY(-50%);
+}
+
+.mushaf-surah-banner::before { left: 3.5cqw; }
+.mushaf-surah-banner::after { right: 3.5cqw; }
+
+.mushaf-surah-banner__inner,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
+.mushaf-theme--classic .mushaf-surah-banner__inner {
+  width: 64%;
+  min-height: 9cqw;
+  justify-content: center;
+  border: 2px solid #d6a83b;
+  border-radius: 999px;
+  padding: 1.1cqw 5cqw;
+  color: #17120b;
+  background: #fff8ca;
+  box-shadow:
+    0 0 0 2px #087681,
+    0 0 0 4px #f4d776,
+    0 3px 8px rgba(4, 67, 72, .22);
+}
+
+.mushaf-surah-banner__inner::before {
+  inset: 3px;
+  border: 1px solid rgba(8, 118, 129, .48);
+  border-radius: 999px;
+}
+
+.mushaf-surah-banner__name,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__name,
+.mushaf-theme--classic .mushaf-surah-banner__name {
+  color: #17120b;
+  font-size: 4.25cqw;
+  line-height: 1.05;
+}
+
+.mushaf-surah-banner__sub,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__sub,
+.mushaf-theme--classic .mushaf-surah-banner__sub {
+  margin-top: .7cqw;
+  color: #356267;
+  font-size: 1.85cqw;
+}
+
+/* Opening pages: fill the large white areas with illuminated top and bottom
+   panels, while keeping every Quran glyph supplied by the QCF API. */
+.mushaf-page-box--opening .mushaf-text-frame__inner {
+  justify-content: flex-start !important;
+  gap: 1.7cqw;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+  background:
+    linear-gradient(rgba(255, 253, 240, .94), rgba(255, 253, 240, .94)),
+    #fffdf0;
+}
+
+.mushaf-page-box--opening .mushaf-text-frame__inner::before,
+.mushaf-page-box--opening .mushaf-text-frame__inner::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mushaf-page-box--opening .mushaf-text-frame__inner::before {
+  top: 0;
+  height: 25cqw;
+  border-bottom: 2px solid #b98227;
+  background:
+    radial-gradient(circle at 50% 50%, #d64f3d 0 8%, #f2c95f 9% 18%, #fff1ba 19% 25%, transparent 26%) 0 1cqw / 6.4cqw 6.4cqw,
+    radial-gradient(ellipse at 50% 100%, #f7e5a1 0 27%, transparent 28%) 3.2cqw 0 / 6.4cqw 6.4cqw,
+    linear-gradient(90deg, #075e6b, #0d8690 20%, #e2af3e 50%, #0d8690 80%, #075e6b);
+  box-shadow:
+    inset 0 -1cqw 0 rgba(6, 105, 114, .92),
+    inset 0 -1.45cqw 0 #f2d173,
+    inset 0 -1.75cqw 0 #8f651b;
+}
+
+.mushaf-page-box--opening .mushaf-text-frame__inner::after {
+  bottom: 0;
+  height: 38cqw;
+  border-top: 2px solid #b98227;
+  background:
+    radial-gradient(circle at 50% 50%, #d64f3d 0 8%, #f2c95f 9% 18%, #fff1ba 19% 25%, transparent 26%) 0 2.8cqw / 6.4cqw 6.4cqw,
+    radial-gradient(ellipse at 50% 0, #f7e5a1 0 27%, transparent 28%) 3.2cqw 0 / 6.4cqw 6.4cqw,
+    linear-gradient(90deg, #075e6b, #0d8690 20%, #e2af3e 50%, #0d8690 80%, #075e6b);
+  box-shadow:
+    inset 0 1cqw 0 rgba(6, 105, 114, .92),
+    inset 0 1.45cqw 0 #f2d173,
+    inset 0 1.75cqw 0 #8f651b;
+}
+
+.mushaf-page-box--baqarah .mushaf-text-frame__inner::after {
+  height: 48cqw;
+}
+
+.mushaf-page-box--opening .mushaf-surah-banner {
+  z-index: 3;
+  flex: 0 0 auto;
+  margin: 14.5cqw 0 2.4cqw;
+  padding: 1.8cqw 0;
+  border-top: 1px solid rgba(255, 241, 179, .82);
+  border-bottom: 1px solid rgba(255, 241, 179, .82);
+  background:
+    radial-gradient(circle at 50% 50%, #efcc66 0 13%, #0b7580 14% 26%, transparent 27%) 0 0 / 5.2cqw 5.2cqw,
+    linear-gradient(90deg, #075e69, #11919a 22%, #dbad3e 50%, #11919a 78%, #075e69);
+}
+
+.mushaf-page-box--opening .mushaf-surah-banner__inner {
+  width: 68%;
+  min-height: 12cqw;
+  border-width: 2px;
+  padding: 1.8cqw 5cqw;
+  background:
+    radial-gradient(ellipse at center, #fffde5 0 58%, #f8e7a2 100%);
+  box-shadow:
+    0 0 0 2px #f4d674,
+    0 0 0 4px #087681,
+    0 0 0 6px #e4b548,
+    0 5px 14px rgba(3, 58, 64, .28);
+}
+
+.mushaf-page-box--opening .mushaf-surah-banner__name {
+  font-size: 4.8cqw;
+  font-weight: 800;
+}
+
+.mushaf-page-box--opening .mushaf-surah-banner__sub {
+  font-size: 1.7cqw;
+  font-weight: 800;
+}
+
+.mushaf-page-box--opening .mushaf-line {
+  width: calc(100% - 3cqw);
+  align-self: center;
+  border-bottom: 1px solid rgba(113, 79, 25, .34);
+  padding: .45cqw 0;
+}
+
+.mushaf-page-box--opening .mushaf-line:last-child {
+  border-bottom: 0;
+}
+
+/* Printed-page number cartouche. */
+.mushaf-page-footer {
+  position: relative;
+  z-index: 5;
+  width: 68px;
+  min-height: 25px;
+  flex: 0 0 25px;
+  align-items: center;
+  margin: -19px auto 2px;
+  border: 1px solid #0a6f78;
+  border-radius: 5px 5px 18px 18px;
+  padding: 1px 12px 3px;
+  color: #194b4d !important;
+  background: linear-gradient(180deg, #fffde8, #f5dfa0);
+  box-shadow:
+    0 0 0 2px #f7ebba,
+    0 0 0 4px #bd8a27,
+    0 0 0 5px #087680,
+    0 4px 8px rgba(7, 78, 83, .2);
+  font-size: .68rem;
+  font-weight: 900;
+}
+
+.mushaf-page-footer::before,
+.mushaf-page-footer::after {
+  content: '◆';
+  position: absolute;
+  top: 3px;
+  color: #b7791f;
+  font-size: .5rem;
+}
+
+.mushaf-page-footer::before { left: 7px; }
+.mushaf-page-footer::after { right: 7px; }
+
+@media (max-width: 620px) and (min-height: 521px) {
+  .mushaf-content {
+    overflow: hidden;
+    align-items: stretch;
+  }
+
+  .mushaf-viewport {
+    width: 100%;
+    max-width: none;
+    height: calc(100dvh - 146px - var(--safe-top) - var(--safe-bottom));
+    min-height: 0;
+    aspect-ratio: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .mushaf-page-box {
+    max-width: none;
+  }
+}
+
+@media (min-width: 621px) and (min-height: 521px) {
+  .mushaf-content {
+    overflow: hidden;
+    align-items: stretch;
+  }
+
+  .mushaf-viewport {
+    width: min(520px, calc((100dvh - 146px - var(--safe-top) - var(--safe-bottom)) * .7));
+    height: calc(100dvh - 146px - var(--safe-top) - var(--safe-bottom));
+    aspect-ratio: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .mushaf-meta { padding-right: 6px; padding-left: 6px; }
+  .mushaf-meta > span { padding-right: 6px; padding-left: 6px; }
+  .mushaf-text-frame { padding: 10px; }
+  .mushaf-text-frame__inner { padding-right: 6px; padding-left: 6px; }
+  .mushaf-line { font-size: 4.75cqw; }
+}
+
+/* ── Final print-safe spacing and calligraphic title treatment ────────── */
+.mushaf-slide {
+  background: #ece8d8 !important;
+}
+
+.mushaf-page-box {
+  width: min(calc(100cqw - 20px), calc((100cqh - 16px) * 941 / 1672));
+  aspect-ratio: 941 / 1672;
+  flex: 0 0 auto;
+  margin: auto;
+  padding: 8px 11px 11px;
+  border-color: rgba(10, 92, 98, .28);
+  box-shadow: 0 4px 14px rgba(33, 41, 32, .1);
+}
+
+.mushaf-frame {
+  inset: 42px 11px 10px;
+}
+
+.mushaf-meta {
+  padding-right: 9px;
+  padding-left: 9px;
+}
+
+.mushaf-qcf-content {
+  min-width: 0;
+  padding: 7px 14px 17px;
+}
+
+.mushaf-text-frame {
+  min-width: 0;
+  margin: 0 7px;
+  padding: 13px;
+}
+
+.mushaf-text-frame__inner {
+  min-width: 0;
+  overflow: hidden;
+  padding-right: 17px;
+  padding-left: 17px;
+}
+
+.mushaf-line {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(18px, 4.45cqw, 25px);
+  line-height: 1.48;
+}
+
+.mushaf-qcf-content--short .mushaf-line {
+  font-size: clamp(18px, 4.45cqw, 25px);
+}
+
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-qcf-content--short .mushaf-text-frame__inner {
+  justify-content: space-evenly;
+  gap: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.mushaf-line--unicode {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 1.4cqw;
+  overflow: visible;
+  direction: rtl;
+  font-family: 'Uthmanic Hafs', 'Amiri Quran', 'Amiri', serif !important;
+  font-size: clamp(18px, 4.25cqw, 24px);
+  line-height: 1.65;
+  white-space: nowrap;
+}
+
+.mushaf-unicode-verse {
+  display: inline-flex;
+  align-items: center;
+  gap: .7cqw;
+}
+
+.mushaf-unicode-ayah-number {
+  min-width: 1.8em;
+  height: 1.8em;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #9a702a;
+  border-radius: 50%;
+  color: #694b16;
+  background: #fff9d9;
+  font-family: 'Amiri', serif;
+  font-size: .52em;
+  line-height: 1;
+}
+
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner {
+  flex-basis: 9%;
+  margin-bottom: 1%;
+}
+
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__inner {
+  width: 52%;
+  border: 1px solid #ad7d2c;
+  border-radius: 999px;
+  padding: .7% 4%;
+  background: rgba(255, 250, 225, .97);
+  box-shadow:
+    0 0 0 2px #f1d786,
+    0 0 0 3px #16777a;
+}
+
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__name {
+  font-size: clamp(28px, 6cqw, 38px);
+}
+
+/* The plaque is decorative only; the Quran glyph line remains untouched. */
+.mushaf-surah-banner {
+  position: relative;
+  margin: 2.2cqw 0 3.4cqw;
+  padding: 2.8cqw 0;
+  border-top: 2px solid #d9aa3d;
+  border-bottom: 2px solid #d9aa3d;
+  background:
+    radial-gradient(circle, #d94f3d 0 9%, #f3ca61 10% 20%, #fff0b7 21% 28%, transparent 29%) 0 50% / 6.2cqw 6.2cqw,
+    linear-gradient(90deg, #075f6b, #0c8992 25%, #0a7580 50%, #0c8992 75%, #075f6b);
+  box-shadow:
+    inset 0 3px 0 #f3d273,
+    inset 0 -3px 0 #f3d273,
+    0 2px 0 rgba(5, 86, 94, .35);
+}
+
+.mushaf-surah-banner__inner,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
+.mushaf-theme--classic .mushaf-surah-banner__inner,
+.mushaf-page-box--opening .mushaf-surah-banner__inner {
+  width: 76%;
+  min-height: 14.5cqw;
+  padding: 1.8cqw 7cqw 2.2cqw;
+  border: 2px solid #b77c19;
+  border-radius: 48% / 34%;
+  background:
+    radial-gradient(ellipse at center, #fffde7 0 60%, #f6e09a 100%);
+  box-shadow:
+    0 0 0 2px #f6dc7e,
+    0 0 0 4px #087681,
+    0 0 0 6px #e1ae3b,
+    inset 0 0 0 3px rgba(8, 118, 129, .18),
+    inset 0 -7px 14px rgba(199, 143, 27, .13),
+    0 5px 12px rgba(4, 61, 66, .22);
+}
+
+.mushaf-surah-banner__inner::before {
+  inset: 6px;
+  border: 1px solid rgba(7, 104, 113, .48);
+  border-radius: 48% / 34%;
+}
+
+.mushaf-surah-banner__name,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__name,
+.mushaf-theme--classic .mushaf-surah-banner__name,
+.mushaf-page-box--opening .mushaf-surah-banner__name {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.7cqw;
+  color: #14100a;
+  font-family: 'Amiri Quran', 'Uthmanic Hafs', 'Amiri', serif;
+  font-size: clamp(29px, 6.15cqw, 39px);
+  font-weight: 400;
+  font-kerning: normal;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  line-height: 1.05;
+  transform: scaleX(1.08);
+  transform-origin: center;
+  text-shadow: 0 1px 0 rgba(181, 125, 24, .24);
+}
+
+.mushaf-surah-banner__name::before,
+.mushaf-surah-banner__name::after {
+  content: '';
+  width: .28em;
+  height: .28em;
+  flex: 0 0 auto;
+  border: 1px solid #916117;
+  background: #d3a139;
+  box-shadow: inset 0 0 0 2px #fff0ad;
+  transform: rotate(45deg);
+}
+
+.mushaf-surah-banner::before,
+.mushaf-surah-banner::after {
+  width: 2.4cqw;
+  height: 2.4cqw;
+  top: 50%;
+  z-index: 2;
+  border: 2px solid #f3d273;
+  background: #087681;
+  box-shadow: 0 0 0 2px #bd801b;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.mushaf-surah-banner::before { left: 5.8cqw; }
+.mushaf-surah-banner::after { right: 5.8cqw; }
+
+.mushaf-surah-banner__sub {
+  display: none;
+}
+
+.mushaf-page-box--opening .mushaf-surah-banner {
+  margin-top: 15.5cqw;
+  margin-bottom: 3.5cqw;
+}
+
+.mushaf-page-box--opening .mushaf-line {
+  width: calc(100% - 6cqw);
+  padding-right: 1cqw;
+  padding-left: 1cqw;
+}
+
+.mushaf-page-footer {
+  margin-top: -22px;
+}
+
+@media (max-width: 390px) {
+  .mushaf-page-box {
+    width: min(calc(100cqw - 14px), calc((100cqh - 14px) * 941 / 1672));
+    margin: auto;
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .mushaf-qcf-content { padding-right: 10px; padding-left: 10px; }
+  .mushaf-text-frame { margin-right: 4px; margin-left: 4px; padding: 10px; }
+  .mushaf-text-frame__inner { padding-right: 10px; padding-left: 10px; }
+  .mushaf-line { font-size: clamp(17px, 4.35cqw, 19px); }
+}
+
+/* ── Quiet Madinah-inspired page: authentic title glyphs, ornament only at edges. */
+@font-face {
+  font-family: 'QCF Surah Name V2';
+  src: url('https://static-cdn.tarteel.ai/qul/fonts/surah-names/v2/surah-name-v2.woff2') format('woff2');
+  font-display: block;
+}
+
+.mushaf-page-box {
+  padding: 9px 13px 13px;
+  background: #fffdf0;
+}
+
+.mushaf-frame {
+  inset: 43px 13px 11px;
+}
+
+.mushaf-frame__border {
+  border: 1px solid #166d70;
+  box-shadow:
+    0 0 0 3px #fff7cf,
+    0 0 0 5px #bd8c30,
+    0 0 0 7px #f8e9a8,
+    0 0 0 8px #166d70,
+    inset 0 0 0 3px #fff8d8;
+}
+
+.mushaf-frame__border::before {
+  inset: 7px;
+  border-color: rgba(21, 107, 111, .6);
+}
+
+.mushaf-frame__border::after {
+  inset: -7px;
+  opacity: .9;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 22px, #d6952d 22px 25px, transparent 25px 44px) top / 100% 2px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 22px, #d6952d 22px 25px, transparent 25px 44px) bottom / 100% 2px no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 22px, #d6952d 22px 25px, transparent 25px 44px) left / 2px 100% no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 22px, #d6952d 22px 25px, transparent 25px 44px) right / 2px 100% no-repeat;
+}
+
+.mushaf-frame__corner {
+  width: 13px;
+  height: 13px;
+  border: 1px solid #b57b20;
+  background: radial-gradient(circle, #d34f3b 0 22%, #f2c860 23% 43%, #08747a 44% 100%);
+  box-shadow: 0 0 0 2px #fff0b5, 0 0 0 3px #08747a;
+}
+
+.mushaf-frame__corner--tl { top: -6px; left: -6px; }
+.mushaf-frame__corner--tr { top: -6px; right: -6px; }
+.mushaf-frame__corner--bl { bottom: -6px; left: -6px; }
+.mushaf-frame__corner--br { right: -6px; bottom: -6px; }
+
+.mushaf-qcf-content {
+  padding: 9px 15px 18px;
+}
+
+.mushaf-text-frame,
+.mushaf-theme--nabawiyyah .mushaf-text-frame,
+.mushaf-theme--classic .mushaf-text-frame {
+  margin: 0 6px;
+  border: 1px solid #a97624 !important;
+  padding: 10px;
+  background:
+    repeating-conic-gradient(from 45deg, #08747a 0 12.5%, #e4b84e 0 25%, #fff2b2 0 37.5%, #c94d3b 0 50%) 0 0 / 18px 18px;
+  box-shadow:
+    0 0 0 2px #fff5c8,
+    0 0 0 4px #08747a,
+    0 0 0 6px #e0b34b,
+    0 0 0 7px #fff2bd;
+}
+
+.mushaf-text-frame__inner {
+  border: 1px solid rgba(26, 101, 103, .58);
+  padding: 12px 18px;
+  background: #fffdf0;
+  box-shadow: none;
+}
+
+.mushaf-surah-banner,
+.mushaf-page-box--opening .mushaf-surah-banner {
+  margin: 1.5cqw 0 3cqw;
+  padding: 1.2cqw 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mushaf-surah-banner::before,
+.mushaf-surah-banner::after {
+  content: '';
+  width: 19%;
+  height: 1px;
+  top: 50%;
+  border: 0;
+  background: linear-gradient(90deg, transparent, #b9862b);
+  box-shadow: none;
+  transform: none;
+}
+
+.mushaf-surah-banner::before { left: 2%; }
+.mushaf-surah-banner::after { right: 2%; transform: rotate(180deg); }
+
+.mushaf-surah-banner__inner,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
+.mushaf-theme--classic .mushaf-surah-banner__inner,
+.mushaf-page-box--opening .mushaf-surah-banner__inner {
+  width: 56%;
+  min-height: 10cqw;
+  border: 1px solid #a87521;
+  border-radius: 999px;
+  padding: .8cqw 3.5cqw;
+  background: #fff9d8;
+  box-shadow:
+    0 0 0 2px #f2cf6a,
+    0 0 0 4px #0b7478,
+    0 0 0 5px #f6dfa0,
+    inset 0 0 12px rgba(190, 137, 39, .12);
+}
+
+.mushaf-surah-banner__inner::before { display: none; }
+
+.mushaf-surah-banner__name,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__name,
+.mushaf-theme--classic .mushaf-surah-banner__name,
+.mushaf-page-box--opening .mushaf-surah-banner__name {
+  display: block;
+  color: #15110b;
+  font-family: 'QCF Surah Name V2', serif;
+  font-size: clamp(36px, 8.2cqw, 52px);
+  font-weight: 400;
+  font-feature-settings: 'liga' 1;
+  line-height: .8;
+  transform: none;
+  text-shadow: none;
+}
+
+.mushaf-surah-banner__name::before,
+.mushaf-surah-banner__name::after {
+  display: none;
+}
+
+.mushaf-page-box--opening .mushaf-text-frame__inner {
+  gap: 1.2cqw;
+  padding-top: 18px;
+  padding-bottom: 28px;
+  background: #fffdf0;
+}
+
+.mushaf-page-box--opening .mushaf-text-frame__inner::before {
+  display: none;
+}
+
+.mushaf-page-box--opening .mushaf-text-frame__inner::after {
+  right: 18%;
+  bottom: 9px;
+  left: 18%;
+  height: 9px;
+  border: 0;
+  border-top: 1px solid #c49334;
+  border-bottom: 1px solid #c49334;
+  background: radial-gradient(circle, #0b7478 0 2px, transparent 2.5px) center / 14px 7px repeat-x;
+  box-shadow: none;
+}
+
+.mushaf-page-box--opening .mushaf-line {
+  width: calc(100% - 4cqw);
+  padding: .6cqw 0;
+}
+
+/* Plain Reading Theme overrides */
+html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-slide {
+  background: #ffffff !important;
+}
+
+.mushaf-page-box,
+.mushaf-page-box--opening,
+.mushaf-theme--nabawiyyah,
+.mushaf-theme--classic,
+.mushaf-page-box--baqarah {
+  padding: 16px !important; /* Single uniform padding for the whole screen */
+  margin: 0 !important;
+  border: 0 !important;
+  background: #ffffff !important; /* Force white background */
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.mushaf-page-box--opening {
+  justify-content: flex-start !important;
+}
+
+/* The first two printed pages use a compact composition in the middle of the
+   page: surah heading + the complete opening passage. */
+.mushaf-page-box--opening .mushaf-text-frame__inner {
+  justify-content: center !important;
+}
+
+.mushaf-qcf-content {
+  flex: 1 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  margin: auto 0 !important;
+}
+
+/* Hide all ornate frames and borders */
+.mushaf-frame,
+.mushaf-frame__border,
+.mushaf-frame__corner,
+.mushaf-meta,
+.mushaf-text-frame__inner::before,
+.mushaf-text-frame__inner::after {
+  display: none !important;
+}
+
+/* Restyle text frame to be completely plain */
+.mushaf-text-frame,
+.mushaf-theme--nabawiyyah .mushaf-text-frame,
+.mushaf-theme--classic .mushaf-text-frame {
+  margin: 0 !important;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mushaf-text-frame__inner {
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.mushaf-qcf-content {
+  flex: 1 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  padding: 0 4.5cqw !important;
+  margin: 0 !important;
+}
+
+/* Restyle Surah Banner to match plain green box */
+.mushaf-surah-banner {
+  margin: 2cqw 0 3cqw !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mushaf-surah-banner::before,
+.mushaf-surah-banner::after {
+  display: none !important;
+}
+
+.mushaf-surah-banner__inner,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
+.mushaf-theme--classic .mushaf-surah-banner__inner,
+.mushaf-page-box--opening .mushaf-surah-banner__inner {
+  width: 100% !important;
+  min-height: 0 !important;
+  border: 1px solid #c2e2cc !important;
+  border-radius: 4px !important;
+  padding: 8px 16px !important;
+  background: #e6f7ec !important; /* Light green background */
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: row !important; /* Force horizontal layout */
+  align-items: center !important;
+  justify-content: space-between !important;
+  direction: ltr !important;
+}
+
+.mushaf-surah-banner__inner::before {
+  display: none !important;
+}
+
+.mushaf-surah-banner__name {
+  color: #1a4f32 !important; /* Darker green text */
+  font-size: clamp(28px, 6.7cqw, 40px) !important;
+  text-shadow: none !important;
+  background: white !important;
+  padding: 5px 22px !important;
+  border-radius: 999px !important;
+  border: 1px solid #c2e2cc !important;
+  margin: 0 10px !important;
+}
+
+.mushaf-surah-banner__name::before,
+.mushaf-surah-banner__name::after {
+  display: none !important;
+}
+
+.mushaf-surah-banner__sub {
+  display: block !important;
+  flex: 1 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  color: #1a4f32 !important;
+  white-space: nowrap !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+}
+
+.mushaf-surah-banner__sub--left {
+  text-align: left !important;
+}
+
+.mushaf-surah-banner__sub--right {
+  text-align: right !important;
+}
+
+/* Remove bottom banner */
+.mushaf-bottom-banner {
+  display: none !important;
+}
+
+/* Simplify footer page number */
+.mushaf-page-footer {
+  width: 100% !important;
+  min-height: 30px !important;
+  margin-top: 20px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #666 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+}
+
+.mushaf-page-footer::before,
+.mushaf-page-footer::after { display: none; }
+
+/* Force remove line borders */
+.mushaf-line {
+  border-bottom: 0 !important;
+}
+
+/* Larger, denser Quran setting. The page box now follows the actual reading
+   viewport, so line 1 (Al-Baqarah 6 on page 3) is never hidden by the app
+   header and the 15 canonical lines remain visible above the player. */
+.mushaf-line--qcf {
+  gap: 0;
+  overflow: visible !important;
+  justify-content: center !important;
+  font-size: clamp(21px, 5.55cqw, 29px) !important;
+  line-height: 1.28 !important;
+  white-space: nowrap;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Keep QCF glyphs touching naturally. The inner run is scaled as one piece by
+   fitQcfLines(), so it reaches both guides without injecting word gaps. */
+.mushaf-line__qcf-content {
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  white-space: nowrap;
+  transform: scaleX(var(--qcf-line-scale, 1));
+  transform-origin: center;
+}
+
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-line--qcf {
+  width: 100% !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  justify-content: center !important;
+}
+
+.mushaf-page-box--opening .mushaf-line--qcf {
+  font-size: clamp(23px, 6.15cqw, 32px) !important;
+  line-height: 1.3 !important;
+}
+
+/* Page 604 follows the printed closing-page composition: three compact,
+   centered surahs, each with its own banner and basmalah. */
+.mushaf-page-box--closing .mushaf-text-frame__inner {
+  justify-content: center !important;
+  gap: .55cqw !important;
+}
+
+.mushaf-page-box--closing .mushaf-surah-banner {
+  margin: .8cqw 0 1cqw !important;
+}
+
+.mushaf-page-box--closing .mushaf-line--qcf {
+  justify-content: center !important;
+  line-height: 1.16 !important;
+}
+
+.mushaf-bismillah-calligraphy {
+  width: 100%;
+  min-height: 1.65em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: .5cqw 0 4.5cqw;
+  color: #15110b;
+  font-family: 'Amiri', 'Amiri Quran', serif;
+  font-size: clamp(22px, 6cqw, 30px);
+  font-weight: 400;
+  line-height: 1.65;
+  text-align: center;
+  direction: rtl;
+  text-rendering: optimizeLegibility;
+}
+
+.mushaf-page-box--multi-surah .mushaf-text-frame__inner {
+  justify-content: center !important;
+  gap: .45cqw !important;
+}
+
+.mushaf-page-box--multi-surah .mushaf-surah-banner {
+  margin: .65cqw 0 .8cqw !important;
+}
+
+.mushaf-page-box--multi-surah .mushaf-bismillah-calligraphy {
+  margin-top: .4cqw;
+  margin-bottom: 4.5cqw;
+}
+
+.mushaf-page-box--multi-surah .mushaf-line--qcf {
+  line-height: 1.14 !important;
+}
+
+.mushaf-ayah-ornament {
+  position: relative;
+  width: 2.05em;
+  height: 2.05em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #a87542;
+  font-family: 'Inter', sans-serif;
+  font-size: .82em;
+  font-weight: 900;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.mushaf-ayah-ornament svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mushaf-ayah-ornament > span {
+  position: relative;
+  z-index: 1;
+  color: #704821;
+  font-size: .76em;
+  font-weight: 900;
+}
+
+:deep(.tajweed-h),
+:deep(.tajweed-s),
+:deep(.tajweed-l) { color: #9a9a9a !important; }
+:deep(.tajweed-n) { color: #537fff !important; }
+:deep(.tajweed-p) { color: #4050ff !important; }
+:deep(.tajweed-m) { color: #000ebc !important; }
+:deep(.tajweed-o) { color: #2144c1 !important; }
+:deep(.tajweed-q) { color: #dd0008 !important; }
+:deep(.tajweed-f),
+:deep(.tajweed-c) { color: #c218b6 !important; }
+:deep(.tajweed-i) { color: #20bfe8 !important; }
+:deep(.tajweed-g) { color: #169777 !important; }
+:deep(.tajweed-u) { color: #169200 !important; }
+:deep(.tajweed-a),
+:deep(.tajweed-w) { color: #159447 !important; }
+
+@media (max-width: 390px) {
+  .mushaf-qcf-content { padding-right: 7px; padding-left: 7px; }
+  .mushaf-text-frame { margin-right: 2px; margin-left: 2px; padding: 4px; }
+  .mushaf-text-frame__inner { padding-right: 14px; padding-left: 14px; }
+  .mushaf-line,
+  .mushaf-qcf-content--short .mushaf-line {
+    width: 100%;
+  }
+
+  .mushaf-line--qcf,
+  .mushaf-qcf-content--short .mushaf-line--qcf {
+    font-size: clamp(20px, 5.45cqw, 26px) !important;
+  }
+
+  .mushaf-page-box--opening .mushaf-line--qcf {
+    font-size: clamp(22px, 6cqw, 29px) !important;
+  }
+}
+
+/* End of CSS */
 </style>

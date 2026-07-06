@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Route;
 // Auth (Public)
 Route::post('/auth/guest', [AuthController::class, 'guest']);
 Route::get('/mushaf/pages/{pageNumber}', [AyahController::class, 'byPage']);
+Route::get('/surahs', [SurahController::class, 'index']);
+Route::get('/surahs/{id}', [SurahController::class, 'show']);
+Route::get('/surahs/{surahId}/ayahs', [AyahController::class, 'index']);
+Route::get('/surahs/{surahId}/ayahs/{ayahNumber}', [AyahController::class, 'show']);
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
@@ -30,14 +34,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
-
-    // Surahs
-    Route::get('/surahs', [SurahController::class, 'index']);
-    Route::get('/surahs/{id}', [SurahController::class, 'show']);
-
-    // Ayahs
-    Route::get('/surahs/{surahId}/ayahs', [AyahController::class, 'index']);
-    Route::get('/surahs/{surahId}/ayahs/{ayahNumber}', [AyahController::class, 'show']);
 
     // Reviews
     Route::post('/reviews', [ReviewController::class, 'store']);

@@ -17,16 +17,18 @@ class SurahController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
+        $userId = $request->user()?->id;
 
         $surahs = Surah::orderBy('number')->get();
 
         // Get progress counts grouped by surah
-        $progressCounts = MemorizationProgress::where('user_id', $userId)
-            ->selectRaw('surah_id, status, COUNT(*) as count')
-            ->groupBy('surah_id', 'status')
-            ->get()
-            ->groupBy('surah_id');
+        $progressCounts = $userId
+            ? MemorizationProgress::where('user_id', $userId)
+                ->selectRaw('surah_id, status, COUNT(*) as count')
+                ->groupBy('surah_id', 'status')
+                ->get()
+                ->groupBy('surah_id')
+            : collect();
 
         // Fetch Juz range for all surahs in a single query
         $juzRanges = Ayah::selectRaw('surah_id, MIN(juz) as juz_start, MAX(juz) as juz_end, MIN(page) as page_start, MAX(page) as page_end')

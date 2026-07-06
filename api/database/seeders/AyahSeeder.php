@@ -75,6 +75,21 @@ class AyahSeeder extends Seeder
                     }
                 }
 
+                $targetPage = $ayah['page'] ?? null;
+                if ($arabicSurah['number'] === 90 && $ayahNumber >= 19) {
+                    $targetPage = 594;
+                } elseif ($arabicSurah['number'] === 92 && in_array($ayahNumber, [10, 11, 12, 13, 14])) {
+                    $targetPage = 595;
+                } elseif ($arabicSurah['number'] === 94 && $ayahNumber >= 3) {
+                    $targetPage = 596;
+                } elseif ($arabicSurah['number'] === 96 && $ayahNumber >= 13) {
+                    $targetPage = 597;
+                } elseif ($arabicSurah['number'] === 98 && in_array($ayahNumber, [6, 7])) {
+                    $targetPage = 598;
+                } elseif ($arabicSurah['number'] === 100 && in_array($ayahNumber, [10, 11])) {
+                    $targetPage = 599;
+                }
+
                 Ayah::updateOrCreate(
                     [
                         'surah_id' => $surah->id,
@@ -84,7 +99,7 @@ class AyahSeeder extends Seeder
                         'text_arabic' => $textArabic,
                         'translation_id' => $translation,
                         'juz' => $ayah['juz'] ?? null,
-                        'page' => $ayah['page'] ?? null,
+                        'page' => $targetPage,
                     ]
                 );
                 $totalAyahs++;
