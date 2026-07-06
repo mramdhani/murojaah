@@ -1657,6 +1657,7 @@ const handlePointerDown = (event: PointerEvent) => {
       }, 450)
     }
   }
+
 }
 
 const handlePointerMove = (event: PointerEvent) => {
@@ -1690,10 +1691,15 @@ const handlePointerMove = (event: PointerEvent) => {
     let distance = deltaX
     const pullingPastFirst = pageNumber.value === 1 && distance < 0
     const pullingPastLast = pageNumber.value === 604 && distance > 0
-    if (pullingPastFirst || pullingPastLast) distance *= .24
+    if (pullingPastFirst || pullingPastLast) {
+      // Smooth rubber-banding: resistance increases the further you pull
+      const absDist = Math.abs(distance)
+      distance = Math.sign(distance) * (absDist * 0.15 + 12 * Math.log2(absDist / 12 + 1) * 0.08)
+    }
     swipeOffset.value = distance
     if (Math.abs(distance) > 20) suppressNextLineTap.value = true
   }
+
 }
 
 const handlePointerUp = async (event: PointerEvent) => {
@@ -1712,7 +1718,8 @@ const handlePointerUp = async (event: PointerEvent) => {
     longPressTimeout.value = null
   }
 
-  const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .18 || Math.abs(velocity) > .42)
+  const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .10 || Math.abs(velocity) > .30)
+
   
   swipeStartX.value = null
   swipeStartY.value = null
@@ -2489,8 +2496,16 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   min-height: 0;
   overflow: hidden;
   background: #fffefa;
-  touch-action: manipulation;
+  touch-action: pan-y pinch-zoom;
   user-select: none;
+}
+
+/* Ensure horizontal touch moves bubble up to viewport without browser cancellation */
+.mushaf-slide,
+.mushaf-page-box,
+.mushaf-word,
+.line-mask {
+  touch-action: pan-y pinch-zoom;
 }
 
 .mushaf-track {
