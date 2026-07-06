@@ -2328,6 +2328,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: space-evenly;
   padding: 0 6px 10px;
   direction: rtl;
 }
@@ -2382,7 +2383,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   align-items: center;
   width: 100%;
   font-size: 6.2cqw; /* Scaled typography. Slightly smaller to ensure no overflow */
-  line-height: 1.5;
+  line-height: 1.7;
+  margin: 2px 0;
   white-space: nowrap; /* Prevent wrapping */
 }
 
