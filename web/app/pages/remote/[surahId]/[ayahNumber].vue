@@ -1183,6 +1183,7 @@ const deleteVoiceRecording = async (key: string) => {
 
 let audioChunks: Blob[] = []
 let recordingInterval: any = null
+let permissionRequestInProgress = false
 
 const onRecordPointerDown = (e: PointerEvent) => {
   e.preventDefault()
@@ -1199,17 +1200,13 @@ const onRecordPointerDown = (e: PointerEvent) => {
   initialPointerY = e.clientY
   pointerDownTime = Date.now()
   
-  startRecording()
+  // Attach pointer listeners immediately so pointerup/pointercancel
+  // are always handled, even during the mic permission request.
+  window.addEventListener('pointermove', onRecordPointerMove)
+  window.addEventListener('pointerup', onRecordPointerUp)
+  window.addEventListener('pointercancel', onRecordPointerCancel)
   
-  if (micPermission.value === 'granted') {
-    window.addEventListener('pointermove', onRecordPointerMove)
-    window.addEventListener('pointerup', onRecordPointerUp)
-    window.addEventListener('pointercancel', onRecordPointerCancel)
-  } else {
-    // If not granted, disable hold tracking so the UI treats it as a clicked/locked recording
-    // which allows the browser permission popup to open without breaking the hold state.
-    isHoldingRecord.value = false
-  }
+  startRecording()
 }
 
 const onRecordPointerMove = (e: PointerEvent) => {
