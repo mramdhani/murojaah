@@ -5701,13 +5701,40 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
     border-radius: 0 !important;
     aspect-ratio: auto !important;
     container-type: normal !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
-  .mushaf-text-frame,
-  .mushaf-text-frame__inner,
+  .mushaf-surah-banner__inner {
+    width: 100% !important;
+  }
+  .mushaf-surah-banner__name {
+    font-size: clamp(40px, 7vw, 64px) !important;
+  }
+  .mushaf-surah-banner__sub {
+    font-size: clamp(16px, 2.5vw, 24px) !important;
+  }
   .mushaf-qcf-content {
     display: block !important;
     height: auto !important;
     overflow: visible !important;
+    padding-left: calc(18px + env(safe-area-inset-left)) !important;
+    padding-right: calc(18px + env(safe-area-inset-right)) !important;
+  }
+  .mushaf-text-frame {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin-left: 4px !important;
+    margin-right: 4px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+  .mushaf-text-frame__inner {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding-left: calc(10px + env(safe-area-inset-left)) !important;
+    padding-right: calc(10px + env(safe-area-inset-right)) !important;
   }
   /* Force typography to scale fully with screen width in landscape. 
      Using vw instead of cqw for Safari iOS compatibility */
@@ -5715,7 +5742,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   .mushaf-line--qcf,
   .mushaf-qcf-content--short .mushaf-line,
   .mushaf-qcf-content--short .mushaf-line--qcf {
-    font-size: 6.2vw !important;
+    font-size: 5.6vw !important;
     width: 100% !important;
   }
 }
