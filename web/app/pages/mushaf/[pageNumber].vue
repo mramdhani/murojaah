@@ -1675,8 +1675,8 @@ const handlePointerMove = (event: PointerEvent) => {
   }
 
   if (!swipeDirection.value) {
-    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+    if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
         swipeDirection.value = 'horizontal'
       } else {
         swipeDirection.value = 'vertical'
@@ -1718,7 +1718,7 @@ const handlePointerUp = async (event: PointerEvent) => {
     longPressTimeout.value = null
   }
 
-  const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .10 || Math.abs(velocity) > .30)
+  const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .22 || (Math.abs(velocity) > .55 && Math.abs(distance) > 30))
 
   
   swipeStartX.value = null
@@ -1750,7 +1750,7 @@ const handlePointerUp = async (event: PointerEvent) => {
     swipeAnimating.value = false
     swipeOffset.value = 0
     startIdleTimer()
-  }, 235)
+  }, 360)
 }
 
 const cancelSwipe = () => {
@@ -2058,7 +2058,7 @@ const slideToPage = async (targetPage: number) => {
   const viewportWidth = viewportRef.value?.clientWidth || window.innerWidth
   swipeAnimating.value = true
   swipeOffset.value = distance > 0 ? viewportWidth : -viewportWidth
-  await new Promise(resolve => window.setTimeout(resolve, 235))
+  await new Promise(resolve => window.setTimeout(resolve, 360))
   await goToPage(targetPage)
   swipeAnimating.value = false
   swipeOffset.value = 0
@@ -2518,7 +2518,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .mushaf-track--animating {
-  transition: transform 235ms cubic-bezier(.22, .72, .28, 1);
+  transition: transform 360ms cubic-bezier(.22, 1, .36, 1);
 }
 
 .mushaf-slide {
@@ -5455,6 +5455,24 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 
   .mushaf-page-box--opening .mushaf-line--qcf {
     font-size: clamp(22px, 6cqw, 29px) !important;
+  }
+}
+
+/* ── Mobile Layout Optimization: Align text with header buttons (12px padding) ── */
+@media (max-width: 620px) {
+  .mushaf-qcf-content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .mushaf-text-frame {
+    margin-left: 2px !important;
+    margin-right: 2px !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+  }
+  .mushaf-text-frame__inner {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
   }
 }
 
