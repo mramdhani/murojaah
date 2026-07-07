@@ -48,7 +48,6 @@
               </svg>
             </span>
             <span class="journey-card__name">Uji Ayat</span>
-            <span class="journey-card__desc">Hafalan ayat per ayat</span>
           </button>
 
           <!-- Mushaf -->
@@ -70,7 +69,6 @@
               </svg>
             </span>
             <span class="journey-card__name">Mushaf</span>
-            <span class="journey-card__desc">Tandai hafalan per baris</span>
           </button>
 
           <!-- Dengar -->
@@ -91,8 +89,7 @@
                 <path d="M4 13h3v7H6a2 2 0 0 1-2-2v-5Zm16 0h-3v7h1a2 2 0 0 0 2-2v-5Z"/>
               </svg>
             </span>
-            <span class="journey-card__name">Dengar</span>
-            <span class="journey-card__desc">Murottal fokus</span>
+            <span class="journey-card__name">Quran per Ayat</span>
           </button>
         </div>
 
@@ -333,7 +330,7 @@ const selectSurah = (surahId: number) => {
 .murojaah-drawer-wrapper {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2000;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -344,7 +341,7 @@ const selectSurah = (surahId: number) => {
   inset: 0;
   background: rgba(4, 39, 25, 0.45);
   backdrop-filter: blur(8px);
-  z-index: 1001;
+  z-index: 2001;
 }
 
 .drawer-panel {
@@ -354,13 +351,15 @@ const selectSurah = (surahId: number) => {
   margin: 0 auto;
   background: #FFFDF7;
   border-radius: 28px 28px 0 0;
-  z-index: 1002;
+  z-index: 2002;
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   max-height: 86dvh;
   border-top: 1.5px solid rgba(212, 175, 55, 0.25);
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .drawer-handle-bar {
@@ -518,12 +517,6 @@ const selectSurah = (surahId: number) => {
   line-height: 1.2;
 }
 
-.journey-card__desc {
-  font-size: 0.6rem;
-  opacity: 0.65;
-  line-height: 1.35;
-  font-weight: 500;
-}
 
 /* ─── Uji Ayat — Emerald ─── */
 .journey-card--quiz.journey-card--active {

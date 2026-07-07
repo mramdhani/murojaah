@@ -1675,8 +1675,10 @@ const handlePointerMove = (event: PointerEvent) => {
   }
 
   if (!swipeDirection.value) {
-    if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
-      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
+    // Detect swipe direction sooner (4px) to beat iOS Safari's native scroll-lock
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+      // Much more forgiving angle for thumb swipes (allows diagonal-ish horizontal swipes)
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 0.6) {
         swipeDirection.value = 'horizontal'
       } else {
         swipeDirection.value = 'vertical'
@@ -3111,6 +3113,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   flex-direction: column;
   /* Height driven by content in dismiss mode */
   max-height: 92dvh;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .navigator-sheet--picker-open {
@@ -4122,6 +4126,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   box-shadow: 0 -18px 50px rgba(17, 35, 28, .2);
   display: flex;
   flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .qari-sheet__handle { 
@@ -5450,11 +5456,11 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 
   .mushaf-line--qcf,
   .mushaf-qcf-content--short .mushaf-line--qcf {
-    font-size: clamp(20px, 5.45cqw, 26px) !important;
+    font-size: 5.8cqw !important;
   }
 
   .mushaf-page-box--opening .mushaf-line--qcf {
-    font-size: clamp(22px, 6cqw, 29px) !important;
+    font-size: 6.2cqw !important;
   }
 }
 

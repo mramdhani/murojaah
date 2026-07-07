@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <VitePwaManifest />
     <!-- Splash Screen during authentication initialization (max 5s timeout) -->
     <div v-if="showSplash" class="app-loading">
       <div class="splash-container">
@@ -15,6 +16,7 @@
       <NuxtPage />
       <BottomNav />
       <MurojaahDrawer />
+      <PwaPrompt />
     </template>
 
     <Teleport to="body">
@@ -94,6 +96,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+body, html {
+  background-color: var(--color-bg);
+  overscroll-behavior: none;
+}
+
 #app {
   height: 100dvh;
   display: flex;

@@ -1,5 +1,5 @@
 <template>
-  <div class="remote-page" :class="{ 'remote-page--hidden': isHiddenState }" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
+  <div class="remote-page" :class="{ 'remote-page--hidden': isHiddenState, 'remote-page--listening': isListeningMode }" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
     <!-- Header -->
     <header class="remote-header">
       <div class="remote-header__left">
@@ -3240,6 +3240,8 @@ useHead({
   max-height: 75dvh;
   box-shadow: var(--shadow-lg);
   padding-bottom: calc(var(--safe-bottom) + 8px);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .picker-sheet__header {
@@ -3903,6 +3905,8 @@ useHead({
   max-height: 92dvh;
   display: flex;
   flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .navigator-sheet__handle {
@@ -4596,15 +4600,15 @@ useHead({
     max-height: 50vh !important;
     overflow-y: auto !important;
   }
-  /* ─── 2-Column Grid Layout for Landscape Uji Ayat / listening mode ─── */
-  .remote-page {
+  /* ─── 2-Column Grid Layout for Landscape Uji Ayat ─── */
+  .remote-page:not(.remote-page--listening) {
     display: grid !important;
     grid-template-rows: auto 1fr !important;
     grid-template-columns: 60% 40% !important;
     height: 100dvh !important;
     overflow: hidden !important;
   }
-  .remote-header {
+  .remote-page:not(.remote-page--listening) .remote-header {
     grid-row: 1 !important;
     grid-column: 1 / span 2 !important;
     height: auto !important;
@@ -4612,14 +4616,14 @@ useHead({
     padding: 6px 16px !important;
     flex: none !important;
   }
-  .remote-content {
+  .remote-page:not(.remote-page--listening) .remote-content {
     grid-row: 2 !important;
     grid-column: 1 !important;
     height: 100% !important;
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
     overflow-y: auto !important;
   }
-  .remote-action-bar {
+  .remote-page:not(.remote-page--listening) .remote-action-bar {
     grid-row: 2 !important;
     grid-column: 2 !important;
     height: 100% !important;
@@ -4635,7 +4639,7 @@ useHead({
     width: 100% !important;
     max-width: 100% !important;
   }
-  .remote-page--hidden .remote-action-bar {
+  .remote-page--hidden:not(.remote-page--listening) .remote-action-bar {
     border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
     background: #022318 !important;
   }
@@ -4653,20 +4657,6 @@ useHead({
   .action-btn--back {
     max-height: 36px !important;
   }
-  .listening-player {
-    flex-direction: column !important;
-    gap: 10px !important;
-    width: 100% !important;
-    height: 100% !important;
-    justify-content: space-evenly !important;
-  }
-  .listening-player__controls {
-    width: 100% !important;
-    justify-content: center !important;
-    gap: 12px !important;
-  }
-  .listening-player__qari {
-    width: 100% !important;
-  }
+
 }
 </style>
