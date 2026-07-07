@@ -101,6 +101,7 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Aplikasi hafalan Qur\'an dengan remote fullscreen — menghafal dan murajaah per ayat dengan mudah' },
         { name: 'theme-color', content: '#064E3B' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
       ],
       link: [

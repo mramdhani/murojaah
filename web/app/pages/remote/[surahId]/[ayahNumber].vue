@@ -227,32 +227,99 @@
         <!-- Hidden mode: only mic bar, centered full-width -->
         <template v-else>
           <div class="action-bar-mic-dock" @click.stop>
-            <!-- IDLE: mic button -->
-            <button
-              v-if="voiceState === 'idle'"
-              type="button"
-              class="rh-mic-btn rh-mic-btn--docked"
-              @click.stop="startRecording"
-              aria-label="Mulai rekam hafalan"
-            >
-              <div class="rh-mic-btn__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
+            <!-- RECORDING ROW (background indicators) -->
+            <div v-if="voiceState === 'recording'" class="rh-mic-recording-row" :class="{ 'rh-mic-recording-row--holding': !isRecordingLocked }">
+              <!-- Floating Lock Indicator (only when holding and not locked) -->
+              <div 
+                v-if="isHoldingRecord && !isRecordingLocked" 
+                class="rh-lock-indicator-panel"
+              >
+                <div class="rh-lock-icon" :class="{ 'rh-lock-icon--active': recordDragY < -80 }">
+                  <svg v-if="recordDragY < -80" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6-5c1.66 0 3 1.34 3 3v2H9V6c0-1.66 1.34-3 3-3zm6 15H6V10h12v10z"/>
+                  </svg>
+                </div>
+                <div class="rh-lock-arrows">
+                  <span class="rh-lock-arrow rh-lock-arrow--1">▲</span>
+                  <span class="rh-lock-arrow rh-lock-arrow--2">▲</span>
+                </div>
+                <div 
+                  class="rh-lock-mic"
+                  :style="{ transform: 'translateY(' + Math.max(-80, recordDragY) + 'px)' }"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                  </svg>
+                </div>
               </div>
-              <span class="rh-mic-btn__label">Rekam Hafalan</span>
-            </button>
 
-            <!-- RECORDING -->
-            <div v-else-if="voiceState === 'recording'" class="rh-mic-recording-row">
               <span class="rh-voice-indicator rh-voice-indicator--lg"></span>
               <span class="rh-mic-timer">{{ voiceDurationLabel }}</span>
-              <button type="button" class="rh-mic-stop-btn" @click.stop="stopRecording">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-                Selesai
-              </button>
+
+              <!-- Active holding state: Slide to cancel -->
+              <template v-if="isHoldingRecord && !isRecordingLocked">
+                <div 
+                  class="rh-slide-to-cancel"
+                  :class="{ 'rh-slide-to-cancel--active': recordDragX < -110 }"
+                  :style="{ transform: 'translateX(' + recordDragX + 'px)', opacity: recordDragX < -110 ? 1 : (1 - Math.abs(recordDragX) / 110) }"
+                >
+                  <span v-if="recordDragX < -110">🗑️ Lepas untuk batal</span>
+                  <span v-else>&lt; Geser untuk batal</span>
+                </div>
+                <div class="rh-mic-placeholder-space"></div>
+              </template>
+
+              <!-- Locked state: show trash/delete and finish button -->
+              <template v-else>
+                <button type="button" class="rh-mic-cancel-btn" @click.stop="onRecordPointerCancel" aria-label="Batal merekam">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+                <button type="button" class="rh-mic-stop-btn" @click.stop="stopRecording">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                  Selesai
+                </button>
+              </template>
             </div>
+
+            <!-- UNIFIED TRIGGER BUTTON: kept in DOM during idle & holding states to prevent pointercancel -->
+            <button
+              v-if="voiceState === 'idle' || (voiceState === 'recording' && isHoldingRecord && !isRecordingLocked)"
+              key="record-btn"
+              type="button"
+              class="rh-mic-btn rh-mic-gesture-target"
+              :class="{ 
+                'rh-mic-btn--grid': false,
+                'rh-mic-btn--docked': voiceState === 'idle', 
+                'rh-mic-gesture-target--recording': voiceState === 'recording' 
+              }"
+              @pointerdown="onRecordPointerDown"
+              aria-label="Mulai rekam hafalan"
+            >
+              <template v-if="voiceState === 'idle'">
+                <div class="rh-mic-btn__icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                  </svg>
+                </div>
+                <span class="rh-mic-btn__label">Tahan untuk Rekam</span>
+              </template>
+              <template v-else>
+                <div class="rh-mic-placeholder-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                  </svg>
+                </div>
+              </template>
+            </button>
 
             <!-- REVIEW: player bar -->
             <div v-else-if="voiceState === 'review'" class="rh-vn-bar">
@@ -1023,6 +1090,34 @@ const voicePlayProgress = ref(0)
 const voiceMimeType = ref('audio/webm') // Actual recorded mime type (varies by browser)
 const MAX_RECORDING_SECONDS = 60
 
+const isHoldingRecord = ref(false)
+const isRecordingLocked = ref(false)
+const isRecordingCancelled = ref(false)
+const recordDragX = ref(0)
+const recordDragY = ref(0)
+
+const micPermission = ref<'prompt' | 'granted' | 'denied'>('prompt')
+
+const checkMicPermission = async () => {
+  if (typeof navigator === 'undefined' || !navigator.permissions || !navigator.permissions.query) {
+    return
+  }
+  try {
+    const result = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+    micPermission.value = result.state
+    result.onchange = () => {
+      micPermission.value = result.state
+    }
+  } catch (e) {
+    console.warn('Permissions API not fully supported:', e)
+  }
+}
+
+let initialPointerX = 0
+let initialPointerY = 0
+let pointerDownTime = 0
+
+
 const voiceDurationLabel = computed(() => {
   const s = voiceDuration.value
   const mins = Math.floor(s / 60)
@@ -1087,9 +1182,96 @@ const deleteVoiceRecording = async (key: string) => {
 let audioChunks: Blob[] = []
 let recordingInterval: any = null
 
+const onRecordPointerDown = (e: PointerEvent) => {
+  e.preventDefault()
+  cleanupRecordGesture()
+  triggerHaptic(50)
+  
+  isHoldingRecord.value = true
+  isRecordingLocked.value = false
+  isRecordingCancelled.value = false
+  recordDragX.value = 0
+  recordDragY.value = 0
+  
+  initialPointerX = e.clientX
+  initialPointerY = e.clientY
+  pointerDownTime = Date.now()
+  
+  startRecording()
+  
+  if (micPermission.value === 'granted') {
+    window.addEventListener('pointermove', onRecordPointerMove)
+    window.addEventListener('pointerup', onRecordPointerUp)
+    window.addEventListener('pointercancel', onRecordPointerCancel)
+  } else {
+    // If not granted, disable hold tracking so the UI treats it as a clicked/locked recording
+    // which allows the browser permission popup to open without breaking the hold state.
+    isHoldingRecord.value = false
+  }
+}
+
+const onRecordPointerMove = (e: PointerEvent) => {
+  if (!isHoldingRecord.value || isRecordingLocked.value || isRecordingCancelled.value) return
+  
+  const deltaX = e.clientX - initialPointerX
+  const deltaY = e.clientY - initialPointerY
+  
+  // Cap the horizontal drag to -150px so it stays visible
+  recordDragX.value = Math.max(-150, Math.min(0, deltaX))
+  recordDragY.value = Math.min(0, deltaY)
+  
+  // Slide Up to Lock (threshold 80px)
+  if (recordDragY.value < -80) {
+    isRecordingLocked.value = true
+    triggerHaptic(45)
+    cleanupRecordGesture()
+  }
+}
+
+const onRecordPointerUp = (e: PointerEvent) => {
+  if (!isHoldingRecord.value) return
+  
+  const elapsed = Date.now() - pointerDownTime
+  
+  // Quick tap check
+  if (elapsed < 300) {
+    isRecordingCancelled.value = true
+    stopRecording()
+    cleanupRecordGesture()
+    showToast?.('Tahan tombol untuk merekam', 'fluent')
+    return
+  }
+  
+  // Check if finger was released in the Cancel Zone (dragged left past -110px)
+  if (recordDragX.value < -110) {
+    isRecordingCancelled.value = true
+    triggerHaptic(60)
+    stopRecording()
+    showToast?.('Rekaman dibatalkan', 'doubtful')
+  } else if (!isRecordingLocked.value && !isRecordingCancelled.value) {
+    stopRecording()
+  }
+  
+  cleanupRecordGesture()
+}
+
+const onRecordPointerCancel = () => {
+  isRecordingCancelled.value = true
+  stopRecording()
+  cleanupRecordGesture()
+}
+
+const cleanupRecordGesture = () => {
+  isHoldingRecord.value = false
+  window.removeEventListener('pointermove', onRecordPointerMove)
+  window.removeEventListener('pointerup', onRecordPointerUp)
+  window.removeEventListener('pointercancel', onRecordPointerCancel)
+}
+
 const startRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    checkMicPermission()
     audioChunks = []
     
     // Stop any existing main audio playback
@@ -1116,6 +1298,15 @@ const startRecording = async () => {
     }
     
     recorder.onstop = async () => {
+      // Stop media tracks to turn off mic indicator
+      stream.getTracks().forEach(track => track.stop())
+
+      if (isRecordingCancelled.value) {
+        audioChunks = []
+        voiceState.value = 'idle'
+        return
+      }
+
       const mimeType = recorder.mimeType || 'audio/webm'
       voiceMimeType.value = mimeType
       const blob = new Blob(audioChunks, { type: mimeType })
@@ -1127,9 +1318,6 @@ const startRecording = async () => {
 
       // Persist to IndexedDB so it survives page refresh
       await saveVoiceRecording(currentVoiceKey.value, blob, voiceDuration.value)
-
-      // Stop media tracks to turn off mic indicator
-      stream.getTracks().forEach(track => track.stop())
     }
 
     voiceState.value = 'recording'
@@ -1148,6 +1336,7 @@ const startRecording = async () => {
   } catch (err) {
     console.error('Microphone access denied:', err)
     showToast?.('Gagal mengakses mikrofon. Pastikan izin mikrofon diberikan.', 'forgot')
+    cleanupRecordGesture()
   }
 }
 
@@ -1380,7 +1569,14 @@ const playTick = (type: 'fluent' | 'doubtful' | 'forgot' | 'normal' = 'normal') 
 // Helper for haptic vibration and sound
 const triggerHaptic = (ms = 40, soundType: 'fluent' | 'doubtful' | 'forgot' | 'normal' = 'normal') => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
-    navigator.vibrate(ms)
+    const hasActivation = typeof navigator.userActivation !== 'undefined' 
+      ? navigator.userActivation.hasBeenActive 
+      : true
+    if (hasActivation) {
+      try {
+        navigator.vibrate(ms)
+      } catch (e) {}
+    }
   }
   playTick(soundType)
 }
@@ -1847,6 +2043,7 @@ watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
 
 onMounted(async () => {
   isInitialized = true
+  checkMicPermission()
   fetchSurahList()
 
   if (isListeningMode.value) {
@@ -2485,6 +2682,7 @@ useHead({
 
 /* Recording row */
 .rh-mic-recording-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2496,12 +2694,166 @@ useHead({
   width: 100%;
 }
 
+.rh-mic-recording-row--holding {
+  background: rgba(20, 20, 22, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
 .rh-mic-timer {
   font-size: 0.8rem;
   font-weight: 800;
   color: #fca5a5;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.rh-mic-recording-row--holding .rh-mic-timer {
+  color: #ef4444; /* Bright red when active holding */
+}
+
+/* Slide to Cancel */
+.rh-slide-to-cancel {
   flex: 1;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  transition: transform 0.05s ease-out, opacity 0.05s ease-out, color 0.15s ease, text-shadow 0.15s ease;
+  user-select: none;
+  background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.4) 100%);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: rhShimmer 1.8s infinite linear;
+}
+
+.rh-slide-to-cancel--active {
+  color: #ef4444 !important;
+  -webkit-text-fill-color: #ef4444 !important;
+  background: none !important;
+  animation: none !important;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  transform: scale(1.05) !important;
+}
+
+@keyframes rhShimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 100% 0; }
+}
+
+.rh-mic-placeholder {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  animation: rhMicBreathe 1.2s infinite ease-in-out;
+}
+
+@keyframes rhMicBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.18); opacity: 1; filter: drop-shadow(0 0 4px rgba(239,68,68,0.6)); }
+}
+
+/* Floating Lock Panel */
+.rh-lock-indicator-panel {
+  position: absolute;
+  bottom: 74px;
+  right: 18px;
+  width: 44px;
+  padding: 14px 0 16px;
+  background: rgba(24, 24, 27, 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 999;
+  animation: lockPanelFadeIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes lockPanelFadeIn {
+  from { transform: translateY(15px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.rh-lock-icon {
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rh-lock-icon--active {
+  color: #ef4444;
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.4));
+}
+
+.rh-lock-arrows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -2px;
+  user-select: none;
+}
+
+.rh-lock-arrow {
+  font-size: 0.65rem;
+  line-height: 0.7;
+  color: rgba(255, 255, 255, 0.3);
+  animation: lockArrowSlide 1.2s infinite ease-in-out;
+}
+
+.rh-lock-arrow--1 {
+  animation-delay: 0s;
+}
+
+.rh-lock-arrow--2 {
+  animation-delay: 0.2s;
+  margin-top: -4px;
+}
+
+@keyframes lockArrowSlide {
+  0% { transform: translateY(4px); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(-4px); opacity: 0; }
+}
+
+.rh-lock-mic {
+  color: #ef4444;
+  margin-top: 4px;
+  transition: transform 0.05s ease-out;
+  animation: rhMicBreathe 1.2s infinite ease-in-out;
+}
+
+/* Locked control buttons */
+.rh-mic-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rh-mic-cancel-btn:active {
+  background: rgba(239, 68, 68, 0.25);
+  transform: scale(0.9);
 }
 
 .rh-mic-stop-btn {
@@ -2517,7 +2869,8 @@ useHead({
   font-weight: 800;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.1s;
+  margin-left: auto; /* Push Selesai to the right */
 }
 
 .rh-mic-stop-btn:active {
@@ -2635,6 +2988,8 @@ useHead({
   align-items: center;
   justify-content: center;
   padding: 4px 16px;
+  position: relative;
+  touch-action: none;
 }
 
 .action-bar-mic-dock .rh-mic-btn--docked {
@@ -4664,5 +5019,38 @@ useHead({
     max-height: 36px !important;
   }
 
+}
+
+/* Placeholder space on the right side of the holding bar so the absolute button has a visually empty area to sit on */
+.rh-mic-placeholder-space {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+/* absolute button when recording (active holding) */
+.rh-mic-gesture-target--recording {
+  position: absolute !important;
+  right: 24px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: rgba(239, 68, 68, 0.2) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ef4444 !important;
+  cursor: grab !important;
+  z-index: 1000 !important;
+  touch-action: none !important;
+}
+
+.rh-mic-placeholder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
