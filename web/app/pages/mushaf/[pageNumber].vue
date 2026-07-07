@@ -212,7 +212,7 @@
       </section>
     </main>
 
-    <section class="mushaf-player" :class="{ 'mushaf-player--hidden': isFullscreenMode }" aria-label="Pemutar murottal">
+    <section class="mushaf-player" :class="{ 'mushaf-player--hidden': isFullscreenMode || showTranslationDrawer }" aria-label="Pemutar murottal">
       <div class="mushaf-player__actions">
         <!-- Play/Pause -->
         <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
@@ -449,28 +449,147 @@
         <!-- Header -->
         <header class="translation-sheet-header">
           <div class="translation-sheet-header__left">
-            <p class="translation-sheet-subtitle">Hal {{ pageNumber }} &middot; Kemenag RI</p>
+            <div class="translation-sheet-dropdown-trigger" @click="showEditionPicker = true">
+              <span>{{ selectedEdition.name }}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="dropdown-chevron"><path d="m7 10 5 5 5-5"/></svg>
+            </div>
+            <p class="translation-sheet-subtitle">
+              <span v-if="activeSurahMeta">{{ activeSurahMeta.number }}. {{ activeSurahMeta.name_latin }} &bull; </span>
+              Hal {{ pageNumber }}, {{ activeJuzLabel }}
+            </p>
           </div>
           <button type="button" class="translation-sheet-close" aria-label="Tutup terjemahan" @click="showTranslationDrawer = false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
           </button>
         </header>
 
-
         <!-- Scrollable list -->
-        <div ref="translationListRef" class="translation-sheet-list">
-          <div 
-            v-for="ayah in pageData?.ayahs" 
-            :key="ayah.id"
-            :ref="el => { if (el && ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}`) activeTranslationItemRef = el as HTMLElement }"
-            class="translation-sheet-item"
-            :class="{ 'translation-sheet-item--active': ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}` }"
-            @click="selectAyahFromTranslation(ayah.surah_id, ayah.ayah_number)"
-          >
-            <span class="translation-sheet-item__number">{{ ayah.ayah_number }}</span>
-            <p class="translation-sheet-item__text">{{ ayah.translation_id || 'Terjemahan tidak tersedia.' }}</p>
+        <div ref="translationListRef" class="translation-sheet-list" @scroll.passive="handleTranslationScroll">
+          <template v-for="ayah in pageData?.ayahs" :key="ayah.id">
+            <div 
+              :ref="el => { if (el && ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}`) activeTranslationItemRef = el as HTMLElement }"
+              class="translation-sheet-item"
+              :class="{ 'translation-sheet-item--active': ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}` }"
+              @click="selectAyahFromTranslation(ayah.surah_id, ayah.ayah_number)"
+            >
+              <!-- Islamic Geometric Number Frame -->
+              <div class="translation-sheet-item__number-wrap">
+                <svg viewBox="0 0 100 100" class="ayah-frame-svg">
+                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/>
+                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/>
+                  <circle cx="50" cy="50" r="23" fill="#fff" stroke="currentColor" stroke-width="2.5"/>
+                </svg>
+                <span :style="{ fontSize: ayah.ayah_number >= 100 ? '0.62rem' : (ayah.ayah_number >= 10 ? '0.74rem' : '0.82rem') }">
+                  {{ ayah.ayah_number }}
+                </span>
+              </div>
+              
+              <div class="translation-sheet-item__content">
+                <!-- Transliterasi (Latin) -->
+                <p 
+                  v-if="showTransliteration && transliterations[ayah.verse_key]" 
+                  class="translation-sheet-item__latin"
+                  :style="{ fontSize: (translationFontSize * 0.92) + 'rem' }"
+                >
+                  {{ transliterations[ayah.verse_key] }}
+                </p>
+                <!-- Translation -->
+                <p class="translation-sheet-item__text" :style="{ fontSize: translationFontSize + 'rem' }">
+                  <span v-if="editionLoading" class="translation-text-loading-skeleton">Memuat terjemahan...</span>
+                  <span v-else>{{ getTranslationText(ayah) }}</span>
+                </p>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Edition Picker (Bottom Sheet Modal) -->
+        <Transition name="sheet">
+          <div v-if="showEditionPicker" class="qari-overlay" @click="showEditionPicker = false">
+            <section class="qari-sheet" role="dialog" aria-modal="true" aria-labelledby="edition-picker-title" :style="editionPickerSheet.sheetStyle.value" @click.stop>
+              <div class="qari-sheet__handle" v-bind="editionPickerSheet.bindHandle"></div>
+              <header class="qari-sheet__header">
+                <div>
+                  <span>Terjemahan &amp; Tafsir</span>
+                  <h2 id="edition-picker-title">Pilih Edisi</h2>
+                  <p>Pilih terjemahan atau tafsir Al-Qur'an</p>
+                </div>
+                <button type="button" aria-label="Tutup pilihan edisi" @click="showEditionPicker = false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                </button>
+              </header>
+              <div class="qari-list">
+                <button v-for="edition in editions" :key="edition.id" type="button" class="qari-item" :class="{ 'qari-item--active': edition.id === selectedEdition.id }" @click="selectEdition(edition)">
+                  <span>
+                    <strong>{{ edition.name }}</strong>
+                    <small>{{ edition.language === 'id' ? 'Bahasa Indonesia' : 'English' }} &middot; {{ edition.type === 'tafsir' ? 'Tafsir' : 'Terjemahan' }}</small>
+                  </span>
+                  <svg v-if="edition.id === selectedEdition.id" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                </button>
+              </div>
+            </section>
+          </div>
+        </Transition>
+
+        <!-- Settings Panel inside Translation Sheet (Fixed at Bottom, above player) -->
+        <div class="translation-sheet-settings">
+          <div class="tss-font-size">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tss-font-icon"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+            <span class="tss-font-value">{{ translationFontSizeLevel }}%</span>
+            <div class="tss-slider-wrap">
+              <input 
+                v-model.number="translationFontSizeLevel" 
+                type="range" 
+                min="20" 
+                max="100" 
+                step="20" 
+                class="tss-slider"
+                :style="{ background: 'linear-gradient(to right, #0a6b4f 0%, #0a6b4f ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea 100%)' }"
+              />
+            </div>
+          </div>
+
+          <div class="tss-toggle">
+            <label class="tss-switch">
+              <input type="checkbox" v-model="showTransliteration" />
+              <span class="tss-slider-toggle"></span>
+            </label>
+            <span class="tss-toggle-label">Transliterasi</span>
           </div>
         </div>
+
+        <!-- Player inside Translation Sheet (Fixed at Bottom) -->
+        <footer class="translation-sheet-player mushaf-player">
+          <div class="mushaf-player__actions">
+            <!-- Play/Pause -->
+            <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
+              <svg v-if="!isPlaying" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+            </button>
+
+            <!-- Repeat Button -->
+            <button type="button" class="mushaf-player__btn" :class="{ 'mushaf-player__btn--active': isCustomRangeActive || localRepeatCount > 1 }" @click="toggleRepeatMode" aria-label="Pengulangan Murotal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              </svg>
+              <span v-if="localRepeatCount > 1 && localRepeatCount !== 99999" class="mushaf-player__badge">{{ localRepeatCount }}</span>
+            </button>
+
+            <!-- Settings Button -->
+            <button type="button" class="mushaf-player__btn" @click="openAudioSettings" aria-label="Pengaturan Murotal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            </button>
+          </div>
+
+          <button type="button" class="mushaf-player__qari-select" @click="openQariPicker">
+            <img :src="activeQari.image" :alt="activeQariName">
+            <span class="mushaf-player__info">
+              <strong>{{ activeQariName }}</strong>
+              <small>{{ playerAyahLabel }}</small>
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+          </button>
+        </footer>
       </div>
     </Transition>
 
@@ -836,6 +955,138 @@ const activeTranslationItemRef = ref<HTMLElement | null>(null)
 const showAyahDrawer = ref(false)
 const selectedAyahForDrawer = ref<{surah: number, ayah: number, verse_key: string, text?: string} | null>(null)
 
+interface TranslationEdition {
+  id: string
+  name: string
+  language: string
+  type: 'translation' | 'tafsir'
+}
+
+const editions: TranslationEdition[] = [
+  { id: 'local', name: 'Terjemah Kemenag 2019', language: 'id', type: 'translation' },
+  { id: 'id.jalalayn', name: 'Tafsir Al-Jalalain', language: 'id', type: 'tafsir' },
+  { id: 'en.sahih', name: 'Sahih International', language: 'en', type: 'translation' },
+  { id: 'id.muntakhab', name: 'Tafsir Ringkas Kemenag', language: 'id', type: 'tafsir' }
+]
+
+const selectedEdition = ref<TranslationEdition>(editions[0])
+const showEditionPicker = ref(false)
+const editionCache = ref<Record<string, Record<number, Record<string, string>>>>({}) // editionId -> { pageNumber -> { verseKey -> text } }
+const editionLoading = ref(false)
+
+const getTranslationText = (ayah: any) => {
+  if (selectedEdition.value.id === 'local') {
+    return ayah.translation_id || 'Terjemahan tidak tersedia.'
+  }
+  return editionCache.value[selectedEdition.value.id]?.[pageNumber.value]?.[ayah.verse_key] || 'Memuat terjemahan...'
+}
+
+const loadEdition = async (editionId: string) => {
+  if (editionId === 'local') return
+  if (editionCache.value[editionId]?.[pageNumber.value]) return
+
+  try {
+    editionLoading.value = true
+    const res = await fetch(`https://api.alquran.cloud/v1/page/${pageNumber.value}/${editionId}`).then(r => r.json())
+    if (res.code === 200 && res.data?.ayahs) {
+      if (!editionCache.value[editionId]) {
+        editionCache.value[editionId] = {}
+      }
+      const pageCache: Record<string, string> = {}
+      for (const ayah of res.data.ayahs) {
+        const key = `${ayah.surah.number}:${ayah.numberInSurah}`
+        pageCache[key] = ayah.text
+      }
+      editionCache.value[editionId][pageNumber.value] = pageCache
+    }
+  } catch (e) {
+    console.error('Failed to load translation edition:', e)
+  } finally {
+    editionLoading.value = false
+  }
+}
+
+const selectEdition = async (edition: TranslationEdition) => {
+  selectedEdition.value = edition
+  showEditionPicker.value = false
+  if (edition.id !== 'local') {
+    await loadEdition(edition.id)
+  }
+}
+
+const currentScrollSurahId = ref<number | null>(null)
+const currentScrollJuz = ref<number | null>(null)
+const translationFontSizeLevel = ref(60)
+const showTransliteration = ref(true)
+const transliterations = ref<Record<string, string>>({})
+const transliterationsLoading = ref(false)
+
+const activeSurahMeta = computed(() => {
+  const id = currentScrollSurahId.value || pageData.value?.ayahs[0]?.surah_id
+  if (!id) return null
+  return pageData.value?.surahs.find(s => s.id === id) || null
+})
+
+const activeJuzLabel = computed(() => {
+  const juz = currentScrollJuz.value || pageData.value?.ayahs[0]?.juz || 1
+  return `Juz ${juz}`
+})
+
+const translationFontSize = computed(() => {
+  const level = translationFontSizeLevel.value
+  if (level === 20) return 0.75
+  if (level === 40) return 0.825
+  if (level === 60) return 0.9
+  if (level === 80) return 1.0
+  return 1.125
+})
+
+const fetchTransliterations = async () => {
+  if (!pageData.value?.surahs.length) return
+  transliterationsLoading.value = true
+  try {
+    for (const surah of pageData.value.surahs) {
+      const hasSurah = Object.keys(transliterations.value).some(k => k.startsWith(`${surah.number}:`))
+      if (!hasSurah) {
+        const res = await fetch(`https://equran.id/api/v2/surat/${surah.number}`).then(r => r.json())
+        if (res.code === 200 && res.data?.ayat) {
+          for (const ayat of res.data.ayat) {
+            const key = `${surah.number}:${ayat.nomorAyat}`
+            transliterations.value[key] = ayat.teksLatin
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch transliterations:', e)
+  } finally {
+    transliterationsLoading.value = false
+  }
+}
+
+const handleTranslationScroll = (event: Event) => {
+  const container = event.target as HTMLElement
+  if (!container || !pageData.value?.ayahs) return
+  
+  const scrollTop = container.scrollTop
+  const items = container.querySelectorAll('.translation-sheet-item')
+  
+  let activeIndex = 0
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i] as HTMLElement
+    if (item.offsetTop - container.offsetTop >= scrollTop - 20) {
+      activeIndex = i
+      break
+    }
+  }
+  
+  const activeAyah = pageData.value.ayahs[activeIndex]
+  if (activeAyah) {
+    currentScrollSurahId.value = activeAyah.surah_id
+    currentScrollJuz.value = activeAyah.juz
+  }
+}
+
 const openAyahOptions = (verseKey: string) => {
   const [surah, ayah] = verseKey.split(':').map(Number)
   selectedSurahId.value = surah
@@ -1162,9 +1413,23 @@ const audioSettingsSheet = useBottomSheet({
   onClose: () => { showAudioSettings.value = false },
 })
 
+const editionPickerSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { showEditionPicker.value = false },
+})
+
 watch(showTranslationDrawer, async (val) => {
   if (val) {
     translationSheet.reset()
+    fetchTransliterations()
+    if (selectedEdition.value.id !== 'local') {
+      loadEdition(selectedEdition.value.id)
+    }
+    if (pageData.value?.ayahs.length) {
+      currentScrollSurahId.value = pageData.value.ayahs[0].surah_id
+      currentScrollJuz.value = pageData.value.ayahs[0].juz
+    }
     await nextTick()
     setTimeout(() => {
       if (activeTranslationItemRef.value) {
@@ -1173,10 +1438,18 @@ watch(showTranslationDrawer, async (val) => {
     }, 150)
   }
 })
+
+watch([pageNumber, selectedEdition], async ([newPage, newEdition]) => {
+  if (newEdition.id !== 'local') {
+    await loadEdition(newEdition.id)
+  }
+})
+
 watch(showAyahDrawer, (val) => { if (val) ayahDrawerSheet.reset() })
 watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
 watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
 watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
+watch(showEditionPicker, (val) => { if (val) editionPickerSheet.reset() })
 
 const trackStyle = computed(() => ({ transform: `translate3d(calc(-33.333333% + ${swipeOffset.value}px), 0, 0)` }))
 const isSwipeActive = computed(() => swipeAnimating.value || Math.abs(swipeOffset.value) > 1)
@@ -1332,6 +1605,11 @@ const getPageSurahCount = (page: number): number =>
 const getSurahBannerAtLine = (lineNumber: any, page: number): MushafSurah | null => {
   const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
   return surahs.find(s => s.starts_at_line !== null && s.starts_at_line !== undefined && Number(s.starts_at_line) === Number(lineNumber)) || null
+}
+
+const getSurahForAyah = (surahId: number): MushafSurah | undefined => {
+  const surahs = pageData.value?.surahs || []
+  return surahs.find(s => s.id === surahId)
 }
 
 const shouldShowBismillahAtLine = (lineNumber: number, page: number): boolean => {
@@ -2960,36 +3238,305 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   height: 16px;
 }
 
+/* --- Clean Minimal Surah Header in Translation Sheet --- */
+.translation-surah-header {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.translation-surah-header--first {
+  margin-top: 8px;
+}
+
+.translation-surah-header__title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #064e3b;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.translation-surah-header__meta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #56706a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.translation-surah-header__line {
+  width: 48px;
+  height: 2px;
+  background: #e6ecea;
+  border-radius: 99px;
+  margin-top: 8px;
+}
+
+/* --- Dropdown trigger inside Translation Sheet Header --- */
+.translation-sheet-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: #1e2e28;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.dropdown-chevron {
+  width: 14px;
+  height: 14px;
+  color: #0a6b4f;
+  transition: transform 0.2s ease;
+}
+
+/* --- Player inside Translation Sheet (Fixed at Bottom) --- */
+.translation-sheet-player {
+  position: static !important;
+  flex: 0 0 auto;
+  border-top: 1px solid rgba(31, 54, 45, 0.08) !important;
+  background: rgba(255, 255, 253, 0.97) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  padding: 10px 16px !important;
+}
+
+/* --- Settings inside Translation Sheet (Fixed at Bottom, above player) --- */
+.translation-sheet-settings {
+  flex: 0 0 auto;
+  border-top: 1px solid #edf2f0;
+  background: #fff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.03);
+  position: relative;
+  z-index: 10;
+}
+
+.tss-font-size {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.tss-font-icon {
+  width: 20px;
+  height: 20px;
+  color: #0a6b4f;
+  flex-shrink: 0;
+}
+
+.tss-font-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0a6b4f;
+  min-width: 38px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tss-slider-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.tss-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #e6ecea;
+  border-radius: 99px;
+  outline: none;
+}
+
+.tss-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #0a6b4f;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(10, 107, 79, 0.3);
+  transition: transform 0.1s ease;
+}
+
+.tss-slider::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+}
+
+.tss-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tss-toggle-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e2e28;
+}
+
+.tss-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.tss-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.tss-slider-toggle {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #cbd5e1;
+  transition: .3s;
+  border-radius: 99px;
+}
+
+.tss-slider-toggle:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+.tss-switch input:checked + .tss-slider-toggle {
+  background-color: #0a6b4f;
+}
+
+.tss-switch input:checked + .tss-slider-toggle:before {
+  transform: translateX(16px);
+}
+
+/* --- Translation Sheet Item Customizations --- */
+.translation-sheet-item__number-wrap {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ayah-frame-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #c6952b; /* Premium Gold border */
+}
+
+.translation-sheet-item__number-wrap span {
+  position: relative;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e2e28;
+  z-index: 1;
+}
+
+.translation-sheet-item__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.translation-sheet-item__latin {
+  font-size: 0.825rem;
+  font-style: italic;
+  font-weight: 550;
+  color: #a87518; /* Goldish-brown text */
+  margin: 0;
+  line-height: 1.5;
+}
+
 .translation-sheet-list {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 8px 12px 24px;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  background: #fff;
 }
 
 .translation-sheet-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #fafcfb;
-  border: 1.5px solid transparent;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px dashed #e6ecea;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, padding 0.15s ease;
+}
+
+.translation-sheet-item:last-child {
+  border-bottom: none;
+}
+
+.translation-sheet-item__number {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: #0a6b4f;
+  color: #fff;
+  border-radius: 50%;
+}
+
+.translation-text-loading-skeleton {
+  display: inline-block;
+  color: #8a9e97;
+  font-style: italic;
+  animation: pulse-loading-translation 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-loading-translation {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
 }
 
 .translation-sheet-item:active {
-  background: #f0f7f4;
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .translation-sheet-item--active {
-  background: rgba(10, 107, 79, 0.06);
-  border-color: #0a6b4f;
+  background: rgba(10, 107, 79, 0.03);
+  border-left: 4px solid #0a6b4f;
+  padding-left: 16px;
+  padding-right: 20px;
+  margin-left: -20px;
+  margin-right: -20px;
 }
 
 .translation-sheet-item__number {
@@ -4043,28 +4590,28 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   border-color: #e8eae7;
 }
 
-.navigator-dynamic { display: flex; flex-direction: column; gap: 14px; }
-.navigator-fields-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 10px; }
 .navigator-field--wide { width: 100%; }
-.navigator-field--ayah { min-width: 0; }
+.navigator-field--ayah {
+  width: 96px;
+  flex-shrink: 0;
+}
 .navigator-field label span { margin-left: 4px; color: #9aa29e; font-size: .62rem; font-weight: 600; }
 .navigator-select-wrap { position: relative; }
 .navigator-select-wrap select {
   width: 100%;
   height: 48px;
   appearance: none;
-  border: 1px solid #dce3df;
-  border-radius: 13px;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  border-radius: 16px;
   outline: none;
   padding: 0 42px 0 14px;
-  color: #314039;
-  background: #fbfcfa;
-  font-size: .8rem;
-  font-weight: 750;
+  color: #1F2937;
+  background: #fff;
+  font-size: .88rem;
+  font-weight: 700;
 }
-.navigator-select-wrap select:focus { border-color: #159174; box-shadow: 0 0 0 3px rgba(21, 145, 116, .09); }
-.navigator-select-wrap svg { position: absolute; top: 50%; right: 14px; width: 17px; height: 17px; color: #168d70; pointer-events: none; transform: translateY(-50%); }
-.navigator-dynamic .navigator-primary { width: 100%; margin-top: 2px; }
+.navigator-select-wrap select:focus { border-color: rgba(8, 125, 89, 0.35); box-shadow: 0 2px 8px rgba(8, 125, 89, 0.06); }
+.navigator-select-wrap svg { position: absolute; top: 50%; right: 14px; width: 16px; height: 16px; color: #9CA3AF; pointer-events: none; transform: translateY(-50%); }
 
 @media (min-width: 621px) {
   /* removed max-width limits to support landscape full width */
@@ -4151,7 +4698,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .qari-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 1300;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -5718,6 +6265,512 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   background: rgba(96, 85, 63, 0.12) !important;
   color: #0f4c46 !important;
   transform: rotate(90deg) !important;
+}
+
+/* ── Navigator Sheet (Pilih Bacaan) - aligned with remote page style ─── */
+.navigator-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(4, 39, 25, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.navigator-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #FFFDF7;
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.navigator-sheet--picker-open {
+  height: 96dvh;
+  max-height: 96dvh;
+}
+
+.navigator-sheet__content {
+  padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.navigator-sheet__handle {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.navigator-sheet__handle::before {
+  content: '';
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.15);
+}
+
+.navigator-sheet__handle:active { cursor: grabbing; }
+
+.navigator-sheet__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.navigator-sheet__header > div > span {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #087d59;
+  margin-bottom: 4px;
+}
+
+.navigator-sheet__header h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #042719;
+  letter-spacing: -0.02em;
+  margin: 0 0 3px;
+}
+
+.navigator-sheet__header p {
+  font-size: 0.78rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.navigator-sheet__header > button {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #F3F4F6;
+  color: #4B5563;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.navigator-sheet__header > button:hover { background: #E5E7EB; }
+
+.navigator-sheet__header > button svg { width: 16px; height: 16px; }
+
+.navigator-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.navigator-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: 0.02em;
+}
+
+.navigator-field label > span {
+  margin-left: 4px;
+  color: #9aa29e;
+  font-weight: 600;
+}
+
+.navigator-field--wide { width: 100%; }
+
+.navigator-field--surah { flex: 1; min-width: 0; }
+
+.navigator-field--ayah { width: 96px; flex-shrink: 0; }
+
+.navigator-selector {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #1F2937;
+}
+
+.navigator-selector:hover {
+  border-color: rgba(8, 125, 89, 0.35);
+  box-shadow: 0 2px 8px rgba(8, 125, 89, 0.06);
+}
+
+.navigator-selector > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.navigator-selector strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navigator-field--ayah .navigator-selector strong {
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.navigator-selector small {
+  font-size: 0.7rem;
+  color: #6B7280;
+  font-weight: 400;
+}
+
+.navigator-selector svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #9CA3AF;
+}
+
+.navigator-primary {
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #087d59, #065c41);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 4px 12px rgba(8, 125, 89, 0.3);
+}
+
+.navigator-primary:active { transform: scale(0.98); }
+
+.navigator-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.navigator-dynamic { display: flex; flex-direction: column; gap: 14px; }
+
+.navigator-fields-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.navigator-select-wrap { position: relative; }
+
+.navigator-select-wrap select {
+  width: 100%;
+  height: 48px;
+  appearance: none;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  border-radius: 16px;
+  outline: none;
+  padding: 0 42px 0 14px;
+  color: #314039;
+  background: #fff;
+  font-size: .8rem;
+  font-weight: 750;
+}
+
+.navigator-select-wrap select:focus { border-color: #159174; box-shadow: 0 0 0 3px rgba(21, 145, 116, .09); }
+
+.navigator-select-wrap svg {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 17px;
+  height: 17px;
+  color: #168d70;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.navigator-error { margin: 12px 0 0; color: #c2414d; font-size: .72rem; text-align: center; }
+
+.navigator-sheet .surah-picker {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 18px 18px calc(20px + var(--safe-bottom));
+  background: #fffdfa;
+}
+
+.surah-picker__header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.surah-picker__header > button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  color: #087d59;
+  background: #edf6f2;
+}
+
+.surah-picker__header svg { width: 19px; height: 19px; }
+
+.surah-picker__header > div { display: flex; flex-direction: column; gap: 1px; }
+
+.surah-picker__header span {
+  color: #087d59;
+  font-size: .61rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.surah-picker__header strong { color: #23332c; font-size: 1.05rem; }
+
+.surah-picker__search {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+  border: 1px solid #e0e4e1;
+  border-radius: 13px;
+  padding: 0 13px;
+  background: #f6f7f4;
+}
+
+.surah-picker__search svg { width: 18px; height: 18px; flex: 0 0 auto; color: #8a9590; }
+
+.surah-picker__search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #28362f;
+  background: transparent;
+  font-size: .8rem;
+}
+
+.surah-picker__list {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.surah-picker__item {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto 20px;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  border: 1px solid #e8eae7;
+  border-radius: 14px;
+  padding: 8px 10px;
+  color: #2b3933;
+  background: #fff;
+  text-align: left;
+}
+
+.surah-picker__item--active { border-color: #5aac91; background: #eff8f4; }
+
+.surah-picker__number {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #64716b;
+  background: #f1f3f1;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.surah-picker__item--active .surah-picker__number { color: #087d59; background: #dcefe7; }
+
+.surah-picker__names {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.surah-picker__names strong {
+  overflow: hidden;
+  font-size: .78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.surah-picker__names small { color: #8a948f; font-size: .61rem; }
+
+.surah-picker__arabic {
+  font-family: var(--font-arabic);
+  color: #087d59;
+  font-size: 1.02rem;
+  direction: rtl;
+}
+
+.surah-picker__item > svg { width: 17px; height: 17px; color: #087d59; }
+
+.ayah-picker__summary { margin: 0 0 13px; color: #7e8983; font-size: .68rem; }
+
+.ayah-picker__grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  gap: 9px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 1px 8px;
+}
+
+.ayah-picker__grid button {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e2e6e3;
+  border-radius: 13px;
+  color: #44524c;
+  background: #fff;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.ayah-picker__grid button:active { transform: scale(.96); }
+
+.ayah-picker__grid .ayah-picker__number--active {
+  border-color: #087d59;
+  color: #fff;
+  background: #087d59;
+  box-shadow: 0 5px 13px rgba(8, 125, 89, .2);
+}
+
+.section-picker__grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  gap: 9px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 1px 18px;
+  scroll-behavior: auto;
+}
+
+.section-picker__grid button {
+  min-height: 49px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e2e6e3;
+  border-radius: 13px;
+  color: #44524c;
+  background: #fff;
+  font-size: .78rem;
+  font-weight: 750;
+  transition: transform .12s ease, border-color .16s ease, background .16s ease;
+}
+
+.section-picker__grid button:active { transform: scale(.95); }
+
+.section-picker__grid .section-picker__number--active {
+  border-color: #087d59;
+  color: #fff;
+  background: #087d59;
+  box-shadow: 0 5px 13px rgba(8, 125, 89, .2);
+}
+
+.picker-enter-active,
+.picker-leave-active {
+  transition: transform .24s ease, opacity .2s ease;
+}
+
+.picker-enter-from,
+.picker-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity .2s ease;
+}
+
+.sheet-enter-active .navigator-sheet,
+.sheet-leave-active .navigator-sheet,
+.sheet-enter-active .qari-sheet,
+.sheet-leave-active .qari-sheet {
+  transition: transform .24s ease;
+}
+
+.sheet-enter-from,
+.sheet-leave-to { opacity: 0; }
+
+.sheet-enter-from .navigator-sheet,
+.sheet-leave-to .navigator-sheet,
+.sheet-enter-from .qari-sheet,
+.sheet-leave-to .qari-sheet { transform: translateY(100%); }
+
+@media (max-height: 520px) {
+  .navigator-sheet,
+  .qari-sheet {
+    min-height: 0 !important;
+    max-height: 95dvh !important;
+  }
+  .navigator-sheet__content,
+  .audio-settings-body {
+    flex: 1 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+  .surah-picker__list,
+  .picker-options-list,
+  .qari-list {
+    max-height: 50vh !important;
+    overflow-y: auto !important;
+  }
 }
 
 /* ── Mobile Landscape Full-Width Override ─── */
