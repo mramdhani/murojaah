@@ -126,10 +126,16 @@
               </button>
             </div>
 
-            <!-- Reveal instruction -->
-            <div class="rh-reveal-instruction" @click.stop="toggleReveal">
-              <span class="rh-reveal-dot"></span>
-              <span class="rh-reveal-text">Ketuk layar untuk lihat ayat</span>
+            <!-- Reveal instruction: only shown when there's already an audio recording -->
+            <div v-if="voiceState === 'review'" class="rh-reveal-instruction" @click.stop="toggleReveal" role="button" tabindex="0" @keydown.enter="toggleReveal">
+              <span class="rh-reveal-ring"></span>
+              <span class="rh-reveal-inner">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="rh-reveal-eye-icon">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span class="rh-reveal-text">Ketuk layar untuk lihat ayat</span>
+              </span>
             </div>
 
           </div>
@@ -226,15 +232,30 @@
 
         <!-- Hidden mode: only mic bar, centered full-width -->
         <template v-else>
-          <div class="action-bar-mic-dock" @click.stop>
-            <!-- RECORDING ROW (background indicators) -->
-            <div v-if="voiceState === 'recording'" class="rh-mic-recording-row" :class="{ 'rh-mic-recording-row--holding': !isRecordingLocked }">
-              <!-- Floating Lock Indicator (only when holding and not locked) -->
-              <div 
-                v-if="isHoldingRecord && !isRecordingLocked" 
-                class="rh-lock-indicator-panel"
-              >
-                <div class="rh-lock-icon" :class="{ 'rh-lock-icon--active': recordDragY < -80 }">
+          <div class="wa-dock" @click.stop>
+            <!-- ── IDLE: premium hold-to-record button ── -->
+            <button
+              v-if="voiceState === 'idle'"
+              type="button"
+              class="wa-idle-btn"
+              @pointerdown="onRecordPointerDown"
+              aria-label="Tahan untuk merekam"
+            >
+              <span class="wa-idle-btn__glow"></span>
+              <span class="wa-idle-btn__icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+              </span>
+              <span class="wa-idle-btn__label">Tahan untuk Rekam</span>
+            </button>
+
+            <!-- ── RECORDING (hold or locked) ── -->
+            <template v-if="voiceState === 'recording' && (isHoldingRecord || isRecordingLocked)">
+              <!-- Lock panel: floats above the mic button area (left side like WhatsApp) -->
+              <div v-if="isHoldingRecord && !isRecordingLocked" class="wa-lock-panel">
+                <div class="wa-lock-icon" :class="{ 'wa-lock-icon--ready': recordDragY < -80 }">
                   <svg v-if="recordDragY < -80" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
                   </svg>
@@ -242,86 +263,67 @@
                     <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6-5c1.66 0 3 1.34 3 3v2H9V6c0-1.66 1.34-3 3-3zm6 15H6V10h12v10z"/>
                   </svg>
                 </div>
-                <div class="rh-lock-arrows">
-                  <span class="rh-lock-arrow rh-lock-arrow--1">▲</span>
-                  <span class="rh-lock-arrow rh-lock-arrow--2">▲</span>
-                </div>
-                <div 
-                  class="rh-lock-mic"
-                  :style="{ transform: 'translateY(' + Math.max(-80, recordDragY) + 'px)' }"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                  </svg>
-                </div>
+                <span class="wa-lock-chevron wa-lock-chevron--1">▲</span>
+                <span class="wa-lock-chevron wa-lock-chevron--2">▲</span>
               </div>
 
-              <span class="rh-voice-indicator rh-voice-indicator--lg"></span>
-              <span class="rh-mic-timer">{{ voiceDurationLabel }}</span>
+              <!-- Flex row: [pill bar ─────────────────] [mic button] -->
+              <div class="wa-rec-row">
+                <!-- LEFT: pill info bar -->
+                <div class="wa-rec-bar">
+                  <div class="wa-rec-left">
+                    <span class="wa-rec-pulse"></span>
+                    <span class="wa-rec-timer">{{ voiceDurationLabel }}</span>
+                  </div>
 
-              <!-- Active holding state: Slide to cancel -->
-              <template v-if="isHoldingRecord && !isRecordingLocked">
-                <div 
-                  class="rh-slide-to-cancel"
-                  :class="{ 'rh-slide-to-cancel--active': recordDragX < -110 }"
-                  :style="{ transform: 'translateX(' + recordDragX + 'px)', opacity: recordDragX < -110 ? 1 : (1 - Math.abs(recordDragX) / 110) }"
+                  <!-- Holding: slide-to-cancel hint -->
+                  <template v-if="isHoldingRecord && !isRecordingLocked">
+                    <div
+                      class="wa-cancel-hint"
+                      :class="{ 'wa-cancel-hint--active': recordDragX < -110 }"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" class="wa-cancel-arrow-icon"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                      <span v-if="recordDragX < -110">Lepas untuk batal</span>
+                      <span v-else>Geser untuk batal</span>
+                    </div>
+                  </template>
+
+                  <!-- Locked: action buttons -->
+                  <template v-else>
+                    <button type="button" class="wa-discard-btn" @click.stop="onRecordPointerCancel" aria-label="Buang rekaman">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                    <button type="button" class="wa-send-btn" @click.stop="stopRecording">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                      Selesai
+                    </button>
+                  </template>
+                </div>
+
+                <!-- RIGHT: Mic trigger — slides with drag -->
+                <button
+                  v-if="isHoldingRecord && !isRecordingLocked"
+                  key="wa-mic-trigger"
+                  type="button"
+                  class="wa-mic-trigger"
+                  :style="{
+                    transform: 'translateX(' + recordDragX + 'px) translateY(' + Math.max(-80, recordDragY) + 'px)',
+                  }"
+                  @pointerdown="onRecordPointerDown"
+                  aria-label="Rekam"
                 >
-                  <span v-if="recordDragX < -110">🗑️ Lepas untuk batal</span>
-                  <span v-else>&lt; Geser untuk batal</span>
-                </div>
-                <div class="rh-mic-placeholder-space"></div>
-              </template>
-
-              <!-- Locked state: show trash/delete and finish button -->
-              <template v-else>
-                <button type="button" class="rh-mic-cancel-btn" @click.stop="onRecordPointerCancel" aria-label="Batal merekam">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                </button>
-                <button type="button" class="rh-mic-stop-btn" @click.stop="stopRecording">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-                  Selesai
-                </button>
-              </template>
-            </div>
-
-            <!-- UNIFIED TRIGGER BUTTON: kept in DOM during idle & holding states to prevent pointercancel -->
-            <button
-              v-if="voiceState === 'idle' || (voiceState === 'recording' && isHoldingRecord && !isRecordingLocked)"
-              key="record-btn"
-              type="button"
-              class="rh-mic-btn rh-mic-gesture-target"
-              :class="{ 
-                'rh-mic-btn--grid': false,
-                'rh-mic-btn--docked': voiceState === 'idle', 
-                'rh-mic-gesture-target--recording': voiceState === 'recording' 
-              }"
-              @pointerdown="onRecordPointerDown"
-              aria-label="Mulai rekam hafalan"
-            >
-              <template v-if="voiceState === 'idle'">
-                <div class="rh-mic-btn__icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <div class="wa-mic-trigger__inner"></div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
                     <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
                   </svg>
-                </div>
-                <span class="rh-mic-btn__label">Tahan untuk Rekam</span>
-              </template>
-              <template v-else>
-                <div class="rh-mic-placeholder-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                  </svg>
-                </div>
-              </template>
-            </button>
+                </button>
+              </div>
+            </template>
 
-            <!-- REVIEW: player bar -->
+            <!-- ── REVIEW: playback bar ── -->
             <div v-else-if="voiceState === 'review'" class="rh-vn-bar">
               <button type="button" class="rh-vn-delete-btn" @click.stop="deleteVoice" aria-label="Hapus rekaman">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -2523,39 +2525,59 @@ useHead({
 }
 
 .rh-reveal-instruction {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   cursor: pointer;
-  padding: 8px 16px;
-  transition: opacity 0.2s;
+  padding: 12px 24px;
+  transition: opacity 0.2s, transform 0.2s;
   -webkit-tap-highlight-color: transparent;
+  border-radius: 99px;
+  outline: none;
+}
+
+.rh-reveal-instruction:focus-visible {
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.4);
 }
 
 .rh-reveal-instruction:active {
-  opacity: 0.7;
+  transform: scale(0.96);
 }
 
-.rh-reveal-dot {
-  width: 6px;
-  height: 6px;
-  background: #34d399; /* Emerald accent */
-  border-radius: 50%;
-  box-shadow: 0 0 8px #34d399;
-  animation: rhDotPulse 1.8s infinite ease-in-out;
+.rh-reveal-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  animation: rhRevealRing 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes rhRevealRing {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.06); opacity: 0; }
+}
+
+.rh-reveal-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.rh-reveal-eye-icon {
+  color: rgba(52, 211, 153, 0.6);
+  flex-shrink: 0;
 }
 
 .rh-reveal-text {
   font-size: 0.72rem;
-  color: #34d399; /* Highlighted in Emerald */
+  color: #34d399;
   font-weight: 750;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-}
-
-@keyframes rhDotPulse {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.6); opacity: 1; }
 }
 
 /* ─── Side-by-Side Action Buttons ─── */
@@ -2632,249 +2654,354 @@ useHead({
   50% { transform: scale(1.5); opacity: 0.5; }
 }
 
-/* ─── MIC BAR (New WhatsApp VN-style) ─── */
-.rh-mic-bar {
-  width: 100%;
-  max-width: 320px;
+/* ─── PREMIUM VOICE NOTE UI (WhatsApp-inspired, elevated) ─── */
+
+/* Dock container — full width, centered */
+.wa-dock {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 8px;
-  padding: 0 8px;
+  padding: 4px 16px;
+  position: relative;
+  touch-action: none;
 }
 
-.rh-mic-btn {
+/* ── IDLE button — premium glassmorphism ── */
+.wa-idle-btn {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
+  gap: 12px;
+  padding: 10px 24px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 99px;
+  width: 100%;
+  justify-content: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  padding: 4px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  backdrop-filter: blur(4px);
 }
 
-.rh-mic-btn__icon {
-  width: 64px;
-  height: 64px;
+.wa-idle-btn__glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.35) 0%,
+    rgba(220, 38, 38, 0.25) 40%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.wa-idle-btn:hover .wa-idle-btn__glow {
+  opacity: 1;
+}
+
+.wa-idle-btn:active {
+  transform: scale(0.96);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.wa-idle-btn__icon {
+  position: relative;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(145deg, #ef4444, #dc2626);
   display: grid;
   place-items: center;
   color: white;
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45), 0 2px 6px rgba(0,0,0,0.3);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
 
-.rh-mic-btn:active .rh-mic-btn__icon {
+.wa-idle-btn:active .wa-idle-btn__icon {
   transform: scale(0.92);
-  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
 }
 
-.rh-mic-btn__label {
-  font-size: 0.7rem;
+.wa-idle-btn__icon::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  animation: waIdlePing 2s ease-in-out infinite;
+}
+
+@keyframes waIdlePing {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0; }
+}
+
+.wa-idle-btn__label {
+  font-size: 0.78rem;
   font-weight: 700;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-/* Recording row */
-.rh-mic-recording-row {
-  position: relative;
+/* ── RECORDING ROW ── */
+.wa-rec-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 99px;
-  padding: 10px 16px;
-  animation: fadeSlideUp 0.2s ease;
+  gap: 8px;
   width: 100%;
+  animation: fadeSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.rh-mic-recording-row--holding {
-  background: rgba(20, 20, 22, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+/* Pill bar — left side, takes remaining space — glassmorphism */
+.wa-rec-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18, 18, 20, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  padding: 8px 14px;
+  min-height: 46px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.rh-mic-timer {
+.wa-rec-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.wa-rec-pulse {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.wa-rec-pulse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: rhRecordPulse 1.2s ease-in-out infinite;
+}
+
+.wa-rec-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  animation: waRecPulseRing 1.2s ease-in-out infinite;
+}
+
+@keyframes waRecPulseRing {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.6); opacity: 0; }
+}
+
+.wa-rec-timer {
   font-size: 0.8rem;
   font-weight: 800;
-  color: #fca5a5;
+  color: #ef4444;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
-.rh-mic-recording-row--holding .rh-mic-timer {
-  color: #ef4444; /* Bright red when active holding */
-}
-
-/* Slide to Cancel */
-.rh-slide-to-cancel {
+/* Cancel hint — centered in remaining space */
+.wa-cancel-hint {
   flex: 1;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.45);
-  transition: transform 0.05s ease-out, opacity 0.05s ease-out, color 0.15s ease, text-shadow 0.15s ease;
+  color: rgba(255, 255, 255, 0.35);
   user-select: none;
-  background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.4) 100%);
-  background-size: 200% 100%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  animation: rhShimmer 1.8s infinite linear;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 
-.rh-slide-to-cancel--active {
-  color: #ef4444 !important;
-  -webkit-text-fill-color: #ef4444 !important;
-  background: none !important;
-  animation: none !important;
-  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
-  transform: scale(1.05) !important;
+.wa-cancel-hint--active {
+  color: #ef4444;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
 }
 
-@keyframes rhShimmer {
-  0% { background-position: -100% 0; }
-  100% { background-position: 100% 0; }
+.wa-cancel-arrow-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
 }
 
-.rh-mic-placeholder {
-  width: 28px;
-  height: 28px;
+.wa-cancel-hint--active .wa-cancel-arrow-icon {
+  opacity: 1;
+}
+
+/* Discard (trash) button — locked state */
+.wa-discard-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  color: rgba(252, 165, 165, 0.8);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.wa-discard-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.wa-discard-btn:active {
+  background: rgba(239, 68, 68, 0.3);
+  transform: scale(0.88);
+  color: #fff;
+}
+
+/* Send (stop) button — locked state */
+.wa-send-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.15);
+  color: rgba(252, 165, 165, 0.9);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-radius: 99px;
+  padding: 6px 16px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.wa-send-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
+}
+
+.wa-send-btn:active {
+  background: rgba(239, 68, 68, 0.35);
+  transform: scale(0.96);
+  color: #fff;
+}
+
+/* ── MIC TRIGGER BUTTON (draggable) ── */
+.wa-mic-trigger {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1.5px solid rgba(239, 68, 68, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ef4444;
-  animation: rhMicBreathe 1.2s infinite ease-in-out;
+  cursor: grab;
+  flex-shrink: 0;
+  touch-action: none;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(239, 68, 68, 0.1);
 }
 
-@keyframes rhMicBreathe {
-  0%, 100% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(1.18); opacity: 1; filter: drop-shadow(0 0 4px rgba(239,68,68,0.6)); }
+.wa-mic-trigger__inner {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  pointer-events: none;
 }
 
-/* Floating Lock Panel */
-.rh-lock-indicator-panel {
+.wa-mic-trigger:active {
+  cursor: grabbing;
+  background: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.25);
+}
+
+/* ── LOCK PANEL (left side, floats above) — glassmorphism ── */
+.wa-lock-panel {
   position: absolute;
   bottom: 74px;
-  right: 18px;
+  left: 18px;
   width: 44px;
   padding: 14px 0 16px;
-  background: rgba(24, 24, 27, 0.94);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 18, 20, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 99px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   z-index: 999;
-  animation: lockPanelFadeIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: waLockFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes lockPanelFadeIn {
-  from { transform: translateY(15px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes waLockFadeIn {
+  from { transform: translateY(15px) scale(0.9); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.rh-lock-icon {
-  color: rgba(255, 255, 255, 0.35);
-  transition: color 0.2s, transform 0.2s;
+.wa-lock-icon {
+  color: rgba(255, 255, 255, 0.3);
+  transition: color 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.rh-lock-icon--active {
+.wa-lock-icon--ready {
   color: #ef4444;
-  transform: scale(1.15);
-  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.4));
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5));
 }
 
-.rh-lock-arrows {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: -2px;
-  user-select: none;
-}
-
-.rh-lock-arrow {
+.wa-lock-chevron {
   font-size: 0.65rem;
   line-height: 0.7;
-  color: rgba(255, 255, 255, 0.3);
-  animation: lockArrowSlide 1.2s infinite ease-in-out;
+  color: rgba(255, 255, 255, 0.2);
+  animation: waLockChevronSlide 1.2s infinite ease-in-out;
 }
 
-.rh-lock-arrow--1 {
+.wa-lock-chevron--1 {
   animation-delay: 0s;
 }
 
-.rh-lock-arrow--2 {
+.wa-lock-chevron--2 {
   animation-delay: 0.2s;
   margin-top: -4px;
 }
 
-@keyframes lockArrowSlide {
+@keyframes waLockChevronSlide {
   0% { transform: translateY(4px); opacity: 0; }
   50% { opacity: 0.8; }
   100% { transform: translateY(-4px); opacity: 0; }
-}
-
-.rh-lock-mic {
-  color: #ef4444;
-  margin-top: 4px;
-  transition: transform 0.05s ease-out;
-  animation: rhMicBreathe 1.2s infinite ease-in-out;
-}
-
-/* Locked control buttons */
-.rh-mic-cancel-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.rh-mic-cancel-btn:active {
-  background: rgba(239, 68, 68, 0.25);
-  transform: scale(0.9);
-}
-
-.rh-mic-stop-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 99px;
-  padding: 6px 14px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, transform 0.1s;
-  margin-left: auto; /* Push Selesai to the right */
-}
-
-.rh-mic-stop-btn:active {
-  background: rgba(239, 68, 68, 0.35);
 }
 
 /* Voice note review bar */
@@ -2980,47 +3107,6 @@ useHead({
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-
-/* Mic dock in bottom action bar — takes full width, centered */
-.action-bar-mic-dock {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 16px;
-  position: relative;
-  touch-action: none;
-}
-
-.action-bar-mic-dock .rh-mic-btn--docked {
-  flex-direction: row;
-  gap: 12px;
-  padding: 10px 24px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 99px;
-  width: 100%;
-  justify-content: center;
-}
-
-.action-bar-mic-dock .rh-mic-btn--docked .rh-mic-btn__icon {
-  width: 40px;
-  height: 40px;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5);
-}
-
-.action-bar-mic-dock .rh-mic-btn__label {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.7);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.action-bar-mic-dock .rh-mic-recording-row,
-.action-bar-mic-dock .rh-vn-bar {
-  width: 100%;
-}
-
 
 .remote-revealed {
   display: flex;
@@ -5021,36 +5107,5 @@ useHead({
 
 }
 
-/* Placeholder space on the right side of the holding bar so the absolute button has a visually empty area to sit on */
-.rh-mic-placeholder-space {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-}
-
-/* absolute button when recording (active holding) */
-.rh-mic-gesture-target--recording {
-  position: absolute !important;
-  right: 24px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 50% !important;
-  background: rgba(239, 68, 68, 0.2) !important;
-  border: 1px solid rgba(239, 68, 68, 0.35) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  color: #ef4444 !important;
-  cursor: grab !important;
-  z-index: 1000 !important;
-  touch-action: none !important;
-}
-
-.rh-mic-placeholder-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* ─── REMOVED: old placeholder styles replaced by wa-* classes ─── */
 </style>
