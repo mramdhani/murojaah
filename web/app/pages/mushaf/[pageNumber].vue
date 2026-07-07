@@ -3102,30 +3102,29 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   pointer-events: none;
 }
 
+/* Navigator Sheet (Pilih Bacaan) - Mushaf style */
 .navigator-overlay {
   position: fixed;
   inset: 0;
   z-index: 1100;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: rgba(13, 29, 23, .42);
-  backdrop-filter: blur(5px);
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(4, 39, 25, 0.5);
+  backdrop-filter: blur(6px);
 }
 
 .navigator-sheet {
   position: relative;
   width: 100%;
-  max-width: 620px;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #FFFDF7;
+  border-radius: 24px 24px 0 0;
   overflow: hidden;
-  padding: 0 20px calc(16px + var(--safe-bottom));
-  border-radius: 26px 26px 0 0;
-  background: #fffdfa;
-  box-shadow: 0 -18px 50px rgba(17, 35, 28, .2);
+  max-height: 92dvh;
   display: flex;
   flex-direction: column;
-  /* Height driven by content in dismiss mode */
-  max-height: 92dvh;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -3135,115 +3134,103 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   max-height: 96dvh;
 }
 
-
 .navigator-sheet__content {
+  padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .navigator-sheet__handle {
-  width: 100%;
-  padding: 8px 0 14px;
+  flex: 0 0 auto;
   display: flex;
-  align-items: center;
   justify-content: center;
+  padding: 12px 0;
   cursor: grab;
   touch-action: none;
   user-select: none;
-  flex-shrink: 0;
 }
+
 .navigator-sheet__handle::before {
   content: '';
-  display: block;
   width: 42px;
   height: 4px;
   border-radius: 999px;
-  background: #d5d9d6;
+  background: rgba(0,0,0,0.15);
 }
-.navigator-sheet__handle:active { cursor: grabbing; }
 
+.navigator-sheet__handle:active {
+  cursor: grabbing;
+}
 
 .navigator-sheet__header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 18px;
+  gap: 12px;
 }
 
-.navigator-sheet__header span {
-  color: #087d59;
-  font-size: .65rem;
+.navigator-sheet__header > div > span {
+  display: block;
+  font-size: 0.65rem;
   font-weight: 800;
-  letter-spacing: .08em;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #087d59;
+  margin-bottom: 4px;
 }
 
 .navigator-sheet__header h2 {
-  margin: 2px 0 0;
-  color: #1f2e28;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #042719;
+  letter-spacing: -0.02em;
+  margin: 0 0 3px;
 }
 
 .navigator-sheet__header p {
-  margin: 3px 0 0;
-  color: #7c8781;
-  font-size: .68rem;
+  font-size: 0.78rem;
+  color: #6B7280;
+  margin: 0;
 }
-.navigator-sheet__header button {
-  width: 38px;
-  height: 38px;
+
+.navigator-sheet__header > button {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   display: grid;
   place-items: center;
-  border: 0;
   border-radius: 50%;
-  color: #5d6863;
-  background: #f0f2f0;
+  background: #F3F4F6;
+  color: #4B5563;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.navigator-sheet__header svg {
-  width: 18px;
-  height: 18px;
+.navigator-sheet__header > button:hover {
+  background: #E5E7EB;
 }
 
-.navigator-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px;
-  gap: 10px;
+.navigator-sheet__header > button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .navigator-field {
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .navigator-field label {
-  color: #66736d;
-  font-size: .68rem;
+  font-size: 0.72rem;
   font-weight: 700;
-}
-
-.navigator-field select,
-.navigator-field input {
-  width: 100%;
-  height: 46px;
-  border: 1px solid #dfe4e0;
-  border-radius: 12px;
-  padding: 0 12px;
-  outline: none;
-  color: #25332d;
-  background: #f8f8f5;
-  font-size: .82rem;
-  font-weight: 650;
-}
-
-.navigator-field select:focus,
-.navigator-field input:focus {
-  border-color: #42a486;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(8, 125, 89, .08);
+  color: #374151;
+  letter-spacing: 0.02em;
 }
 
 .navigator-field label > span {
@@ -3252,63 +3239,98 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   font-weight: 600;
 }
 
+.navigator-field--wide { width: 100%; }
+
 .navigator-field--surah {
+  flex: 1;
   min-width: 0;
+}
+
+.navigator-field--ayah {
+  width: 96px;
+  flex-shrink: 0;
 }
 
 .navigator-selector {
   width: 100%;
-  height: 46px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  border: 1px solid #dfe4e0;
-  border-radius: 12px;
-  padding: 0 11px 0 13px;
-  color: #25332d;
-  background: #f8f8f5;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  background: #fff;
+  cursor: pointer;
   text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #1F2937;
+}
+
+.navigator-selector:hover {
+  border-color: rgba(8, 125, 89, 0.35);
+  box-shadow: 0 2px 8px rgba(8, 125, 89, 0.06);
 }
 
 .navigator-selector > span {
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .navigator-selector strong {
-  overflow: hidden;
-  font-size: .8rem;
-  text-overflow: ellipsis;
+  font-size: 0.88rem;
+  font-weight: 700;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.navigator-selector small {
-  color: #8a948f;
-  font-size: .6rem;
-}
-
-.navigator-selector svg {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 auto;
-  color: #78837d;
-}
-.navigator-primary {
-  grid-column: 1 / -1;
-  height: 46px;
-  border: 0;
-  border-radius: 13px;
-  color: #fff;
-  background: #087d59;
-  font-size: .8rem;
+.navigator-field--ayah .navigator-selector strong {
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 1rem;
   font-weight: 800;
 }
 
+.navigator-selector small {
+  font-size: 0.7rem;
+  color: #6B7280;
+  font-weight: 400;
+}
+
+.navigator-selector svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #9CA3AF;
+}
+
+.navigator-primary {
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #087d59, #065c41);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 4px 12px rgba(8, 125, 89, 0.3);
+}
+
+.navigator-primary:active {
+  transform: scale(0.98);
+}
+
 .navigator-primary:disabled {
-  opacity: .55;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .navigator-divider {
@@ -3452,59 +3474,66 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .surah-picker__item {
-  min-height: 58px;
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto 20px;
+  display: flex;
   align-items: center;
   gap: 10px;
-  flex: 0 0 auto;
-  border: 1px solid #e8eae7;
-  border-radius: 14px;
-  padding: 8px 10px;
-  color: #2b3933;
-  background: #fff;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
   text-align: left;
+  transition: background 0.15s;
+  color: #1F2937;
+}
+
+.surah-picker__item:active,
+.surah-picker__item--active {
+  background: #E9F6F0;
 }
 
 .surah-picker__item--active {
-  border-color: #5aac91;
-  background: #eff8f4;
+  color: #087d59;
 }
 
 .surah-picker__number {
   width: 32px;
   height: 32px;
+  flex: 0 0 32px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #64716b;
-  background: #f1f3f1;
-  font-size: .7rem;
+  background: #F4F3ED;
+  font-size: 0.72rem;
   font-weight: 800;
+  color: #6B7280;
 }
 
 .surah-picker__item--active .surah-picker__number {
-  color: #087d59;
-  background: #dcefe7;
+  background: #D1FAE5;
+  color: #065F46;
 }
 
 .surah-picker__names {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .surah-picker__names strong {
   overflow: hidden;
-  font-size: .78rem;
+  font-size: 0.82rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .surah-picker__names small {
-  color: #8a948f;
-  font-size: .61rem;
+  font-size: 0.68rem;
+  color: #6B7280;
 }
 
 .surah-picker__arabic {
@@ -3515,8 +3544,9 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 .surah-picker__item > svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
   color: #087d59;
 }
 

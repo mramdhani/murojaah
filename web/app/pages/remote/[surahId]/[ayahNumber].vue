@@ -348,7 +348,7 @@
     <!-- Mushaf-style Navigator Sheet (Pilih Bacaan) -->
     <Transition name="sheet">
       <div v-if="navigatorOpen" class="navigator-overlay" @click="closeNavigator">
-        <section class="navigator-sheet" role="dialog" aria-modal="true" aria-labelledby="remote-navigator-title" :style="navigatorSheet.sheetStyle.value" @click.stop>
+        <section class="navigator-sheet"  :class="{ 'navigator-sheet--picker-open': navigatorShowSurahPicker || navigatorShowAyahPicker }" role="dialog" aria-modal="true" aria-labelledby="remote-navigator-title" :style="navigatorSheet.sheetStyle.value" @click.stop>
           <div class="navigator-sheet__handle" v-bind="navigatorSheet.bindHandle"></div>
 
           <div class="navigator-sheet__content">
@@ -4650,7 +4650,6 @@ useHead({
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-
 .surah-picker__item {
   min-height: 58px;
   display: grid;
@@ -4780,28 +4779,25 @@ useHead({
 .surah-picker__header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 16px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-  flex-shrink: 0;
+  gap: 11px;
+  margin-bottom: 14px;
 }
 
 .surah-picker__header > button {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
+  border: 0;
   border-radius: 50%;
-  background: #F3F4F6;
-  color: #374151;
-  border: none;
-  cursor: pointer;
+  color: #087d59;
+  background: #edf6f2;
 }
 
 .surah-picker__header svg {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
 }
 
 .surah-picker__header > div {
@@ -4811,17 +4807,16 @@ useHead({
 }
 
 .surah-picker__header span {
-  font-size: 0.68rem;
-  color: #6B7280;
-  font-weight: 600;
+  color: #087d59;
+  font-size: .61rem;
+  font-weight: 800;
+  letter-spacing: .08em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .surah-picker__header strong {
+  color: #23332c;
   font-size: 1.05rem;
-  font-weight: 800;
-  color: #042719;
 }
 
 .surah-picker__search {
@@ -4923,9 +4918,9 @@ useHead({
 }
 
 .surah-picker__arabic {
-  font-family: 'Uthmanic Hafs', serif;
-  font-size: 1rem;
-  color: #374151;
+  font-family: var(--font-arabic);
+  color: #087d59;
+  font-size: 1.02rem;
   direction: rtl;
 }
 
@@ -5103,6 +5098,11 @@ useHead({
   }
 
 }
+.navigator-sheet--picker-open {
+  height: 96dvh;
+  max-height: 96dvh;
+}
+
 
 /* ─── REMOVED: old placeholder styles replaced by wa-* classes ─── */
 </style>
