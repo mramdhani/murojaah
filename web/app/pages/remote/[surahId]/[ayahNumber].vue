@@ -777,10 +777,16 @@ const closeQariPicker = () => {
 
 const selectQari = (qariId: string) => {
   triggerHaptic(50)
+  const wasPlaying = isPlaying.value
   selectedQari.value = qariId
   showQariPicker.value = false
-  // Stop currently playing audio and reload with new Qari
-  stopAudio()
+  
+  if (wasPlaying) {
+    stopAudio()
+    playAudio()
+  } else {
+    stopAudio()
+  }
 }
 
 // Audio Player

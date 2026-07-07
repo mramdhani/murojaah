@@ -1650,7 +1650,14 @@ const handlePointerDown = (event: PointerEvent) => {
       longPressTimeout.value = window.setTimeout(() => {
         isLongPressActive.value = true
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          navigator.vibrate(24) // 24ms haptic vibration
+          const hasActivation = typeof navigator.userActivation !== 'undefined' 
+            ? navigator.userActivation.hasBeenActive 
+            : true
+          if (hasActivation) {
+            try {
+              navigator.vibrate(24)
+            } catch (e) {}
+          }
         }
         openAyahOptions(verseKey)
         longPressTimeout.value = null
@@ -1773,8 +1780,14 @@ const openModeDrawer = () => openMurojaahDrawer('learning', 'mushaf')
 const openQariPicker = () => { showQariPicker.value = true }
 const closeQariPicker = () => { showQariPicker.value = false }
 const selectQari = (qariId: string) => {
+  const wasPlaying = isPlaying.value
   selectedQari.value = qariId
-  resetPlayer()
+  if (wasPlaying) {
+    stopPlayer()
+    playPlayerAyah()
+  } else {
+    stopPlayer()
+  }
   closeQariPicker()
 }
 const openAyahMode = (mode: 'learning' | 'listening') => {
