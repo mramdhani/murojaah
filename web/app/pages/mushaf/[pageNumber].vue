@@ -1485,7 +1485,7 @@ const fitQcfLines = async () => {
       const availableWidth = line.clientWidth
       if (!naturalWidth || !availableWidth) return
 
-      const scale = Math.min(1.24, Math.max(.88, availableWidth / naturalWidth))
+      const scale = Math.min(1.15, Math.max(.92, availableWidth / naturalWidth))
       content.style.setProperty('--qcf-line-scale', scale.toFixed(4))
     })
     qcfFitFrame = null
