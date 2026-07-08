@@ -2364,7 +2364,47 @@ const stopPlayer = () => {
 }
 
 
+let bismillahPendingSurah = 0
+
+const isBismillahSurah = (surah: number) => surah !== 1 && surah !== 9
+
 const playPlayerAyah = () => {
+  // Check if we need to play Bismillah first (ayah 1 of a surah that has Bismillah)
+  if (bismillahPendingSurah > 0) {
+    const surah = bismillahPendingSurah
+    bismillahPendingSurah = 0
+    const src = `https://everyayah.com/data/${selectedQari.value}/${String(surah).padStart(3, '0')}000.mp3`
+    if (!playerAudio) {
+      playerAudio = new Audio()
+      playerAudio.preload = 'auto'
+    }
+    if (playerAudio.src !== src) {
+      playerAudio.src = src
+    }
+    playerAudio.load()
+    playerAudio.preload = 'auto'
+    playerAudio.ontimeupdate = () => { playerCurrentTime.value = playerAudio?.currentTime || 0 }
+    playerAudio.onloadedmetadata = () => { playerDuration.value = Number.isFinite(playerAudio?.duration) ? (playerAudio?.duration || 0) : 0 }
+    playerAudio.onplay = () => { isPlaying.value = true }
+    playerAudio.onpause = () => { isPlaying.value = false }
+    playerAudio.onerror = (e) => {
+      console.error('Bismillah audio error:', e)
+      // If Bismillah fails, just continue to the actual ayah
+      playPlayerAyah()
+    }
+    playerAudio.onended = () => {
+      // Bismillah finished, now play the actual ayah
+      playPlayerAyah()
+    }
+    playerAudio.play().catch((err: Error) => {
+      isPlaying.value = false
+      console.error('Bismillah play error:', err)
+      // If Bismillah fails, try the actual ayah
+      playPlayerAyah()
+    })
+    return
+  }
+
   if (playingAyahsList.value.length === 0 && pageData.value?.ayahs) {
     playingPageNumber.value = pageNumber.value
     playingAyahsList.value = [...pageData.value.ayahs]

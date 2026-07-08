@@ -11,35 +11,8 @@
           </NuxtLink>
           <div class="page-header__info" v-if="data">
             <h1>{{ data.surah_name }}</h1>
-            <p>{{ data.surah_name_arabic }} · {{ data.total_ayah }} ayat</p>
+            <p>{{ data.total_ayah }} Ayat</p>
           </div>
-        </div>
-
-        <!-- Right: Navigation Chevrons Group -->
-        <div class="page-header__right-nav" v-if="data">
-          <!-- Previous Surah Arrow -->
-          <NuxtLink
-            v-if="currentSurahId > 1"
-            :to="`/progress/${currentSurahId - 1}`"
-            class="page-header__nav-btn"
-            aria-label="Surat Sebelumnya"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </NuxtLink>
-
-          <!-- Next Surah Arrow (hidden if completed) -->
-          <NuxtLink
-            v-if="currentSurahId < 114 && !isCompleted"
-            :to="`/progress/${currentSurahId + 1}`"
-            class="page-header__nav-btn"
-            aria-label="Surat Selanjutnya"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </NuxtLink>
         </div>
       </div>
     </header>
@@ -322,36 +295,6 @@ const statusLabel = (status: string) => {
   gap: 16px;
   min-width: 0;
   flex: 1;
-}
-
-.page-header__right-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.page-header__nav-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255, 255, 255, 0.85);
-  transition: all 0.2s ease;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.page-header__nav-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: white;
-}
-
-.page-header__nav-btn:active {
-  transform: scale(0.9);
 }
 
 /* ================================================
