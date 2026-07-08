@@ -146,31 +146,47 @@
 
                       <div v-else class="mushaf-line mushaf-line--qcf" :data-line="line.line_number">
                         <span class="mushaf-line__qcf-content">
-                          <template v-for="word in line.words" :key="word.word_id">
+                          <template v-for="word in getGroupedWords(line.words)" :key="word.word_id">
                             <span
-                              :data-verse="word.verse_key"
-                              :class="[
-                                'mushaf-word',
-                                word.char_type === 'end' ? 'mushaf-word--end' : '',
-                                ...tajweedClassesForWord(word.text_tajweed),
-                                index === 1 && isActiveVerse(word.verse_key) ? 'mushaf-word--active' : '',
-                                index === 1 ? getVerseProgressClass(word.verse_key) : ''
-                              ]"
+                              class="mushaf-word-group"
+                              :class="{ 'mushaf-word-group--with-ornament': word.attachedOrnament }"
                             >
+                              <!-- Normal word -->
                               <span
-                                v-if="word.char_type === 'end'"
-                                class="mushaf-ayah-ornament"
-                                :aria-label="`Ayat ${ayahNumberFromVerseKey(word.verse_key)}`"
+                                :data-verse="word.verse_key"
+                                :class="[
+                                  'mushaf-word',
+                                  ...tajweedClassesForWord(word.text_tajweed),
+                                  index === 1 && isActiveVerse(word.verse_key) ? 'mushaf-word--active' : '',
+                                  index === 1 ? getVerseProgressClass(word.verse_key) : ''
+                                ]"
                               >
-                                <svg viewBox="0 0 100 100" aria-hidden="true">
-                                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/>
-                                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/>
-                                  <circle cx="50" cy="50" r="23" fill="#fff" stroke="currentColor" stroke-width="2.5"/>
-                                  <circle cx="50" cy="50" r="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/>
-                                </svg>
-                                <span>{{ formatArabicNumber(ayahNumberFromVerseKey(word.verse_key)) }}</span>
+                                <span :style="{ fontFamily: qcfFontFamily(word.page_number || slidePage) }">{{ word.code_v2 }}</span>
                               </span>
-                              <span v-else :style="{ fontFamily: qcfFontFamily(word.page_number || slidePage) }">{{ word.code_v2 }}</span>
+                              <!-- Attached ornament -->
+                              <span
+                                v-if="word.attachedOrnament"
+                                :data-verse="word.attachedOrnament.verse_key"
+                                :class="[
+                                  'mushaf-word',
+                                  'mushaf-word--end',
+                                  index === 1 && isActiveVerse(word.attachedOrnament.verse_key) ? 'mushaf-word--active' : '',
+                                  index === 1 ? getVerseProgressClass(word.attachedOrnament.verse_key) : ''
+                                ]"
+                              >
+                                <span
+                                  class="mushaf-ayah-ornament"
+                                  :aria-label="`Ayat ${ayahNumberFromVerseKey(word.attachedOrnament.verse_key)}`"
+                                >
+                                  <svg viewBox="0 0 100 100" aria-hidden="true">
+                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/>
+                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/>
+                                    <circle cx="50" cy="50" r="23" fill="#fff" stroke="currentColor" stroke-width="2.5"/>
+                                    <circle cx="50" cy="50" r="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/>
+                                  </svg>
+                                  <span>{{ formatArabicNumber(ayahNumberFromVerseKey(word.attachedOrnament.verse_key)) }}</span>
+                                </span>
+                              </span>
                             </span>
                           </template>
                         </span>
@@ -1570,6 +1586,27 @@ const getPageLines = (page: number): MushafLine[] => {
   return page >= 600
     ? [...lines].sort((a, b) => Number(a.line_number) - Number(b.line_number))
     : lines
+}
+
+interface GroupedMushafWord extends MushafWord {
+  attachedOrnament?: MushafWord | null
+}
+
+const getGroupedWords = (words: MushafWord[]): GroupedMushafWord[] => {
+  const grouped: GroupedMushafWord[] = []
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i]
+    if (word.char_type === 'end') {
+      if (grouped.length === 0) {
+        grouped.push({ ...word, attachedOrnament: null })
+      } else {
+        grouped[grouped.length - 1].attachedOrnament = word
+      }
+    } else {
+      grouped.push({ ...word, attachedOrnament: null })
+    }
+  }
+  return grouped
 }
 
 const formatArabicNumber = (value: number): string =>
@@ -3055,8 +3092,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   align-items: center;
   width: 100%;
   font-size: 6.2cqw; /* Scaled typography. Slightly smaller to ensure no overflow */
-  line-height: 1.7;
-  margin: 2px 0;
+  line-height: 1.52;
+  margin: 0.8cqw 0;
   white-space: nowrap; /* Prevent wrapping */
 }
 
@@ -3068,6 +3105,22 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-bismillah-text {
   font-size: 1.15em;
   letter-spacing: 0;
+}
+
+/* Word and its ayah number ornament grouped as one flex item */
+.mushaf-word-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.mushaf-word-group .mushaf-word--end {
+  margin-right: -0.05em; /* Natural spacing next to word, no overlap */
+}
+
+.mushaf-word-group--with-ornament {
+  margin-left: -0.05em; /* Natural spacing, no overlap */
 }
 
 /* Individual word spans */
@@ -5123,7 +5176,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   z-index: 2;
   max-width: 100%;
   font-size: 4.95cqw;
-  line-height: 1.42;
+  line-height: 1.44;
 }
 
 .mushaf-qcf-content--short .mushaf-text-frame__inner {
@@ -6064,14 +6117,14 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 .mushaf-page-box--multi-surah .mushaf-line--qcf {
-  font-size: clamp(11px, 5.1cqw, 28px) !important;
-  line-height: 1.46 !important;
+  font-size: clamp(11px, 5.8cqw, 31px) !important;
+  line-height: 1.42 !important;
 }
 
 .mushaf-ayah-ornament {
   position: relative;
-  width: 2.05em;
-  height: 2.05em;
+  width: 1.6em;
+  height: 1.6em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6094,7 +6147,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   position: relative;
   z-index: 1;
   color: #704821;
-  font-size: .76em;
+  font-size: .72em;
   font-weight: 900;
 }
 
@@ -6115,9 +6168,9 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 :deep(.tajweed-w) { color: #159447 !important; }
 
 @media (max-width: 415px) {
-  .mushaf-qcf-content { padding-right: 7px; padding-left: 7px; }
+  .mushaf-qcf-content { padding-right: 10px !important; padding-left: 10px !important; }
   .mushaf-text-frame { margin-right: 2px; margin-left: 2px; padding: 4px; }
-  .mushaf-text-frame__inner { padding-right: 14px; padding-left: 14px; }
+  .mushaf-text-frame__inner { padding-right: 18px !important; padding-left: 18px !important; }
   .mushaf-line,
   .mushaf-qcf-content--short .mushaf-line {
     width: 100%;
@@ -6125,16 +6178,20 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 
   .mushaf-line--qcf,
   .mushaf-qcf-content--short .mushaf-line--qcf {
-    font-size: 5.8cqw !important;
+    font-size: 6.4cqw !important;
+    line-height: 1.52 !important;
+    margin: 1.2cqw 0 !important;
   }
 
   .mushaf-page-box--opening .mushaf-line--qcf {
-    font-size: 6.2cqw !important;
+    font-size: 6.6cqw !important;
   }
 
   /* Multi-surah pages on narrow mobile: slightly smaller but still fills the frame */
   .mushaf-page-box--multi-surah .mushaf-line--qcf {
-    font-size: 5.2cqw !important;
+    font-size: 5.7cqw !important;
+    line-height: 1.42 !important;
+    margin: 1cqw 0 !important;
   }
 }
 
