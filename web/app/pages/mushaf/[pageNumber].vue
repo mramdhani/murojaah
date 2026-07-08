@@ -1416,7 +1416,7 @@ const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
 })
 
 const mushafTheme = useCookie<'classic' | 'nabawiyyah' | 'dark'>('mushaf_theme', {
-  default: () => 'nabawiyyah',
+  default: () => 'classic',
   maxAge: 60 * 60 * 24 * 365,
   path: '/'
 })
@@ -2352,9 +2352,11 @@ const stopPlayer = () => {
   clearIdleTimer()
   if (playerAudio) {
     playerAudio.pause()
-    playerAudio.removeAttribute('src')
-    playerAudio.load()
-    playerAudio = null
+    playerAudio.currentTime = 0
+    // On iOS Safari, we MUST keep the audio element alive and "blessed".
+    // Destroying it (removeAttribute('src') + load() + null) breaks the
+    // user gesture blessing, causing silent playback on subsequent plays.
+    // Instead, just pause and keep the reference intact.
   }
   isPlaying.value = false
   playerCurrentTime.value = 0
@@ -2372,17 +2374,22 @@ const playPlayerAyah = () => {
   if (!src) return
   if (!playerAudio) {
     playerAudio = new Audio()
+    playerAudio.preload = 'auto'
   }
   // Change src on the persistent, user-blessed instance rather than swapping elements,
   // which bypasses iOS Safari's strict media element blessing requirements.
+  // On iOS, we must call .load() after changing src to initiate the network fetch,
+  // otherwise the browser won't start loading the audio data. This is safe with
+  // a persistent (never-nulled) audio element that was already blessed by a user gesture.
   if (playerAudio.src !== src) {
     playerAudio.src = src
   }
+  playerAudio.load()
+  playerAudio.preload = 'auto'
   if (preloadedAudioUrl === src) {
     preloadedAudio = null
     preloadedAudioUrl = ''
   }
-  playerAudio.preload = 'auto'
   playerAudio.ontimeupdate = () => { playerCurrentTime.value = playerAudio?.currentTime || 0 }
   playerAudio.onloadedmetadata = () => { playerDuration.value = Number.isFinite(playerAudio?.duration) ? (playerAudio?.duration || 0) : 0 }
   playerAudio.onplay = () => { isPlaying.value = true }
