@@ -212,53 +212,55 @@
       </section>
     </main>
 
-    <section class="mushaf-player" :class="{ 'mushaf-player--hidden': isFullscreenMode || showTranslationDrawer }" aria-label="Pemutar murottal">
-      <div class="mushaf-player__actions">
-        <!-- Play/Pause -->
-        <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
-          <svg v-if="!isPlaying" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
-          <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
-        </button>
+    <Teleport to="body">
+      <section class="mushaf-player" :class="{ 'mushaf-player--hidden': isFullscreenMode || showTranslationDrawer }" aria-label="Pemutar murottal">
+        <div class="mushaf-player__actions">
+          <!-- Play/Pause -->
+          <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
+            <svg v-if="!isPlaying" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
+            <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+          </button>
 
-        <!-- Repeat Button -->
-        <button type="button" class="mushaf-player__btn" :class="{ 'mushaf-player__btn--active': isCustomRangeActive || localRepeatCount > 1 }" @click="toggleRepeatMode" aria-label="Pengulangan Murotal">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="17 1 21 5 17 9"/>
-            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-            <polyline points="7 23 3 19 7 15"/>
-            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-          </svg>
-          <span v-if="isCustomRangeActive" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">Rentang</span>
-          <span v-else-if="localRepeatCount > 1" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">
-            {{ localRepeatCount === 99999 ? '\u221E' : localRepeatCount }}
+          <!-- Repeat Button -->
+          <button type="button" class="mushaf-player__btn" :class="{ 'mushaf-player__btn--active': isCustomRangeActive || localRepeatCount > 1 }" @click="toggleRepeatMode" aria-label="Pengulangan Murotal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="17 1 21 5 17 9"/>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+              <polyline points="7 23 3 19 7 15"/>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+            </svg>
+            <span v-if="isCustomRangeActive" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">Rentang</span>
+            <span v-else-if="localRepeatCount > 1" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">
+              {{ localRepeatCount === 99999 ? '\u221E' : localRepeatCount }}
+            </span>
+          </button>
+
+          <!-- Settings Button -->
+          <button type="button" class="mushaf-player__btn" @click="openAudioSettings" aria-label="Pengaturan Murotal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"/>
+              <line x1="4" y1="10" x2="4" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12" y2="3"/>
+              <line x1="20" y1="21" x2="20" y2="16"/>
+              <line x1="20" y1="12" x2="20" y2="3"/>
+              <line x1="1" y1="14" x2="7" y2="14"/>
+              <line x1="9" y1="8" x2="15" y2="8"/>
+              <line x1="17" y1="16" x2="23" y2="16"/>
+            </svg>
+          </button>
+        </div>
+
+        <button type="button" class="mushaf-player__qari-select" @click="openQariPicker">
+          <img :src="activeQari.image" :alt="activeQariName">
+          <span class="mushaf-player__info">
+            <strong>{{ activeQariName }}</strong>
+            <small>{{ playerAyahLabel }}</small>
           </span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
         </button>
-
-        <!-- Settings Button -->
-        <button type="button" class="mushaf-player__btn" @click="openAudioSettings" aria-label="Pengaturan Murotal">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="21" x2="4" y2="14"/>
-            <line x1="4" y1="10" x2="4" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12" y2="3"/>
-            <line x1="20" y1="21" x2="20" y2="16"/>
-            <line x1="20" y1="12" x2="20" y2="3"/>
-            <line x1="1" y1="14" x2="7" y2="14"/>
-            <line x1="9" y1="8" x2="15" y2="8"/>
-            <line x1="17" y1="16" x2="23" y2="16"/>
-          </svg>
-        </button>
-      </div>
-
-      <button type="button" class="mushaf-player__qari-select" @click="openQariPicker">
-        <img :src="activeQari.image" :alt="activeQariName">
-        <span class="mushaf-player__info">
-          <strong>{{ activeQariName }}</strong>
-          <small>{{ playerAyahLabel }}</small>
-        </span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
-      </button>
-    </section>
+      </section>
+    </Teleport>
 
     <!-- Settings Bottom Sheet -->
     <Transition name="sheet">
@@ -1948,6 +1950,32 @@ const handlePointerDown = (event: PointerEvent) => {
 
 }
 
+const handleTouchMove = (event: TouchEvent) => {
+  if (swipeStartX.value === null || swipeStartY.value === null || swipeAnimating.value) return
+
+  const touch = event.touches[0]
+  if (!touch) return
+
+  const deltaX = touch.clientX - swipeStartX.value
+  const deltaY = touch.clientY - swipeStartY.value
+
+  if (!swipeDirection.value) {
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 0.6) {
+        swipeDirection.value = 'horizontal'
+      } else {
+        swipeDirection.value = 'vertical'
+      }
+    }
+  }
+
+  if (swipeDirection.value === 'horizontal') {
+    if (event.cancelable) {
+      event.preventDefault()
+    }
+  }
+}
+
 const handlePointerMove = (event: PointerEvent) => {
   if (swipeStartX.value === null || swipeStartY.value === null || swipeAnimating.value) return
   
@@ -2219,7 +2247,16 @@ const playPlayerAyah = () => {
     }
   }
   preloadFollowingAyah()
-  playerAudio.play().catch(() => { isPlaying.value = false })
+  playerAudio.play().catch((err: Error) => {
+    isPlaying.value = false
+    if (err.name === 'NotAllowedError') {
+      showToast?.('Ketuk layar terlebih dahulu, lalu tekan play kembali', 'doubtful')
+    } else if (err.name === 'NotSupportedError') {
+      showToast?.('Format audio tidak didukung browser ini', 'forgot')
+    } else {
+      showToast?.('Gagal memutar murottal. Periksa koneksi internet.', 'forgot')
+    }
+  })
 }
 
 const togglePlayer = () => {
@@ -2228,7 +2265,14 @@ const togglePlayer = () => {
     return
   }
   if (playerAudio?.src && playerAudio.currentTime > 0 && playerAudio.currentTime < playerAudio.duration) {
-    playerAudio.play().catch(() => { isPlaying.value = false })
+    playerAudio.play().catch((err: Error) => {
+      isPlaying.value = false
+      if (err.name === 'NotAllowedError') {
+        showToast?.('Ketuk layar terlebih dahulu, lalu tekan play kembali', 'doubtful')
+      } else {
+        showToast?.('Gagal memutar murottal. Periksa koneksi internet.', 'forgot')
+      }
+    })
     return
   }
   
@@ -2614,6 +2658,9 @@ onMounted(() => {
   handlePageChange()
   loadSurahOptions()
   window.addEventListener('resize', fitQcfLines)
+  if (viewportRef.value) {
+    viewportRef.value.addEventListener('touchmove', handleTouchMove, { passive: false })
+  }
 })
 
 onBeforeUnmount(() => {
@@ -2621,6 +2668,9 @@ onBeforeUnmount(() => {
   stopPlayer()
   window.removeEventListener('resize', fitQcfLines)
   if (qcfFitFrame !== null) cancelAnimationFrame(qcfFitFrame)
+  if (viewportRef.value) {
+    viewportRef.value.removeEventListener('touchmove', handleTouchMove)
+  }
 })
 
 useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) })
@@ -6073,6 +6123,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   border-top-right-radius: 28px !important;
   border-top: 1px solid rgba(156, 122, 60, 0.12) !important;
   box-shadow: 0 -8px 24px rgba(96, 85, 63, 0.08) !important;
+  z-index: 1350 !important;
 }
 
 .ayah-options-sheet .translation-sheet-header {

@@ -1268,6 +1268,20 @@ const cleanupRecordGesture = () => {
 }
 
 const startRecording = async () => {
+  // Guard: microphone requires HTTPS in browsers
+  if (typeof window !== 'undefined' && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+    showToast?.('Rekaman suara membutuhkan koneksi HTTPS. Buka via https://', 'forgot')
+    cleanupRecordGesture()
+    return
+  }
+
+  // Guard: mediaDevices not available (HTTP or unsupported browser)
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast?.('Browser tidak mendukung perekaman suara. Gunakan Chrome atau Safari terbaru.', 'forgot')
+    cleanupRecordGesture()
+    return
+  }
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     checkMicPermission()
@@ -1342,10 +1356,19 @@ const startRecording = async () => {
     }, 1000)
 
     recorder.start()
-  } catch (err) {
-    console.error('Microphone access denied:', err)
-    showToast?.('Gagal mengakses mikrofon. Pastikan izin mikrofon diberikan.', 'forgot')
+  } catch (err: any) {
+    console.error('Microphone access error:', err)
+    voiceState.value = 'idle'
     cleanupRecordGesture()
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      showToast?.('Izin mikrofon ditolak. Aktifkan di pengaturan browser.', 'forgot')
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      showToast?.('Mikrofon tidak ditemukan di perangkat ini.', 'forgot')
+    } else if (err.name === 'SecurityError') {
+      showToast?.('Rekaman suara membutuhkan koneksi HTTPS.', 'forgot')
+    } else {
+      showToast?.('Gagal mengakses mikrofon. Pastikan izin diberikan.', 'forgot')
+    }
   }
 }
 

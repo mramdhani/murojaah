@@ -132,5 +132,17 @@ export default defineNuxtConfig({
     prerender: {
       routes: ['/'],
     },
+    routeRules: {
+      '/**': {
+        headers: {
+          // Allow microphone access and autoplay for murottal
+          'Permissions-Policy': 'microphone=(*), camera=(), autoplay=(*)',
+          // Prevent framing (security)
+          'X-Frame-Options': 'SAMEORIGIN',
+          // XSS protection
+          'X-Content-Type-Options': 'nosniff',
+        },
+      },
+    },
   },
 })
