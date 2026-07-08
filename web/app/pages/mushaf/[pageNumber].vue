@@ -1164,7 +1164,7 @@ const translationFontSizeLevel = ref(60)
 const showTransliteration = ref(true)
 const showTajweedColors = useState<boolean>('mushafShowTajweedColors', () => true)
 const showTajweedLegendSheet = ref(false)
-const showSettingsPanel = ref(true)
+const showSettingsPanel = ref(false)
 const transliterations = ref<Record<string, string>>({})
 const transliterationsLoading = ref(false)
 
@@ -3130,13 +3130,13 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 /* Nabawiyyah Theme — warm cream like physical Madinah mushaf */
 .mushaf-theme--nabawiyyah {
   background: #f7ebd3 !important;
-  color: #2c1a04 !important;
+  color: #2c1a04;
 }
 
 /* Classic Theme — clean white, navy accents */
 .mushaf-theme--classic {
   background: #FFFFFF !important;
-  color: #000000 !important;
+  color: #000000;
 }
 
 /* ── Page Meta Header ─── */
@@ -6282,13 +6282,6 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   font-weight: 900;
 }
 
-/* Monochrome rendering for QCF v2 when Tajweed is toggled off */
-.mushaf-viewport--monochrome .mushaf-word:not(.mushaf-word--end),
-.mushaf-viewport--monochrome .mushaf-word:not(.mushaf-word--end) * {
-  font-palette: none !important;
-  color: inherit !important;
-}
-
 /* Tajweed Class Color Overrides (Applied when showTajweedColors is ON) */
 .mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-q) { color: #20bfe8 !important; } /* Qalqalah: Cyan/Blue */
 .mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-g) { color: #169777 !important; } /* Ghunnah: Green */
@@ -6304,11 +6297,42 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 .mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-s),
 .mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-l) { color: #9a9a9a !important; } /* Silent/wasl */
 
+/* Monochrome rendering for QCF v2 when Tajweed is toggled off */
+.mushaf-viewport--monochrome .mushaf-word:not(.mushaf-word--end),
+.mushaf-viewport--monochrome .mushaf-word:not(.mushaf-word--end) * {
+  font-palette: none !important;
+  color: inherit !important;
+}
+
 /* Dark theme style overrides */
 .mushaf-theme--dark {
   background: #151d1a !important; /* Deep warm black/green tint */
-  color: #edf2f0 !important;
+  color: #edf2f0;
 }
+
+.mushaf-theme--dark .mushaf-word--active {
+  color: #ffffff !important; /* High contrast white text for selected word in dark mode */
+  background: rgba(52, 211, 153, 0.22) !important; /* Semi-transparent mint highlight */
+}
+
+.mushaf-theme--dark .mushaf-word--active.mushaf-word--end {
+  background: rgba(52, 211, 153, 0.32) !important;
+}
+
+/* Soft pastel Tajweed colors for Dark Mode to avoid eye strain (Anti-Glare) */
+.mushaf-theme--dark :deep(.tajweed-q) { color: #5ce6e6 !important; } /* Qalqalah: Soft ice-cyan */
+.mushaf-theme--dark :deep(.tajweed-g) { color: #6ee7b7 !important; } /* Ghunnah: Soft mint-green */
+.mushaf-theme--dark :deep(.tajweed-i) { color: #f472b6 !important; } /* Ikhfa: Soft pink */
+.mushaf-theme--dark :deep(.tajweed-n) { color: #93c5fd !important; } /* Idgham: Soft sky-blue */
+.mushaf-theme--dark :deep(.tajweed-m),
+.mushaf-theme--dark :deep(.tajweed-o),
+.mushaf-theme--dark :deep(.tajweed-p) { color: #f87171 !important; } /* Madd: Soft coral-red */
+.mushaf-theme--dark :deep(.tajweed-u),
+.mushaf-theme--dark :deep(.tajweed-a),
+.mushaf-theme--dark :deep(.tajweed-w) { color: #86efac !important; } /* Others: Soft green */
+.mushaf-theme--dark :deep(.tajweed-h),
+.mushaf-theme--dark :deep(.tajweed-s),
+.mushaf-theme--dark :deep(.tajweed-l) { color: #5a7066 !important; } /* Muted wasl/silent */
 
 .mushaf-theme--dark .mushaf-text-frame {
   border: 4px double #9c7b41 !important;
@@ -6320,24 +6344,27 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 .mushaf-theme--dark .mushaf-surah-banner__inner {
-  background: #1c2622 !important;
-  border-color: #9c7b41 !important;
+  background: #0b2d23 !important; /* Deep dark green background */
+  border-color: #0b2d23 !important;
+  box-shadow: none !important;
 }
 
 .mushaf-theme--dark .mushaf-surah-banner__inner::before {
-  border-color: #9c7b41 !important;
+  border-color: #174f40 !important; /* Lighter dark green internal outline */
 }
 
 .mushaf-theme--dark .mushaf-surah-banner__name {
-  color: #decba5 !important;
+  color: #ffffff !important; /* Pure white surah name calligraphy */
+  background-color: #151d1a !important; /* Match the banner background */
 }
 
 .mushaf-theme--dark .mushaf-surah-banner__sub {
-  color: #8fa099 !important;
+  color: #ffffff !important; /* Pure white sub-text */
+  opacity: 0.95;
 }
 
 .mushaf-theme--dark .mushaf-bismillah-calligraphy {
-  color: #decba5 !important;
+  color: #ffffff !important; /* Pure white Bismillah calligraphy */
 }
 
 .mushaf-theme--dark .mushaf-ayah-ornament circle {

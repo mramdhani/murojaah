@@ -314,15 +314,18 @@ const selectSurah = (surahId: number) => {
   const selectedSurah = surahs.value.find(surah => surah.id === surahId)
   close()
 
-  if (targetMode === 'learning' && format.value === 'mushaf') {
-    router.push({
-      path: `/mushaf/${selectedSurah?.page_start || 1}`,
-      query: { surah: surahId },
-    })
-    return
-  }
+  // Delay the navigation slightly so the slide-down animation of the drawer finishes cleanly
+  window.setTimeout(() => {
+    if (targetMode === 'learning' && format.value === 'mushaf') {
+      router.push({
+        path: `/mushaf/${selectedSurah?.page_start || 1}`,
+        query: { surah: surahId },
+      })
+      return
+    }
 
-  router.push({ path: `/remote/${surahId}/1`, query: { mode: targetMode } })
+    router.push({ path: `/remote/${surahId}/1`, query: { mode: targetMode } })
+  }, 280)
 }
 </script>
 
