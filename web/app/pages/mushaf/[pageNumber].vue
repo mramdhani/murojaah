@@ -1475,9 +1475,14 @@ const fitQcfLines = async () => {
 
       if (line.closest('.mushaf-page-box--opening, .mushaf-page-box--closing')) {
         content.style.removeProperty('--qcf-line-scale')
+        content.style.width = ''
+        content.style.justifyContent = ''
         return
       }
 
+      // Reset styles to measure the clean natural width
+      content.style.width = 'max-content'
+      content.style.justifyContent = 'center'
       content.style.transform = 'none'
       const naturalWidth = content.getBoundingClientRect().width
       content.style.transform = ''
@@ -1485,8 +1490,25 @@ const fitQcfLines = async () => {
       const availableWidth = line.clientWidth
       if (!naturalWidth || !availableWidth) return
 
-      const scale = Math.min(1.15, Math.max(.92, availableWidth / naturalWidth))
-      content.style.setProperty('--qcf-line-scale', scale.toFixed(4))
+      const ratio = availableWidth / naturalWidth
+
+      if (ratio < 1.0) {
+        // Line overflows: squeeze slightly (scaleX) to fit exactly
+        const scale = Math.max(0.90, ratio)
+        content.style.width = 'max-content'
+        content.style.justifyContent = 'center'
+        content.style.setProperty('--qcf-line-scale', scale.toFixed(4))
+      } else if (ratio <= 1.28) {
+        // Normal line: justify perfectly using flex space-between (no horizontal stretching/distortion)
+        content.style.width = '100%'
+        content.style.justifyContent = 'space-between'
+        content.style.setProperty('--qcf-line-scale', '1')
+      } else {
+        // Short line (e.g., end of surah): center naturally without stretching
+        content.style.width = 'max-content'
+        content.style.justifyContent = 'center'
+        content.style.setProperty('--qcf-line-scale', '1')
+      }
     })
     qcfFitFrame = null
   })
@@ -1515,6 +1537,7 @@ const loadQcfPages = async () => {
     qcfLoading.value = false
   }
   fitQcfLines()
+  setTimeout(fitQcfLines, 100) // Ensure layout settles after DOM update
   loadQcfPage(Math.max(1, pageNumber.value - 1))
   loadQcfPage(Math.min(604, pageNumber.value + 1))
 }
@@ -1529,7 +1552,11 @@ const loadQcfFont = (page: number) => {
   const style = document.createElement('style')
   style.textContent = `@font-face { font-family: "QCF-p${page}"; src: url("${fontUrl}") format("woff2"); font-display: block; }`
   document.head.appendChild(style)
-  document.fonts?.load(`16px "QCF-p${page}"`).then(() => fitQcfLines())
+  document.fonts?.load(`16px "QCF-p${page}"`).then(() => {
+    fitQcfLines()
+    setTimeout(fitQcfLines, 100) // Recalculate once browser settles the new font layout
+    setTimeout(fitQcfLines, 400) // Safety check
+  })
 }
 
 const qcfFontFamily = (page: number): string => {
@@ -2660,6 +2687,18 @@ onMounted(() => {
   window.addEventListener('resize', fitQcfLines)
   if (viewportRef.value) {
     viewportRef.value.addEventListener('touchmove', handleTouchMove, { passive: false })
+  }
+  
+  // Call multiple times as font resources load and UI layout finishes rendering
+  setTimeout(fitQcfLines, 80)
+  setTimeout(fitQcfLines, 300)
+  setTimeout(fitQcfLines, 800)
+
+  if (typeof document !== 'undefined' && document.fonts) {
+    document.fonts.ready.then(() => {
+      fitQcfLines()
+      setTimeout(fitQcfLines, 100)
+    })
   }
 })
 
@@ -5576,7 +5615,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   margin-top: -22px;
 }
 
-@media (max-width: 390px) {
+@media (max-width: 415px) {
   .mushaf-page-box {
     width: min(calc(100cqw - 14px), calc((100cqh - 14px) * 941 / 1672));
     margin: auto;
@@ -6025,7 +6064,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 }
 
 .mushaf-page-box--multi-surah .mushaf-line--qcf {
-  font-size: clamp(11px, 4.6cqw, 26px) !important;
+  font-size: clamp(11px, 5.1cqw, 28px) !important;
   line-height: 1.46 !important;
 }
 
@@ -6075,7 +6114,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 :deep(.tajweed-a),
 :deep(.tajweed-w) { color: #159447 !important; }
 
-@media (max-width: 390px) {
+@media (max-width: 415px) {
   .mushaf-qcf-content { padding-right: 7px; padding-left: 7px; }
   .mushaf-text-frame { margin-right: 2px; margin-left: 2px; padding: 4px; }
   .mushaf-text-frame__inner { padding-right: 14px; padding-left: 14px; }
@@ -6091,6 +6130,11 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 
   .mushaf-page-box--opening .mushaf-line--qcf {
     font-size: 6.2cqw !important;
+  }
+
+  /* Multi-surah pages on narrow mobile: slightly smaller but still fills the frame */
+  .mushaf-page-box--multi-surah .mushaf-line--qcf {
+    font-size: 5.2cqw !important;
   }
 }
 
