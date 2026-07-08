@@ -559,7 +559,7 @@
         </div>
 
         <!-- Player inside Translation Sheet (Fixed at Bottom) -->
-        <footer class="translation-sheet-player mushaf-player">
+        <footer class="translation-sheet-player">
           <div class="mushaf-player__actions">
             <!-- Play/Pause -->
             <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
@@ -572,7 +572,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
               </svg>
-              <span v-if="localRepeatCount > 1 && localRepeatCount !== 99999" class="mushaf-player__badge">{{ localRepeatCount }}</span>
+              <span v-if="isCustomRangeActive" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">Rentang</span>
+              <span v-else-if="localRepeatCount > 1" class="mushaf-player__repeat-badge" style="font-size: 0.52rem;">
+                {{ localRepeatCount === 99999 ? '\u221E' : localRepeatCount }}
+              </span>
             </button>
 
             <!-- Settings Button -->
@@ -3301,13 +3304,14 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 /* --- Player inside Translation Sheet (Fixed at Bottom) --- */
 .translation-sheet-player {
-  position: static !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex: 0 0 auto;
-  border-top: 1px solid rgba(31, 54, 45, 0.08) !important;
-  background: rgba(255, 255, 253, 0.97) !important;
-  box-shadow: none !important;
-  transform: none !important;
-  padding: 10px 16px !important;
+  border-top: 1px solid rgba(31, 54, 45, 0.08);
+  background: rgba(255, 255, 253, 0.97);
+  padding: 10px 16px;
 }
 
 /* --- Settings inside Translation Sheet (Fixed at Bottom, above player) --- */
@@ -3461,25 +3465,11 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   z-index: 1;
 }
 
-.translation-sheet-item__content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.translation-sheet-item__latin {
-  font-size: 0.825rem;
-  font-style: italic;
-  font-weight: 550;
-  color: #a87518; /* Goldish-brown text */
-  margin: 0;
-  line-height: 1.5;
-}
-
 .translation-sheet-list {
   flex: 1;
+  min-height: 0; /* Allow the list to shrink and scroll inside the flex container */
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrolling & iOS wobble */
   -webkit-overflow-scrolling: touch;
   padding: 0 20px;
   display: flex;
@@ -3491,7 +3481,9 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  padding: 18px 0;
+  padding: 18px 20px; /* Pad content back from edges */
+  margin-left: -20px; /* Stretch container from absolute left to right */
+  margin-right: -20px;
   border-bottom: 1px dashed #e6ecea;
   cursor: pointer;
   text-align: left;
@@ -3533,10 +3525,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .translation-sheet-item--active {
   background: rgba(10, 107, 79, 0.03);
   border-left: 4px solid #0a6b4f;
-  padding-left: 16px;
+  padding-left: 16px; /* Offset the 4px border-left to keep layout aligned */
   padding-right: 20px;
-  margin-left: -20px;
-  margin-right: -20px;
 }
 
 .translation-sheet-item__number {
@@ -3653,7 +3643,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .navigator-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: 1300;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -6271,7 +6261,7 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
 .navigator-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: 1300;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;

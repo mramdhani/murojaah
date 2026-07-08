@@ -1271,6 +1271,16 @@ const startRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     checkMicPermission()
+    
+    // If the gesture was interrupted (e.g. by browser permission prompt dialog),
+    // cancel this recording session and reset state so the button does not disappear.
+    if (!isHoldingRecord.value) {
+      stream.getTracks().forEach(track => track.stop())
+      voiceState.value = 'idle'
+      showToast?.('Izin mikrofon aktif. Silakan tahan tombol lagi untuk merekam.', 'fluent')
+      return
+    }
+    
     audioChunks = []
     
     // Stop any existing main audio playback
