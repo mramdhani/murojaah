@@ -4,6 +4,7 @@
     :class="{ 
       'mushaf-page--nabawiyyah': mushafTheme === 'nabawiyyah', 
       'mushaf-page--classic': mushafTheme === 'classic',
+      'mushaf-page--dark': mushafTheme === 'dark',
       'mushaf-page--fullscreen': isFullscreenMode
     }" 
     @click.self="toggleFullscreen"
@@ -2369,13 +2370,17 @@ const playPlayerAyah = () => {
 
   const src = playerAudioUrl()
   if (!src) return
-  if (preloadedAudio && preloadedAudioUrl === src) {
-    playerAudio = preloadedAudio
+  if (!playerAudio) {
+    playerAudio = new Audio()
+  }
+  // Change src on the persistent, user-blessed instance rather than swapping elements,
+  // which bypasses iOS Safari's strict media element blessing requirements.
+  if (playerAudio.src !== src) {
+    playerAudio.src = src
+  }
+  if (preloadedAudioUrl === src) {
     preloadedAudio = null
     preloadedAudioUrl = ''
-  } else {
-    if (!playerAudio) playerAudio = new Audio()
-    playerAudio.src = src
   }
   playerAudio.preload = 'auto'
   playerAudio.ontimeupdate = () => { playerCurrentTime.value = playerAudio?.currentTime || 0 }
@@ -2879,7 +2884,12 @@ onBeforeUnmount(() => {
   }
 })
 
-useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) })
+useHead({
+  title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value),
+  bodyAttrs: {
+    class: computed(() => `theme-body-${mushafTheme.value}`)
+  }
+})
 </script>
 
 <style scoped>
@@ -2892,21 +2902,44 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 /* Theme-specific background colors for page wrappers */
 .mushaf-page--nabawiyyah {
-  background: #f1f7f4; /* Soft premium green background */
+  background: #fbf3db; /* Warm paper cream background */
 }
 .mushaf-page--nabawiyyah .mushaf-content,
 .mushaf-page--nabawiyyah .mushaf-viewport,
+.mushaf-page--nabawiyyah .mushaf-track,
 .mushaf-page--nabawiyyah .mushaf-slide {
-  background: #f1f7f4;
+  background: #fbf3db;
 }
 
 .mushaf-page--classic {
-  background: #eef4f8; /* Soft premium blue background */
+  background: #ffffff; /* Pure white background */
 }
 .mushaf-page--classic .mushaf-content,
 .mushaf-page--classic .mushaf-viewport,
+.mushaf-page--classic .mushaf-track,
 .mushaf-page--classic .mushaf-slide {
-  background: #eef4f8;
+  background: #ffffff;
+}
+
+.mushaf-page--dark {
+  background: #151d1a; /* Deep warm black/green tint */
+}
+.mushaf-page--dark .mushaf-content,
+.mushaf-page--dark .mushaf-viewport,
+.mushaf-page--dark .mushaf-track,
+.mushaf-page--dark .mushaf-slide {
+  background: #151d1a;
+}
+
+/* Global body theme backgrounds */
+:global(body.theme-body-dark) {
+  background-color: #151d1a !important;
+}
+:global(body.theme-body-nabawiyyah) {
+  background-color: #fbf3db !important;
+}
+:global(body.theme-body-classic) {
+  background-color: #ffffff !important;
 }
 
 .mushaf-header {
@@ -3129,7 +3162,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 /* Nabawiyyah Theme — warm cream like physical Madinah mushaf */
 .mushaf-theme--nabawiyyah {
-  background: #f7ebd3 !important;
+  background: #fbf3db !important;
   color: #2c1a04;
 }
 
@@ -5149,7 +5182,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-page--nabawiyyah .mushaf-slide {
   background:
     radial-gradient(circle at 50% 12%, rgba(224, 190, 102, .13), transparent 34%),
-    #f7f4e8;
+    #fbf3db;
 }
 
 .mushaf-viewport {
@@ -5167,7 +5200,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   border-radius: 3px;
   background:
     radial-gradient(circle at 50% 0, rgba(231, 196, 106, .13), transparent 24%),
-    #fffdf0;
+    #fbf3db;
 }
 
 /* The outer illuminated border sits behind the text frame. */
@@ -5298,7 +5331,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   min-height: 0;
   border: 1px solid rgba(176, 127, 33, .74);
   padding: 7px 8px;
-  background: #fffdf0;
+  background: #fbf3db;
   box-shadow: inset 0 0 18px rgba(204, 157, 56, .06);
 }
 
@@ -5405,8 +5438,8 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   padding-top: 0;
   padding-bottom: 0;
   background:
-    linear-gradient(rgba(255, 253, 240, .94), rgba(255, 253, 240, .94)),
-    #fffdf0;
+    linear-gradient(rgba(251, 243, 219, .94), rgba(251, 243, 219, .94)),
+    #fbf3db;
 }
 
 .mushaf-page-box--opening .mushaf-text-frame__inner::before,
@@ -5575,10 +5608,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   .mushaf-line { font-size: 4.75cqw; }
 }
 
-/* ── Final print-safe spacing and calligraphic title treatment ────────── */
-.mushaf-slide {
-  background: #ece8d8 !important;
-}
+
 
 .mushaf-page-box {
   width: min(calc(100cqw - 20px), calc((100cqh - 16px) * 941 / 1672));
@@ -5822,7 +5852,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 .mushaf-page-box {
   padding: 9px 13px 13px;
-  background: #fffdf0;
+  background: #fbf3db;
 }
 
 .mushaf-frame {
@@ -5889,7 +5919,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 .mushaf-text-frame__inner {
   border: 1px solid rgba(26, 101, 103, .58);
   padding: 12px 18px;
-  background: #fffdf0;
+  background: #fbf3db;
   box-shadow: none;
 }
 
@@ -5960,7 +5990,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   gap: 1.2cqw;
   padding-top: 18px;
   padding-bottom: 28px;
-  background: #fffdf0;
+  background: #fbf3db;
 }
 
 .mushaf-page-box--opening .mushaf-text-frame__inner::before {
@@ -5984,10 +6014,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   padding: .6cqw 0;
 }
 
-/* Plain Reading Theme overrides */
-html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-slide {
-  background: #ffffff !important;
-}
+
 
 .mushaf-page-box,
 .mushaf-page-box--opening,
@@ -5997,7 +6024,6 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   padding: 16px !important; /* Single uniform padding for the whole screen */
   margin: 0 !important;
   border: 0 !important;
-  background: #ffffff !important; /* Force white background */
   box-shadow: none !important;
   display: flex !important;
   flex-direction: column !important;

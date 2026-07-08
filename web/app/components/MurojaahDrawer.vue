@@ -38,15 +38,6 @@
             :aria-selected="selectedJourney === 'quiz'"
             @click="selectJourney('quiz')"
           >
-            <span v-if="selectedJourney === 'quiz'" class="journey-card__check">
-              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0z"/></svg>
-            </span>
-            <span class="journey-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M9 11l3 3L22 4"/>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-              </svg>
-            </span>
             <span class="journey-card__name">Uji Ayat</span>
           </button>
 
@@ -59,15 +50,6 @@
             :aria-selected="selectedJourney === 'mushaf'"
             @click="selectJourney('mushaf')"
           >
-            <span v-if="selectedJourney === 'mushaf'" class="journey-card__check">
-              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0z"/></svg>
-            </span>
-            <span class="journey-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/>
-                <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"/>
-              </svg>
-            </span>
             <span class="journey-card__name">Mushaf</span>
           </button>
 
@@ -80,15 +62,6 @@
             :aria-selected="selectedJourney === 'listening'"
             @click="selectJourney('listening')"
           >
-            <span v-if="selectedJourney === 'listening'" class="journey-card__check">
-              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0z"/></svg>
-            </span>
-            <span class="journey-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 13v-1a8 8 0 0 1 16 0v1"/>
-                <path d="M4 13h3v7H6a2 2 0 0 1-2-2v-5Zm16 0h-3v7h1a2 2 0 0 0 2-2v-5Z"/>
-              </svg>
-            </span>
             <span class="journey-card__name">Quran per Ayat</span>
           </button>
         </div>
@@ -447,15 +420,14 @@ const selectSurah = (surahId: number) => {
 .journey-card {
   position: relative;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 5px;
-  padding: 14px 6px 12px;
-  border-radius: 20px;
+  padding: 12px 6px;
+  border-radius: 14px;
   border: 1.5px solid rgba(0, 0, 0, 0.05);
   background: #f4f3ee;
   cursor: pointer;
-  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.22s ease,
               background 0.22s ease,
               border-color 0.22s ease,
@@ -467,50 +439,8 @@ const selectSurah = (surahId: number) => {
 }
 
 .journey-card:active {
-  transform: scale(0.91) !important;
+  transform: scale(0.95) !important;
   transition: transform 0.1s ease !important;
-}
-
-.journey-card__check {
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  display: grid;
-  place-items: center;
-  animation: checkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes checkPop {
-  from { opacity: 0; transform: scale(0.4); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.journey-card__check svg {
-  width: 11px;
-  height: 11px;
-  display: block;
-}
-
-.journey-card__icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 15px;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.06);
-  transition: background 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-  margin-bottom: 2px;
-  flex-shrink: 0;
-}
-
-.journey-card__icon svg {
-  width: 22px;
-  height: 22px;
-  transition: stroke 0.18s ease;
 }
 
 .journey-card__name {
@@ -526,13 +456,7 @@ const selectSurah = (surahId: number) => {
   background: linear-gradient(145deg, #054f38 0%, #0a9e72 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(8, 125, 89, 0.42), 0 2px 6px rgba(8, 125, 89, 0.18);
-  transform: translateY(-4px);
-}
-
-.journey-card--quiz.journey-card--active .journey-card__icon {
-  background: rgba(255, 255, 255, 0.18);
-  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgba(8, 125, 89, 0.24);
 }
 
 /* ─── Mushaf — Warm Amber ─── */
@@ -540,13 +464,7 @@ const selectSurah = (surahId: number) => {
   background: linear-gradient(145deg, #6b2d07 0%, #c2610a 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(194, 97, 10, 0.38), 0 2px 6px rgba(194, 97, 10, 0.18);
-  transform: translateY(-4px);
-}
-
-.journey-card--mushaf.journey-card--active .journey-card__icon {
-  background: rgba(255, 255, 255, 0.18);
-  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgba(194, 97, 10, 0.24);
 }
 
 /* ─── Dengar — Deep Indigo ─── */
@@ -554,13 +472,7 @@ const selectSurah = (surahId: number) => {
   background: linear-gradient(145deg, #1a2e5c 0%, #2b5fd4 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(43, 95, 212, 0.38), 0 2px 6px rgba(43, 95, 212, 0.18);
-  transform: translateY(-4px);
-}
-
-.journey-card--listening.journey-card--active .journey-card__icon {
-  background: rgba(255, 255, 255, 0.18);
-  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgba(43, 95, 212, 0.24);
 }
 
 .drawer-safe-bottom {

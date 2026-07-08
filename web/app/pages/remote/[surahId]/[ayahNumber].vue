@@ -1355,7 +1355,7 @@ const startRecording = async () => {
       }
     }, 1000)
 
-    recorder.start()
+    recorder.start(250)
   } catch (err: any) {
     console.error('Microphone access error:', err)
     voiceState.value = 'idle'
