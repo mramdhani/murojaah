@@ -43,7 +43,10 @@
       <section
         ref="viewportRef"
         class="mushaf-viewport"
-        :class="{ 'mushaf-viewport--dragging': swipeStartX !== null }"
+        :class="{ 
+          'mushaf-viewport--dragging': swipeStartX !== null,
+          'mushaf-viewport--monochrome': !showTajweedColors
+        }"
         aria-label="Halaman mushaf interaktif. Geser kiri atau kanan untuk berpindah halaman."
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
@@ -476,9 +479,22 @@
               Hal {{ pageNumber }}, {{ activeJuzLabel }}
             </p>
           </div>
-          <button type="button" class="translation-sheet-close" aria-label="Tutup terjemahan" @click="showTranslationDrawer = false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
-          </button>
+          <div class="translation-sheet-header__right-actions">
+            <button 
+              type="button" 
+              class="translation-sheet-settings-toggle" 
+              :class="{ 'translation-sheet-settings-toggle--active': showSettingsPanel }"
+              aria-label="Pengaturan Tampilan" 
+              @click="showSettingsPanel = !showSettingsPanel"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-cog-icon">
+                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+            <button type="button" class="translation-sheet-close" aria-label="Tutup terjemahan" @click="showTranslationDrawer = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
         </header>
 
         <!-- Scrollable list -->
@@ -549,8 +565,123 @@
           </div>
         </Transition>
 
+        <!-- Tajweed Legend Bottom Sheet (Slide Up) -->
+        <Transition name="sheet">
+          <div v-if="showTajweedLegendSheet" class="qari-overlay" @click="showTajweedLegendSheet = false">
+            <section class="qari-sheet" role="dialog" aria-modal="true" aria-labelledby="tajweed-legend-title" :style="legendSheet.sheetStyle.value" @click.stop>
+              <div class="qari-sheet__handle" v-bind="legendSheet.bindHandle"></div>
+              <header class="qari-sheet__header">
+                <div>
+                  <span>Panduan Membaca</span>
+                  <h2 id="tajweed-legend-title">Warna Tajwid</h2>
+                  <p>Kaidah pewarnaan hukum bacaan Mushaf</p>
+                </div>
+                <button type="button" aria-label="Tutup panduan" @click="showTajweedLegendSheet = false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                </button>
+              </header>
+              <div class="qari-list" style="padding: 16px; gap: 14px;">
+                <div class="tajweed-legend-row-item">
+                  <span class="tajweed-legend-badge tss-color-dot--madd"></span>
+                  <div class="tajweed-legend-info-box">
+                    <strong>Mad (Panjang)</strong>
+                    <p>Hukum pemanjangan harakat huruf (merah terang).</p>
+                  </div>
+                </div>
+                <div class="tajweed-legend-row-item">
+                  <span class="tajweed-legend-badge tss-color-dot--ghunnah"></span>
+                  <div class="tajweed-legend-info-box">
+                    <strong>Ghunnah (Dengung)</strong>
+                    <p>Suara dengung yang ditahan pada huruf Noon atau Meem tasydid (hijau).</p>
+                  </div>
+                </div>
+                <div class="tajweed-legend-row-item">
+                  <span class="tajweed-legend-badge tss-color-dot--ikhfa"></span>
+                  <div class="tajweed-legend-info-box">
+                    <strong>Ikhfa (Samar)</strong>
+                    <p>Menyamarkan bunyi Nun sukun atau Tanwin (merah muda/magenta).</p>
+                  </div>
+                </div>
+                <div class="tajweed-legend-row-item">
+                  <span class="tajweed-legend-badge tss-color-dot--idgham"></span>
+                  <div class="tajweed-legend-info-box">
+                    <strong>Idgham (Melebur)</strong>
+                    <p>Memasukkan bunyi Nun sukun/Tanwin ke huruf berikutnya (biru).</p>
+                  </div>
+                </div>
+                <div class="tajweed-legend-row-item">
+                  <span class="tajweed-legend-badge tss-color-dot--qalqalah"></span>
+                  <div class="tajweed-legend-info-box">
+                    <strong>Qalqalah (Memantul)</strong>
+                    <p>Bunyi memantul pada huruf Ba, Jim, Dal, Ta, Qaf saat sukun/waqaf (cyan/biru muda).</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </Transition>
+
         <!-- Settings Panel inside Translation Sheet (Fixed at Bottom, above player) -->
-        <div class="translation-sheet-settings">
+        <div v-if="showSettingsPanel" class="translation-sheet-settings">
+          <!-- Row 1: Themes -->
+          <div class="mushaf-theme-row">
+            <span class="theme-label-small">Tema Halaman</span>
+            <div class="theme-segmented-control-new">
+              <button 
+                type="button" 
+                class="theme-segment-btn-new theme-segment-btn-new--classic"
+                :class="{ 'theme-segment-btn-new--active': mushafTheme === 'classic' }"
+                @click="mushafTheme = 'classic'"
+              >
+                Terang
+              </button>
+              <button 
+                type="button" 
+                class="theme-segment-btn-new theme-segment-btn-new--nabawiyyah"
+                :class="{ 'theme-segment-btn-new--active': mushafTheme === 'nabawiyyah' }"
+                @click="mushafTheme = 'nabawiyyah'"
+              >
+                Krem
+              </button>
+              <button 
+                type="button" 
+                class="theme-segment-btn-new theme-segment-btn-new--dark"
+                :class="{ 'theme-segment-btn-new--active': mushafTheme === 'dark' }"
+                @click="mushafTheme = 'dark'"
+              >
+                Malam
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Toggles -->
+          <div class="tss-toggles-row">
+            <div class="tss-toggle">
+              <label class="tss-switch">
+                <input type="checkbox" v-model="showTransliteration" />
+                <span class="tss-slider-toggle"></span>
+              </label>
+              <span class="tss-toggle-label">Transliterasi</span>
+            </div>
+
+            <div class="tss-toggle">
+              <label class="tss-switch">
+                <input type="checkbox" v-model="showTajweedColors" />
+                <span class="tss-slider-toggle"></span>
+              </label>
+              <span class="tss-toggle-label">Tajwid</span>
+              <button 
+                type="button" 
+                class="tss-info-link-btn" 
+                @click="showTajweedLegendSheet = true"
+                aria-label="Panduan Tajwid"
+              >
+                Panduan
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 3: Font Size -->
           <div class="tss-font-size">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tss-font-icon"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
             <span class="tss-font-value">{{ translationFontSizeLevel }}%</span>
@@ -565,14 +696,6 @@
                 :style="{ background: 'linear-gradient(to right, #0a6b4f 0%, #0a6b4f ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea 100%)' }"
               />
             </div>
-          </div>
-
-          <div class="tss-toggle">
-            <label class="tss-switch">
-              <input type="checkbox" v-model="showTransliteration" />
-              <span class="tss-slider-toggle"></span>
-            </label>
-            <span class="tss-toggle-label">Transliterasi</span>
           </div>
         </div>
 
@@ -1039,6 +1162,9 @@ const currentScrollSurahId = ref<number | null>(null)
 const currentScrollJuz = ref<number | null>(null)
 const translationFontSizeLevel = ref(60)
 const showTransliteration = ref(true)
+const showTajweedColors = useState<boolean>('mushafShowTajweedColors', () => true)
+const showTajweedLegendSheet = ref(false)
+const showSettingsPanel = ref(true)
 const transliterations = ref<Record<string, string>>({})
 const transliterationsLoading = ref(false)
 
@@ -1288,15 +1414,12 @@ const listeningAutoNextAyah = useCookie<boolean>('listening_auto_next_ayah', {
   path: '/'
 })
 
-const mushafTheme = useCookie<'classic' | 'nabawiyyah'>('mushaf_theme', {
+const mushafTheme = useCookie<'classic' | 'nabawiyyah' | 'dark'>('mushaf_theme', {
   default: () => 'nabawiyyah',
   maxAge: 60 * 60 * 24 * 365,
   path: '/'
 })
 
-if (mushafTheme.value === 'classic') {
-  mushafTheme.value = 'nabawiyyah'
-}
 
 watch(mushafTheme, () => {
   prefetchPages()
@@ -1440,6 +1563,12 @@ const editionPickerSheet = useBottomSheet({
   onClose: () => { showEditionPicker.value = false },
 })
 
+const legendSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { showTajweedLegendSheet.value = false },
+})
+
 watch(showTranslationDrawer, async (val) => {
   if (val) {
     translationSheet.reset()
@@ -1468,6 +1597,7 @@ watch([pageNumber, selectedEdition], async ([newPage, newEdition]) => {
 
 watch(showAyahDrawer, (val) => { if (val) ayahDrawerSheet.reset() })
 watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
+watch(showTajweedLegendSheet, (val) => { if (val) legendSheet.reset() })
 watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
 watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
 watch(showEditionPicker, (val) => { if (val) editionPickerSheet.reset() })
@@ -2999,14 +3129,14 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 /* Nabawiyyah Theme — warm cream like physical Madinah mushaf */
 .mushaf-theme--nabawiyyah {
-  background: #FFF8F0;
-  color: #1A0A00;
+  background: #f7ebd3 !important;
+  color: #2c1a04 !important;
 }
 
 /* Classic Theme — clean white, navy accents */
 .mushaf-theme--classic {
-  background: #FFFFFF;
-  color: #000;
+  background: #FFFFFF !important;
+  color: #000000 !important;
 }
 
 /* ── Page Meta Header ─── */
@@ -3457,19 +3587,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 }
 
 /* --- Settings inside Translation Sheet (Fixed at Bottom, above player) --- */
-.translation-sheet-settings {
-  flex: 0 0 auto;
-  border-top: 1px solid #edf2f0;
-  background: #fff;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.03);
-  position: relative;
-  z-index: 10;
-}
+/* Old Settings Panel removed from bottom of drawer */
 
 .tss-font-size {
   display: flex;
@@ -3621,7 +3739,7 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
 
 .translation-sheet-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   padding: 18px 20px; /* Pad content back from edges */
   margin-left: -20px; /* Stretch container from absolute left to right */
@@ -3697,9 +3815,22 @@ useHead({ title: computed(() => 'Mushaf Hafalan - Halaman ' + pageNumber.value) 
   font-weight: 450;
 }
 
+.translation-sheet-item__latin {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #718a80; /* Soft gray-green color to differentiate */
+  font-style: italic; /* Italicized style */
+  margin-bottom: 6px;
+  font-weight: 400;
+}
+
 .translation-sheet-item--active .translation-sheet-item__text {
   color: #0a3d2e;
   font-weight: 550;
+}
+
+.translation-sheet-item--active .translation-sheet-item__latin {
+  color: #4a6156; /* Richer green-gray when active */
 }
 
 /* Slide-up animation for sheet */
@@ -6151,21 +6282,266 @@ html, body, #__nuxt, .mushaf-page, .mushaf-content, .mushaf-viewport, .mushaf-sl
   font-weight: 900;
 }
 
-:deep(.tajweed-h),
-:deep(.tajweed-s),
-:deep(.tajweed-l) { color: #9a9a9a !important; }
-:deep(.tajweed-n) { color: #537fff !important; }
-:deep(.tajweed-p) { color: #4050ff !important; }
-:deep(.tajweed-m) { color: #000ebc !important; }
-:deep(.tajweed-o) { color: #2144c1 !important; }
-:deep(.tajweed-q) { color: #dd0008 !important; }
-:deep(.tajweed-f),
-:deep(.tajweed-c) { color: #c218b6 !important; }
-:deep(.tajweed-i) { color: #20bfe8 !important; }
-:deep(.tajweed-g) { color: #169777 !important; }
-:deep(.tajweed-u) { color: #169200 !important; }
-:deep(.tajweed-a),
-:deep(.tajweed-w) { color: #159447 !important; }
+/* Monochrome rendering for QCF v2 when Tajweed is toggled off */
+.mushaf-viewport--monochrome .mushaf-word:not(.mushaf-word--end),
+.mushaf-viewport--monochrome .mushaf-word:not(.mushaf-word--end) * {
+  font-palette: none !important;
+  color: inherit !important;
+}
+
+/* Tajweed Class Color Overrides (Applied when showTajweedColors is ON) */
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-q) { color: #20bfe8 !important; } /* Qalqalah: Cyan/Blue */
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-g) { color: #169777 !important; } /* Ghunnah: Green */
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-i) { color: #c218b6 !important; } /* Ikhfa: Pink/Magenta */
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-n) { color: #537fff !important; } /* Idgham: Blue */
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-m),
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-o),
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-p) { color: #dd0008 !important; } /* Madd: Red */
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-u),
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-a),
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-w) { color: #159447 !important; } /* Others */
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-h),
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-s),
+.mushaf-viewport:not(.mushaf-viewport--monochrome) :deep(.tajweed-l) { color: #9a9a9a !important; } /* Silent/wasl */
+
+/* Dark theme style overrides */
+.mushaf-theme--dark {
+  background: #151d1a !important; /* Deep warm black/green tint */
+  color: #edf2f0 !important;
+}
+
+.mushaf-theme--dark .mushaf-text-frame {
+  border: 4px double #9c7b41 !important;
+  box-shadow:
+    inset 0 0 0 3px #151d1a,
+    inset 0 0 0 4px #9c7b41,
+    0 0 0 3px #151d1a,
+    0 0 0 4px #9c7b41 !important;
+}
+
+.mushaf-theme--dark .mushaf-surah-banner__inner {
+  background: #1c2622 !important;
+  border-color: #9c7b41 !important;
+}
+
+.mushaf-theme--dark .mushaf-surah-banner__inner::before {
+  border-color: #9c7b41 !important;
+}
+
+.mushaf-theme--dark .mushaf-surah-banner__name {
+  color: #decba5 !important;
+}
+
+.mushaf-theme--dark .mushaf-surah-banner__sub {
+  color: #8fa099 !important;
+}
+
+.mushaf-theme--dark .mushaf-bismillah-calligraphy {
+  color: #decba5 !important;
+}
+
+.mushaf-theme--dark .mushaf-ayah-ornament circle {
+  fill: #151d1a !important;
+  stroke: #9c7b41 !important;
+}
+
+.mushaf-theme--dark .mushaf-ayah-ornament svg rect {
+  stroke: #9c7b41 !important;
+}
+
+.mushaf-theme--dark .mushaf-ayah-ornament > span {
+  color: #decba5 !important;
+}
+
+.mushaf-theme--dark .mushaf-meta {
+  color: #decba5 !important;
+}
+
+.mushaf-theme--dark .mushaf-page-footer {
+  color: #8fa099 !important;
+}
+
+/* Compact Settings Panel inside Translation Sheet (Fixed at Bottom) */
+.translation-sheet-settings {
+  flex: 0 0 auto;
+  border-top: 1px solid #edf2f0;
+  background: #fff;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+  position: relative;
+  z-index: 10;
+}
+
+.mushaf-theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.theme-label-small {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #4a5d55;
+}
+
+.theme-segmented-control-new {
+  display: flex;
+  background: #f1f6f4;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid #e5edea;
+}
+
+.theme-segment-btn-new {
+  border: none;
+  background: none;
+  padding: 4px 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #4a5d55;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.theme-segment-btn-new--active {
+  background: #fff;
+  color: #0a6b4f;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tss-toggles-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.tss-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tss-toggle-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e2e28;
+}
+
+.tss-info-link-btn {
+  background: none;
+  border: none;
+  padding: 0 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0a6b4f;
+  text-decoration: underline;
+  cursor: pointer;
+  outline: none;
+}
+
+.tss-info-link-btn:hover {
+  color: #08553e;
+}
+
+/* Header Action Buttons */
+.translation-sheet-header__right-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.translation-sheet-settings-toggle {
+  background: rgba(0, 0, 0, 0.03);
+  border: none;
+  padding: 6px;
+  color: #718096;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.translation-sheet-settings-toggle:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #0a6b4f;
+}
+
+.translation-sheet-settings-toggle--active {
+  color: #ffffff !important;
+  background: #0a6b4f !important;
+}
+
+.settings-cog-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Slide Up Tajweed Legend Styles */
+.tajweed-legend-row-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+}
+
+.tajweed-legend-badge {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.tajweed-legend-info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tajweed-legend-info-box strong {
+  font-size: 0.82rem;
+  color: #1e2e28;
+}
+
+.tajweed-legend-info-box p {
+  font-size: 0.74rem;
+  color: #657b72;
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* Standard Tajweed Color Map */
+.tss-color-dot--madd { background: #dd0008; }     /* Red */
+.tss-color-dot--ghunnah { background: #169777; }  /* Green */
+.tss-color-dot--ikhfa { background: #c218b6; }    /* Pink/Magenta */
+.tss-color-dot--idgham { background: #537fff; }   /* Blue */
+.tss-color-dot--qalqalah { background: #20bfe8; } /* Cyan/Teal */
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
 
 @media (max-width: 415px) {
   .mushaf-qcf-content { padding-right: 10px !important; padding-left: 10px !important; }
