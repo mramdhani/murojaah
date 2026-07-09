@@ -237,7 +237,7 @@
     </main>
 
     <Teleport to="body">
-      <section class="mushaf-player" :class="{ 'mushaf-player--hidden': isFullscreenMode || showTranslationDrawer }" aria-label="Pemutar murottal">
+      <section class="mushaf-player" :class="{ 'mushaf-player--hidden': isFullscreenMode || showTranslationDrawer, 'mushaf-player--dark': mushafTheme === 'dark' }" aria-label="Pemutar murottal">
         <div class="mushaf-player__actions">
           <!-- Play/Pause -->
           <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
@@ -289,7 +289,7 @@
     <!-- Settings Bottom Sheet -->
     <Transition name="sheet">
       <div v-if="showAudioSettings" class="qari-overlay" @click="closeAudioSettings">
-        <section class="qari-sheet" role="dialog" aria-modal="true" :style="audioSettingsSheet.sheetStyle.value" @click.stop>
+        <section class="qari-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" :style="audioSettingsSheet.sheetStyle.value" @click.stop>
           <div class="qari-sheet__handle" v-bind="audioSettingsSheet.bindHandle"></div>
 
           <template v-if="activePickerType === 'none'">
@@ -439,7 +439,7 @@
 
     <Transition name="sheet">
       <div v-if="showQariPicker" class="qari-overlay" @click="closeQariPicker">
-        <section class="qari-sheet" role="dialog" aria-modal="true" aria-labelledby="qari-picker-title" :style="qariPickerSheet.sheetStyle.value" @click.stop>
+        <section class="qari-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" aria-labelledby="qari-picker-title" :style="qariPickerSheet.sheetStyle.value" @click.stop>
           <div class="qari-sheet__handle" v-bind="qariPickerSheet.bindHandle"></div>
           <header class="qari-sheet__header">
             <div>
@@ -463,7 +463,7 @@
     </Transition>
 
     <Transition name="translate-sheet">
-      <div v-if="showTranslationDrawer" class="translation-bottom-sheet" :style="translationSheet.sheetStyle.value" @click.stop>
+      <div v-if="showTranslationDrawer" class="translation-bottom-sheet" :class="{ 'translation-bottom-sheet--dark': mushafTheme === 'dark' }" :style="translationSheet.sheetStyle.value" @click.stop>
         <!-- Drag handle -->
         <div 
           class="translation-sheet-handle"
@@ -545,7 +545,7 @@
         <!-- Edition Picker (Bottom Sheet Modal) -->
         <Transition name="sheet">
           <div v-if="showEditionPicker" class="qari-overlay" @click="showEditionPicker = false">
-            <section class="qari-sheet" role="dialog" aria-modal="true" aria-labelledby="edition-picker-title" :style="editionPickerSheet.sheetStyle.value" @click.stop>
+            <section class="qari-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" aria-labelledby="edition-picker-title" :style="editionPickerSheet.sheetStyle.value" @click.stop>
               <div class="qari-sheet__handle" v-bind="editionPickerSheet.bindHandle"></div>
               <header class="qari-sheet__header">
                 <div>
@@ -573,7 +573,7 @@
         <!-- Tajweed Legend Bottom Sheet (Slide Up) -->
         <Transition name="sheet">
           <div v-if="showTajweedLegendSheet" class="qari-overlay" @click="showTajweedLegendSheet = false">
-            <section class="qari-sheet" role="dialog" aria-modal="true" aria-labelledby="tajweed-legend-title" :style="legendSheet.sheetStyle.value" @click.stop>
+            <section class="qari-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" aria-labelledby="tajweed-legend-title" :style="legendSheet.sheetStyle.value" @click.stop>
               <div class="qari-sheet__handle" v-bind="legendSheet.bindHandle"></div>
               <header class="qari-sheet__header">
                 <div>
@@ -705,7 +705,7 @@
         </div>
 
         <!-- Player inside Translation Sheet (Fixed at Bottom) -->
-        <footer class="translation-sheet-player">
+        <footer class="translation-sheet-player" :class="{ 'translation-sheet-player--dark': mushafTheme === 'dark', 'mushaf-player--dark': mushafTheme === 'dark' }">
           <div class="mushaf-player__actions">
             <!-- Play/Pause -->
             <button type="button" class="mushaf-player__play" :aria-label="isPlaying ? 'Jeda murottal' : 'Putar murottal'" @click="togglePlayer">
@@ -747,7 +747,7 @@
     </Transition>
 
     <Transition name="translate-sheet">
-      <div v-if="showAyahDrawer" class="translation-bottom-sheet ayah-options-sheet" :style="ayahDrawerSheet.sheetStyle.value" @click.stop>
+      <div v-if="showAyahDrawer" class="translation-bottom-sheet ayah-options-sheet" :class="{ 'translation-bottom-sheet--dark': mushafTheme === 'dark', 'ayah-options-sheet--dark': mushafTheme === 'dark' }" :style="ayahDrawerSheet.sheetStyle.value" @click.stop>
         <!-- Drag handle -->
         <div class="translation-sheet-handle" v-bind="ayahDrawerSheet.bindHandle">
           <div class="translation-sheet-handle__bar"></div>
@@ -846,7 +846,7 @@
       <div v-if="navigatorOpen" class="navigator-overlay" @click="closeNavigator">
         <section
           class="navigator-sheet"
-          :class="{ 'navigator-sheet--picker-open': showSurahPicker || showAyahPicker || showSectionPicker }"
+          :class="{ 'navigator-sheet--picker-open': showSurahPicker || showAyahPicker || showSectionPicker, 'navigator-sheet--dark': mushafTheme === 'dark' }"
           role="dialog"
           aria-modal="true"
           aria-labelledby="navigator-title"
@@ -3769,7 +3769,12 @@ useHead({
   color: #0a6b4f;
   transition: transform 0.2s ease;
 }
-
+.translation-bottom-sheet--dark .translation-sheet-dropdown-trigger  {
+      color: #a8b7b1 !important;
+}
+.translation-bottom-sheet--dark .dropdown-chevron {
+      color: #a8b7b1 !important;
+}
 /* --- Player inside Translation Sheet (Fixed at Bottom) --- */
 .translation-sheet-player {
   display: flex;
@@ -3919,6 +3924,9 @@ useHead({
   font-weight: 800;
   color: #1e2e28;
   z-index: 1;
+}
+.translation-bottom-sheet--dark .translation-sheet-item__number-wrap span {
+ color: #a8b7b1 !important;
 }
 
 .translation-sheet-list {
@@ -4873,7 +4881,11 @@ useHead({
   background: #0f735b;
   border-color: #0f735b;
 }
-
+.mushaf-page--dark .custom-select-trigger {
+    background: #15261f !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #f4f7f5 !important;
+}
 .custom-select-trigger {
   width: 100%;
   height: 48px;
@@ -5583,6 +5595,8 @@ useHead({
   font-size: 4.25cqw;
   line-height: 1.05;
 }
+
+
 
 .mushaf-surah-banner__sub,
 .mushaf-theme--nabawiyyah .mushaf-surah-banner__sub,
@@ -6776,6 +6790,9 @@ useHead({
   font-size: 0.82rem;
   color: #1e2e28;
 }
+.translation-bottom-sheet--dark .tajweed-legend-info-box strong {
+  color: #edf2f0;
+}
 
 .tajweed-legend-info-box p {
   font-size: 0.74rem;
@@ -7630,5 +7647,670 @@ useHead({
 /* ── Fullscreen Viewport Height Expansion ─── */
 .mushaf-page--fullscreen .mushaf-viewport {
   height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px) !important;
+}
+
+/* ===== Dark Mode Polish Overrides ===== */
+.mushaf-viewport--monochrome .mushaf-theme--dark .mushaf-word:not(.mushaf-word--end),
+.mushaf-viewport--monochrome .mushaf-theme--dark .mushaf-word:not(.mushaf-word--end) *,
+.mushaf-viewport--monochrome .mushaf-theme--dark :deep([class*="tajweed-"]) {
+  color: #f4f7f5 !important;
+  -webkit-text-fill-color: #f4f7f5 !important;
+}
+
+.mushaf-viewport--monochrome .mushaf-theme--dark .mushaf-word--end,
+.mushaf-viewport--monochrome .mushaf-theme--dark .mushaf-word--end * {
+  color: #c9ad70 !important;
+  -webkit-text-fill-color: #c9ad70 !important;
+}
+
+.mushaf-theme--dark .mushaf-line--qcf,
+.mushaf-theme--dark .mushaf-line__qcf-content {
+  color: #f4f7f5;
+}
+
+.mushaf-theme--dark .mushaf-word--fluent,
+.mushaf-theme--dark .mushaf-word--doubtful,
+.mushaf-theme--dark .mushaf-word--forgot {
+  color: inherit;
+}
+
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
+.mushaf-page--nabawiyyah .mushaf-surah-banner__inner {
+  background: linear-gradient(180deg, #7a4b1c 0%, #5c3514 100%) !important;
+  border-color: #d1a454 !important;
+  color: #fff4d7 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 237, 179, 0.32),
+    0 4px 10px rgba(87, 55, 20, 0.16) !important;
+}
+
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner::before,
+.mushaf-page--nabawiyyah .mushaf-surah-banner__inner::before {
+  border-color: rgba(255, 232, 166, 0.48) !important;
+}
+
+
+.mushaf-page--nabawiyyah .mushaf-surah-banner__name,
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__sub,
+.mushaf-page--nabawiyyah .mushaf-surah-banner__sub {
+  color: #fff4d7 !important;
+}
+
+.mushaf-theme--nabawiyyah .mushaf-surah-banner__name{
+color: #75471a !important;
+}
+
+.mushaf-page--dark .mushaf-player {
+  background: rgba(13, 24, 20, 0.96) !important;
+  border-top-color: rgba(209, 164, 84, 0.2) !important;
+  box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.42) !important;
+  backdrop-filter: blur(18px);
+}
+
+.mushaf-page--dark .mushaf-player__btn {
+  color: #a8b7b1 !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.mushaf-page--dark .mushaf-player__btn:hover,
+.mushaf-page--dark .mushaf-player__btn:active,
+.mushaf-page--dark .mushaf-player__btn--active {
+  color: #f4d58a !important;
+  background: rgba(244, 213, 138, 0.12) !important;
+}
+
+.mushaf-page--dark .mushaf-player__play {
+  color: #06231a !important;
+  background: linear-gradient(135deg, #f4d58a, #c79b42) !important;
+  box-shadow: 0 8px 20px rgba(199, 155, 66, 0.22) !important;
+}
+
+.mushaf-page--dark .mushaf-player__qari-select,
+.mushaf-page--dark .mushaf-player__qari-select .mushaf-player__info {
+  color: #eef5f1 !important;
+}
+
+.mushaf-page--dark .mushaf-player__info strong {
+  color: #f5f7f5 !important;
+}
+
+.mushaf-page--dark .mushaf-player__info small {
+  color: #9fb0aa !important;
+}
+
+.mushaf-page--dark .mushaf-player__info > span {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.mushaf-page--dark .mushaf-player__info > span i {
+  background: #f4d58a !important;
+}
+
+.mushaf-page--dark .translation-bottom-sheet,
+.mushaf-page--dark .ayah-options-sheet,
+.mushaf-page--dark .navigator-sheet,
+.mushaf-page--dark .qari-sheet {
+  background: #111c17 !important;
+  border-color: rgba(209, 164, 84, 0.16) !important;
+  color: #eff5f2 !important;
+  box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.48) !important;
+}
+
+.mushaf-page--dark .translation-sheet-header,
+.mushaf-page--dark .qari-sheet__header,
+.mushaf-page--dark .navigator-sheet__header {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.mushaf-page--dark .translation-sheet-header h2,
+.mushaf-page--dark .qari-sheet__header h2,
+.mushaf-page--dark .navigator-sheet__title,
+.mushaf-page--dark .ayah-drawer-title,
+.mushaf-page--dark .surah-picker__header strong {
+  color: #f5f7f5 !important;
+}
+
+.mushaf-page--dark .translation-sheet-header p,
+.mushaf-page--dark .qari-sheet__header p,
+.mushaf-page--dark .ayah-drawer-subtitle,
+.mushaf-page--dark .ayah-picker__summary,
+.mushaf-page--dark .surah-picker__names small {
+  color: #9fb0aa !important;
+}
+
+.mushaf-page--dark .translation-sheet-close,
+.mushaf-page--dark .qari-sheet__header > button,
+.mushaf-page--dark .surah-picker__header > button,
+.mushaf-page--dark .ayah-options-sheet .translation-sheet-close {
+  color: #d6c18b !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+.mushaf-page--dark .translation-sheet-settings {
+  background: #0d1713 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 -8px 22px rgba(0, 0, 0, 0.28) !important;
+}
+
+.mushaf-page--dark .theme-label-small,
+.mushaf-page--dark .tss-toggle-label,
+.mushaf-page--dark .tss-font-size-label,
+.mushaf-page--dark .translation-text,
+.mushaf-page--dark .translation-item,
+.mushaf-page--dark .ayah-list-item__label,
+.mushaf-page--dark .navigator-field label,
+.mushaf-page--dark .surah-picker__names strong {
+  color: #e8efeb !important;
+}
+
+.mushaf-page--dark .theme-segmented-control-new,
+.mushaf-page--dark .surah-picker__search,
+.mushaf-page--dark .navigator-select-wrap select {
+  background: #16241e !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #eff5f2 !important;
+}
+
+.mushaf-page--dark .theme-segment-btn-new {
+  color: #9fb0aa !important;
+}
+
+.mushaf-page--dark .theme-segment-btn-new--active {
+  background: #25382f !important;
+  color: #f4d58a !important;
+}
+
+.mushaf-page--dark .tss-switch,
+.mushaf-page--dark .ayah-list-item,
+.mushaf-page--dark .qari-item,
+.mushaf-page--dark .surah-picker__item,
+.mushaf-page--dark .ayah-picker__grid button,
+.mushaf-page--dark .section-picker__grid button {
+  background: #16241e !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #e8efeb !important;
+}
+
+.mushaf-page--dark .ayah-list-item:hover,
+.mushaf-page--dark .qari-item--active,
+.mushaf-page--dark .surah-picker__item--active,
+.mushaf-page--dark .ayah-picker__grid .ayah-picker__number--active,
+.mushaf-page--dark .section-picker__grid .section-picker__number--active {
+  background: #20362c !important;
+  border-color: rgba(244, 213, 138, 0.36) !important;
+  color: #f4d58a !important;
+}
+
+.mushaf-page--dark .ayah-list-item__icon-wrapper,
+.mushaf-page--dark .surah-picker__number {
+  background: rgba(244, 213, 138, 0.12) !important;
+  color: #f4d58a !important;
+}
+
+.mushaf-page--dark .surah-picker__arabic,
+.mushaf-page--dark .qari-item > svg,
+.mushaf-page--dark .surah-picker__item > svg,
+.mushaf-page--dark .navigator-select-wrap svg {
+  color: #d6c18b !important;
+}
+
+.mushaf-page--dark .surah-picker__search input {
+  color: #eff5f2 !important;
+}
+
+.mushaf-page--dark .surah-picker__search input::placeholder {
+  color: #7f918a !important;
+}
+
+/* Teleported surfaces need body theme selectors because they render outside .mushaf-page */
+:global(body.theme-body-dark) .mushaf-player {
+  background: rgba(13, 24, 20, 0.96) !important;
+  border-top-color: rgba(209, 164, 84, 0.2) !important;
+  box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.42) !important;
+  backdrop-filter: blur(18px);
+}
+
+:global(body.theme-body-dark) .mushaf-player__btn {
+  color: #a8b7b1 !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+:global(body.theme-body-dark) .mushaf-player__btn:hover,
+:global(body.theme-body-dark) .mushaf-player__btn:active,
+:global(body.theme-body-dark) .mushaf-player__btn--active {
+  color: #f4d58a !important;
+  background: rgba(244, 213, 138, 0.12) !important;
+}
+
+:global(body.theme-body-dark) .mushaf-player__play {
+  color: #06231a !important;
+  background: linear-gradient(135deg, #f4d58a, #c79b42) !important;
+  box-shadow: 0 8px 20px rgba(199, 155, 66, 0.22) !important;
+}
+
+:global(body.theme-body-dark) .mushaf-player__info strong {
+  color: #f5f7f5 !important;
+}
+
+:global(body.theme-body-dark) .mushaf-player__info small {
+  color: #9fb0aa !important;
+}
+
+:global(body.theme-body-dark) .mushaf-player__info > span {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+:global(body.theme-body-dark) .mushaf-player__info > span i {
+  background: #f4d58a !important;
+}
+
+:global(body.theme-body-dark) .mushaf-player__qari-select > svg {
+  color: #d6c18b !important;
+}
+
+:global(body.theme-body-dark) .translation-bottom-sheet,
+:global(body.theme-body-dark) .ayah-options-sheet,
+:global(body.theme-body-dark) .navigator-sheet,
+:global(body.theme-body-dark) .qari-sheet {
+  background: #111c17 !important;
+  border-color: rgba(209, 164, 84, 0.16) !important;
+  color: #eff5f2 !important;
+  box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.48) !important;
+}
+
+:global(body.theme-body-dark) .translation-sheet-settings {
+  background: #0d1713 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:global(body.theme-body-dark) .translation-sheet-header h2,
+:global(body.theme-body-dark) .qari-sheet__header h2,
+:global(body.theme-body-dark) .navigator-sheet__title,
+:global(body.theme-body-dark) .ayah-drawer-title,
+:global(body.theme-body-dark) .surah-picker__header strong,
+:global(body.theme-body-dark) .theme-label-small,
+:global(body.theme-body-dark) .tss-toggle-label,
+:global(body.theme-body-dark) .tss-font-size-label,
+:global(body.theme-body-dark) .translation-text,
+:global(body.theme-body-dark) .translation-item,
+:global(body.theme-body-dark) .ayah-list-item__label,
+:global(body.theme-body-dark) .navigator-field label,
+:global(body.theme-body-dark) .surah-picker__names strong,
+:global(body.theme-body-dark) .qari-item strong {
+  color: #e8efeb !important;
+}
+
+:global(body.theme-body-dark) .translation-sheet-header p,
+:global(body.theme-body-dark) .qari-sheet__header p,
+:global(body.theme-body-dark) .ayah-drawer-subtitle,
+:global(body.theme-body-dark) .ayah-picker__summary,
+:global(body.theme-body-dark) .surah-picker__names small,
+:global(body.theme-body-dark) .qari-item small {
+  color: #9fb0aa !important;
+}
+
+:global(body.theme-body-dark) .translation-sheet-close,
+:global(body.theme-body-dark) .qari-sheet__header > button,
+:global(body.theme-body-dark) .surah-picker__header > button,
+:global(body.theme-body-dark) .ayah-options-sheet .translation-sheet-close {
+  color: #d6c18b !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+:global(body.theme-body-dark) .theme-segmented-control-new,
+:global(body.theme-body-dark) .surah-picker__search,
+:global(body.theme-body-dark) .navigator-select-wrap select,
+:global(body.theme-body-dark) .tss-switch,
+:global(body.theme-body-dark) .ayah-list-item,
+:global(body.theme-body-dark) .qari-item,
+:global(body.theme-body-dark) .surah-picker__item,
+:global(body.theme-body-dark) .ayah-picker__grid button,
+:global(body.theme-body-dark) .section-picker__grid button {
+  background: #16241e !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #e8efeb !important;
+}
+
+:global(body.theme-body-dark) .theme-segment-btn-new {
+  color: #9fb0aa !important;
+}
+
+:global(body.theme-body-dark) .theme-segment-btn-new--active,
+:global(body.theme-body-dark) .ayah-list-item:hover,
+:global(body.theme-body-dark) .qari-item--active,
+:global(body.theme-body-dark) .surah-picker__item--active,
+:global(body.theme-body-dark) .ayah-picker__grid .ayah-picker__number--active,
+:global(body.theme-body-dark) .section-picker__grid .section-picker__number--active {
+  background: #20362c !important;
+  border-color: rgba(244, 213, 138, 0.36) !important;
+  color: #f4d58a !important;
+}
+
+:global(body.theme-body-dark) .ayah-list-item__icon-wrapper,
+:global(body.theme-body-dark) .surah-picker__number {
+  background: rgba(244, 213, 138, 0.12) !important;
+  color: #f4d58a !important;
+}
+
+:global(body.theme-body-dark) .surah-picker__arabic,
+:global(body.theme-body-dark) .qari-item > svg,
+:global(body.theme-body-dark) .surah-picker__item > svg,
+:global(body.theme-body-dark) .navigator-select-wrap svg {
+  color: #d6c18b !important;
+}
+
+:global(body.theme-body-dark) .surah-picker__search input {
+  color: #eff5f2 !important;
+}
+
+:global(body.theme-body-dark) .surah-picker__search input::placeholder {
+  color: #7f918a !important;
+}
+/* ===== Direct dark modifiers for teleported mushaf surfaces ===== */
+.mushaf-player--dark {
+  background: rgba(13, 24, 20, 0.98) !important;
+  border-top: 1px solid rgba(209, 164, 84, 0.22) !important;
+  box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.42) !important;
+  color: #eff5f2 !important;
+}
+
+.mushaf-player--dark .mushaf-player__actions {
+  background: #13231d !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.mushaf-player--dark .mushaf-player__btn {
+  background: transparent !important;
+  color: #a8b7b1 !important;
+}
+
+.mushaf-player--dark .mushaf-player__btn:hover,
+.mushaf-player--dark .mushaf-player__btn:active,
+.mushaf-player--dark .mushaf-player__btn--active {
+  background: rgba(244, 213, 138, 0.12) !important;
+  color: #f4d58a !important;
+}
+
+.mushaf-player--dark .mushaf-player__play {
+  background: linear-gradient(135deg, #f4d58a 0%, #c99f46 100%) !important;
+  color: #06231a !important;
+  box-shadow: 0 8px 22px rgba(199, 155, 66, 0.28) !important;
+}
+
+.mushaf-player--dark .mushaf-player__qari-select {
+  color: #eff5f2 !important;
+}
+
+.mushaf-player--dark .mushaf-player__info strong {
+  color: #f7faf8 !important;
+}
+
+.mushaf-player--dark .mushaf-player__info small {
+  color: #a8b7b1 !important;
+}
+
+.mushaf-player--dark .mushaf-player__info > span {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.mushaf-player--dark .mushaf-player__info > span i {
+  background: #f4d58a !important;
+}
+
+.translation-bottom-sheet--dark {
+  background: #101b16 !important;
+  border-color: rgba(209, 164, 84, 0.18) !important;
+  color: #eff5f2 !important;
+  box-shadow: 0 -16px 38px rgba(0, 0, 0, 0.5) !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-header,
+.translation-bottom-sheet--dark .translation-sheet-settings,
+.translation-bottom-sheet--dark .translation-sheet-player {
+  background: #101b16 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-list,
+.translation-bottom-sheet--dark .translation-list,
+.translation-bottom-sheet--dark .translation-sheet-body {
+  background: #101b16 !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-item,
+.translation-bottom-sheet--dark .translation-item {
+  background: #101b16 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #eff5f2 !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-item--active,
+.translation-bottom-sheet--dark .translation-item--active {
+  background: #173026 !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-header h2,
+.translation-bottom-sheet--dark .translation-sheet-title,
+.translation-bottom-sheet--dark .ayah-drawer-title,
+.translation-bottom-sheet--dark .translation-sheet-item__text,
+.translation-bottom-sheet--dark .translation-text,
+.translation-bottom-sheet--dark .translation-item__text,
+.translation-bottom-sheet--dark .ayah-list-item__label,
+.translation-bottom-sheet--dark .theme-label-small,
+.translation-bottom-sheet--dark .tss-toggle-label,
+.translation-bottom-sheet--dark .tss-font-size-label {
+  color: #eef5f1 !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-header p,
+.translation-bottom-sheet--dark .ayah-drawer-subtitle,
+.translation-bottom-sheet--dark .translation-sheet-item__latin,
+.translation-bottom-sheet--dark .translation-latin,
+.translation-bottom-sheet--dark .translation-item__latin,
+.translation-bottom-sheet--dark .tss-helper,
+.translation-bottom-sheet--dark .tss-font-size-value {
+  color: #a8b7b1 !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-close {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #d8c486 !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-item__number-wrap svg circle {
+  fill: #101b16 !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-item__number-wrap svg path,
+.translation-bottom-sheet--dark .translation-sheet-item__number-wrap svg text {
+  color: #d8aa4e !important;
+  fill: currentColor !important;
+}
+
+.translation-bottom-sheet--dark .theme-segmented-control-new,
+.translation-bottom-sheet--dark .tss-switch,
+.translation-bottom-sheet--dark .ayah-list-item {
+  background: #15261f !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #eff5f2 !important;
+}
+
+.translation-bottom-sheet--dark .theme-segment-btn-new {
+  color: #a8b7b1 !important;
+}
+
+.translation-bottom-sheet--dark .theme-segment-btn-new--active,
+.translation-bottom-sheet--dark .ayah-list-item:hover {
+  background: #20362c !important;
+  border-color: rgba(244, 213, 138, 0.36) !important;
+  color: #f4d58a !important;
+}
+
+.translation-bottom-sheet--dark input,
+.translation-bottom-sheet--dark select,
+.translation-bottom-sheet--dark textarea {
+  background: #15261f !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f4f7f5 !important;
+}
+
+.translation-bottom-sheet--dark input::placeholder,
+.translation-bottom-sheet--dark textarea::placeholder {
+  color: #7f918a !important;
+}
+
+.translation-sheet-player--dark {
+  background: #0d1814 !important;
+  border-top-color: rgba(209, 164, 84, 0.2) !important;
+}
+
+.qari-sheet--dark {
+  background: #101b16 !important;
+  border-color: rgba(209, 164, 84, 0.18) !important;
+  color: #eff5f2 !important;
+  box-shadow: 0 -16px 38px rgba(0, 0, 0, 0.5) !important;
+}
+
+.qari-sheet--dark .qari-sheet__header,
+.qari-sheet--dark .audio-settings-body,
+.qari-sheet--dark .qari-list {
+  background: #101b16 !important;
+  color: #eff5f2 !important;
+}
+
+.qari-sheet--dark .qari-sheet__header h2,
+.qari-sheet--dark .qari-item strong,
+.qari-sheet--dark .audio-settings-col label,
+.qari-sheet--dark .audio-settings-field label {
+  color: #f4f7f5 !important;
+}
+
+.qari-sheet--dark .qari-sheet__header p,
+.qari-sheet--dark .qari-item small {
+  color: #a8b7b1 !important;
+}
+
+.qari-sheet--dark .qari-sheet__header > button {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #d8c486 !important;
+}
+
+.qari-sheet--dark .qari-item,
+.qari-sheet--dark .audio-settings-col select,
+.qari-sheet--dark .audio-settings-field select,
+.qari-sheet--dark input,
+.qari-sheet--dark select,
+.qari-sheet--dark textarea {
+  background: #15261f !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f4f7f5 !important;
+}
+
+.qari-sheet--dark option {
+  background: #15261f !important;
+  color: #f4f7f5 !important;
+}
+
+.qari-sheet--dark .qari-item--active {
+  background: #20362c !important;
+  border-color: rgba(244, 213, 138, 0.5) !important;
+}
+
+.qari-sheet--dark .qari-item--active svg,
+.qari-sheet--dark .qari-item > svg {
+  color: #f4d58a !important;
+}
+
+.qari-sheet--dark .audio-settings-actions button:first-child {
+  background: #f4f7f5 !important;
+  color: #52615b !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.navigator-sheet--dark {
+  background: #101b16 !important;
+  border-color: rgba(209, 164, 84, 0.18) !important;
+  color: #eff5f2 !important;
+  box-shadow: 0 -16px 38px rgba(0, 0, 0, 0.5) !important;
+}
+
+.navigator-sheet--dark .navigator-sheet__content,
+.navigator-sheet--dark .surah-picker,
+.navigator-sheet--dark .ayah-picker,
+.navigator-sheet--dark .section-picker {
+  background: #101b16 !important;
+  color: #eff5f2 !important;
+}
+
+.navigator-sheet--dark .navigator-sheet__header h2,
+.navigator-sheet--dark .navigator-sheet__title,
+.navigator-sheet--dark .navigator-field label,
+.navigator-sheet--dark .navigator-selector strong,
+.navigator-sheet--dark .surah-picker__header strong,
+.navigator-sheet--dark .surah-picker__names strong,
+.navigator-sheet--dark .ayah-picker__summary strong,
+.navigator-sheet--dark .section-picker__summary strong {
+  color: #f4f7f5 !important;
+}
+
+.navigator-sheet--dark .navigator-sheet__header span,
+.navigator-sheet--dark .navigator-sheet__header p,
+.navigator-sheet--dark .navigator-selector small,
+.navigator-sheet--dark .surah-picker__names small,
+.navigator-sheet--dark .ayah-picker__summary,
+.navigator-sheet--dark .section-picker__summary {
+  color: #a8b7b1 !important;
+}
+
+.navigator-sheet--dark .navigator-sheet__header > button,
+.navigator-sheet--dark .surah-picker__header > button,
+.navigator-sheet--dark .ayah-picker__back,
+.navigator-sheet--dark .section-picker__back {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #d8c486 !important;
+}
+
+.navigator-sheet--dark .navigator-selector,
+.navigator-sheet--dark .navigator-select-wrap select,
+.navigator-sheet--dark .surah-picker__search,
+.navigator-sheet--dark .surah-picker__item,
+.navigator-sheet--dark .ayah-picker__grid button,
+.navigator-sheet--dark .section-picker__grid button {
+  background: #15261f !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f4f7f5 !important;
+}
+
+.navigator-sheet--dark .navigator-select-wrap option {
+  background: #15261f !important;
+  color: #f4f7f5 !important;
+}
+
+.navigator-sheet--dark .surah-picker__search input {
+  color: #f4f7f5 !important;
+}
+
+.navigator-sheet--dark .surah-picker__search input::placeholder {
+  color: #7f918a !important;
+}
+
+.navigator-sheet--dark .surah-picker__number {
+  background: rgba(244, 213, 138, 0.14) !important;
+  color: #f4d58a !important;
+}
+
+.navigator-sheet--dark .surah-picker__arabic,
+.navigator-sheet--dark .surah-picker__item > svg,
+.navigator-sheet--dark .navigator-selector > svg,
+.navigator-sheet--dark .navigator-select-wrap svg {
+  color: #d8c486 !important;
+}
+
+.navigator-sheet--dark .surah-picker__item--active,
+.navigator-sheet--dark .ayah-picker__number--active,
+.navigator-sheet--dark .section-picker__number--active {
+  background: #20362c !important;
+  border-color: rgba(244, 213, 138, 0.5) !important;
+  color: #f4d58a !important;
 }
 </style>

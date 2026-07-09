@@ -11,7 +11,7 @@
       <span class="hdr-dot hdr-dot--1"></span>
       <span class="hdr-dot hdr-dot--2"></span>
 
-      <div class="container" style="position: relative; z-index: 2; padding-bottom: 24px;">
+      <div class="container" style="position: relative; z-index: 2; padding-bottom: 0px;">
         <div class="history-header__text">
           <h1 class="history-title">Riwayat Murojaah</h1>
           <p class="history-subtitle">

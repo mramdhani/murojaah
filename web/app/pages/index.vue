@@ -1221,7 +1221,7 @@ useHead({
   padding: 0 20px;
   position: relative;
   z-index: 2;
-  padding-bottom: 28px;
+  padding-bottom: 0px;
 }
 
 .home-header__top {
