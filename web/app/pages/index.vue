@@ -315,6 +315,79 @@
         <div class="skeleton" style="height: 64px; border-radius: 14px;"></div>
       </section>
 
+      <!-- ===== AYAH HARI INI ===== -->
+      <section class="section daily-ayah-section animate-fade-in" style="animation-delay: 0.045s;">
+        <div class="daily-ayah-card" :class="{ 'daily-ayah-card--opened': dailyAyah, 'daily-ayah-card--spinning': dailyAyahOpening }">
+          <div class="daily-ayah-card__content">
+            <div class="daily-ayah-card__copy">
+              <span class="daily-ayah-card__label">Ayah Hari Ini</span>
+              <h2>
+                {{ dailyAyah 
+                  ? `${dailyAyah.surah_name}: ${dailyAyah.ayah_number}` 
+                  : 'Renungan pilihan hari ini' 
+                }}
+              </h2>
+
+              <p>
+                {{ dailyAyah 
+                  ? 'Baca perlahan, renungkan maknanya.' 
+                  : 'Satu ayah singkat untuk menemani niat dan hafalanmu.' 
+                }}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="daily-ayah-reveal"
+              :class="{ 'daily-ayah-reveal--done': dailyAyah }"
+              :disabled="dailyAyahOpening || !!dailyAyah"
+              @click="openDailyAyah"
+            >
+              <span class="daily-ayah-reveal__ring" aria-hidden="true"></span>
+              <span class="daily-ayah-reveal__inner">
+                <svg v-if="dailyAyah" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m5 12 4 4L19 6"/>
+                </svg>
+                <template v-else>
+                  <strong>{{ dailyAyahOpening ? '...' : 'Buka' }}</strong>
+                  <small>Ayah</small>
+                </template>
+              </span>
+            </button>
+
+            <div class="daily-ayah-card__status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3l2.2 4.8L19 10l-4.8 2.2L12 17l-2.2-4.8L5 10l4.8-2.2L12 3Z"/>
+              </svg>
+              <span>{{ dailyAyah ? 'Ayah hari ini sudah terbuka' : '1x / hari' }}</span>
+            </div>
+          </div>
+
+          <Transition name="daily-reveal">
+            <div v-if="dailyAyah" class="daily-ayah-result">
+              <p class="daily-ayah-result__arabic" dir="rtl">{{ dailyAyah.text_arabic }}</p>
+              <p class="daily-ayah-result__translation">{{ dailyAyah.translation_id }}</p>
+              <button type="button" class="daily-ayah-audio" @click="toggleDailyAyahAudio">
+                <span class="daily-ayah-audio__icon" :class="{ 'daily-ayah-audio__icon--playing': dailyAyahAudioPlaying }" aria-hidden="true"></span>
+                <span>{{ dailyAyahAudioPlaying ? 'Jeda Mishary' : 'Dengar Mishary' }}</span>
+              </button>
+              <div class="daily-ayah-result__actions">
+                <NuxtLink
+                  class="daily-ayah-result__btn daily-ayah-result__btn--primary"
+                  :to="{ path: `/mushaf/${dailyAyah.page}`, query: { surah: dailyAyah.surah_number, ayah: dailyAyah.ayah_number } }"
+                >
+                  <span class="daily-ayah-result__btn-icon" aria-hidden="true"></span>Buka di Mushaf
+                </NuxtLink>
+                <button type="button" class="daily-ayah-result__btn" @click="copyDailyAyah">
+                  <span class="daily-ayah-result__btn-icon daily-ayah-result__btn-icon--copy" aria-hidden="true"></span>Salin Ayat
+                </button>
+              </div>
+            </div>
+          </Transition>
+
+          <p v-if="dailyAyahError" class="daily-ayah-error">{{ dailyAyahError }}</p>
+        </div>
+      </section>
       <!-- ===== MUROJAAH HARI INI ===== -->
       <section class="section animate-fade-in" style="animation-delay: 0.06s;" v-if="dashboard">
         <div class="section-header">
@@ -660,6 +733,7 @@ const router = useRouter()
 const { apiFetch } = useApi()
 const { user, isLoggedIn } = useAuth()
 const { open: openDrawer } = useMurojaahDrawer()
+const showToast = inject<(message: string, type?: string) => void>('showToast')
 
 interface SurahProgress {
   id: number
@@ -793,8 +867,244 @@ const goToRemote = (surah: any) => {
   router.push({ path: `/remote/${surah.id}/1`, query: { mode: 'learning' } })
 }
 
+interface DailyAyahData {
+  date: string
+  surah_id: number
+  surah_number: number
+  surah_name: string
+  ayah_number: number
+  page: number
+  text_arabic: string
+  translation_id: string
+}
+
+const dailyAyahPool = [
+  { surah: 1, ayah: 5 },
+  { surah: 2, ayah: 45 },
+  { surah: 2, ayah: 152 },
+  { surah: 2, ayah: 153 },
+  { surah: 2, ayah: 186 },
+  { surah: 2, ayah: 286 },
+  { surah: 3, ayah: 8 },
+  { surah: 3, ayah: 139 },
+  { surah: 3, ayah: 173 },
+  { surah: 9, ayah: 51 },
+  { surah: 13, ayah: 28 },
+  { surah: 14, ayah: 7 },
+  { surah: 16, ayah: 97 },
+  { surah: 20, ayah: 114 },
+  { surah: 21, ayah: 87 },
+  { surah: 24, ayah: 35 },
+  { surah: 25, ayah: 74 },
+  { surah: 29, ayah: 69 },
+  { surah: 33, ayah: 41 },
+  { surah: 33, ayah: 56 },
+  { surah: 39, ayah: 53 },
+  { surah: 40, ayah: 60 },
+  { surah: 47, ayah: 7 },
+  { surah: 57, ayah: 4 },
+  { surah: 59, ayah: 18 },
+  { surah: 65, ayah: 3 },
+  { surah: 73, ayah: 8 },
+  { surah: 93, ayah: 5 },
+  { surah: 94, ayah: 5 },
+  { surah: 94, ayah: 6 }
+]
+
+const dailyAyah = ref<DailyAyahData | null>(null)
+const dailyAyahOpening = ref(false)
+const dailyAyahError = ref('')
+const dailyAyahAudio = ref<HTMLAudioElement | null>(null)
+const dailyAyahAudioPlaying = ref(false)
+
+const todayKey = () => {
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const dailyAyahStorageKey = computed(() =>
+  `murojaah_daily_ayah_${user.value?.id || 'guest'}`
+)
+
+const hashString = (value: string) => {
+  let hash = 0
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(i)
+    hash |= 0
+  }
+  return Math.abs(hash)
+}
+
+const cleanDailyArabic = (text?: string) => (text || '')
+  .replace(/\[[a-z](?:\d+|:\d+)?\[/gi, '')
+  .replace(/\]/g, '')
+  .trim()
+
+const getDailyAyahTarget = () => {
+  const seed = `${todayKey()}-${user.value?.id || user.value?.name || 'guest'}`
+  return dailyAyahPool[hashString(seed) % dailyAyahPool.length]
+}
+
+const loadDailyAyah = () => {
+  if (process.server) return
+  try {
+    const raw = localStorage.getItem(dailyAyahStorageKey.value)
+    const parsed = raw ? JSON.parse(raw) : null
+    dailyAyah.value = parsed?.date === todayKey() ? parsed : null
+  } catch {
+    dailyAyah.value = null
+  }
+}
+
+const dailyAyahAudioUrl = computed(() => {
+  if (!dailyAyah.value) return ''
+  const surah = String(dailyAyah.value.surah_number).padStart(3, '0')
+  const ayah = String(dailyAyah.value.ayah_number).padStart(3, '0')
+  return `https://everyayah.com/data/Alafasy_128kbps/${surah}${ayah}.mp3`
+})
+
+const toggleDailyAyahAudio = async () => {
+  if (process.server || !dailyAyah.value || !dailyAyahAudioUrl.value) return
+  try {
+    if (!dailyAyahAudio.value || dailyAyahAudio.value.src !== dailyAyahAudioUrl.value) {
+      dailyAyahAudio.value?.pause()
+      dailyAyahAudio.value = new Audio(dailyAyahAudioUrl.value)
+      dailyAyahAudio.value.preload = 'none'
+      dailyAyahAudio.value.onended = () => { dailyAyahAudioPlaying.value = false }
+      dailyAyahAudio.value.onerror = () => {
+        dailyAyahAudioPlaying.value = false
+        showToast?.('Audio qari belum bisa diputar', 'forgot')
+      }
+    }
+
+    if (dailyAyahAudioPlaying.value) {
+      dailyAyahAudio.value.pause()
+      dailyAyahAudioPlaying.value = false
+      return
+    }
+
+    await dailyAyahAudio.value.play()
+    dailyAyahAudioPlaying.value = true
+  } catch {
+    dailyAyahAudioPlaying.value = false
+    showToast?.('Audio qari belum bisa diputar', 'forgot')
+  }
+}
+
+const playDailyAyahSound = () => {
+  if (process.server) return
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextClass) return
+    const ctx = new AudioContextClass()
+    if (ctx.state === 'suspended') void ctx.resume()
+    const master = ctx.createGain()
+    master.gain.setValueAtTime(0.0001, ctx.currentTime)
+    master.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 0.04)
+    master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.55)
+    master.connect(ctx.destination)
+
+    for (let i = 0; i < 11; i++) {
+      const start = ctx.currentTime + i * 0.095
+      const tickGain = ctx.createGain()
+      tickGain.gain.setValueAtTime(0.0001, start)
+      tickGain.gain.exponentialRampToValueAtTime(0.035, start + 0.012)
+      tickGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.075)
+      tickGain.connect(master)
+
+      const tick = ctx.createOscillator()
+      tick.type = 'triangle'
+      tick.frequency.setValueAtTime(720 + i * 28, start)
+      tick.connect(tickGain)
+      tick.start(start)
+      tick.stop(start + 0.08)
+    }
+
+    ;[523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+      const start = ctx.currentTime + 1.08 + index * 0.065
+      const chimeGain = ctx.createGain()
+      chimeGain.gain.setValueAtTime(0.0001, start)
+      chimeGain.gain.exponentialRampToValueAtTime(0.045, start + 0.025)
+      chimeGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.52)
+      chimeGain.connect(master)
+
+      const osc = ctx.createOscillator()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(frequency, start)
+      osc.connect(chimeGain)
+      osc.start(start)
+      osc.stop(start + 0.55)
+    })
+
+    window.setTimeout(() => ctx.close(), 1800)
+  } catch {}
+}
+
+const openDailyAyah = async () => {
+  if (dailyAyah.value || dailyAyahOpening.value) return
+  dailyAyahOpening.value = true
+  dailyAyahError.value = ''
+  playDailyAyahSound()
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate([18, 28, 18])
+  }
+
+  try {
+    const target = getDailyAyahTarget()
+    await new Promise(resolve => window.setTimeout(resolve, 1450))
+    const response = await apiFetch<{ data: any }>(`/surahs/${target.surah}/ayahs/${target.ayah}`)
+    const data = response.data
+    const payload: DailyAyahData = {
+      date: todayKey(),
+      surah_id: data.surah_id,
+      surah_number: data.surah_number,
+      surah_name: data.surah_name,
+      ayah_number: data.ayah_number,
+      page: data.page,
+      text_arabic: cleanDailyArabic(data.text_arabic),
+      translation_id: data.translation_id || ''
+    }
+    dailyAyah.value = payload
+    localStorage.setItem(dailyAyahStorageKey.value, JSON.stringify(payload))
+  } catch (error) {
+    console.error('Failed to open daily ayah:', error)
+    dailyAyahError.value = 'Ayah hari ini belum bisa dibuka. Coba lagi sebentar.'
+  } finally {
+    dailyAyahOpening.value = false
+  }
+}
+
+const copyDailyAyah = async () => {
+  if (!dailyAyah.value) return
+  const text = `QS. ${dailyAyah.value.surah_name} ${dailyAyah.value.ayah_number}\n\n${dailyAyah.value.text_arabic}\n\n${dailyAyah.value.translation_id}`
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+    }
+    showToast?.('Ayah hari ini disalin', 'fluent')
+  } catch {
+    showToast?.('Gagal menyalin ayah', 'forgot')
+  }
+}
+onUnmounted(() => {
+  dailyAyahAudio.value?.pause()
+})
+
 onMounted(async () => {
   loadLastReadAyah()
+  loadDailyAyah()
   loadAyahBookmarks()
   try {
     const [dashRes, surahRes] = await Promise.all([
@@ -1495,6 +1805,490 @@ useHead({
   max-width: 220px;
 }
 
+/* ================================================
+   DAILY AYAH
+   ================================================ */
+.daily-ayah-section {
+  margin-top: 14px;
+}
+
+.daily-ayah-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(210, 166, 78, 0.34);
+  background:
+    radial-gradient(circle at 84% 10%, rgba(10, 107, 79, 0.08), transparent 28%),
+    linear-gradient(180deg, #fffdf7 0%, #fff8ea 100%);
+  box-shadow: 0 14px 30px rgba(43, 34, 15, 0.1);
+  isolation: isolate;
+}
+
+.daily-ayah-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(135deg, rgba(10, 107, 79, 0.035) 1px, transparent 1px),
+    linear-gradient(45deg, rgba(205, 158, 62, 0.035) 1px, transparent 1px);
+  background-size: 38px 38px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.daily-ayah-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, #064e3b, #d6a748, #064e3b);
+  opacity: 0.68;
+  pointer-events: none;
+}
+
+.daily-ayah-card__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 14px;
+  padding: 20px 18px 16px;
+  text-align: center;
+}
+
+.daily-ayah-card__copy {
+  min-width: 0;
+  width: 100%;
+}
+
+.daily-ayah-card__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 8px;
+  color: #b68423;
+  font-size: 0.72rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.daily-ayah-card h2 {
+  margin: 0 auto;
+  max-width: 17rem;
+  color: #063f31;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.28rem, 5.8vw, 1.82rem);
+  font-weight: 900;
+  line-height: 1.13;
+  letter-spacing: 0;
+}
+
+.daily-ayah-card p {
+  margin: 8px auto 0;
+  max-width: 17rem;
+  color: #65716d;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.daily-ayah-reveal {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  filter: drop-shadow(0 10px 18px rgba(161, 111, 22, 0.22));
+  -webkit-tap-highlight-color: transparent;
+}
+
+.daily-ayah-reveal:disabled {
+  cursor: default;
+}
+
+.daily-ayah-reveal::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 78% 24%, rgba(255, 255, 255, 0.92) 0 2px, transparent 4px),
+    radial-gradient(circle, rgba(247, 217, 121, 0.22), transparent 68%);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.daily-ayah-reveal__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f8df83, #b78120 44%, #fff2b2 53%, #0a6b4f 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 252, 222, 0.82),
+    0 0 0 6px rgba(247, 217, 121, 0.12);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.daily-ayah-reveal__ring::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 246, 198, 0.78);
+  background:
+    radial-gradient(circle at 38% 23%, rgba(255, 255, 255, 0.18), transparent 24%),
+    radial-gradient(circle, #086044, #064433 78%);
+}
+
+.daily-ayah-reveal__ring::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: conic-gradient(from 0deg, transparent 0 15%, rgba(255, 244, 185, 0.95) 18% 25%, transparent 28% 44%, rgba(214, 167, 72, 0.9) 48% 55%, transparent 58% 74%, rgba(255, 255, 255, 0.82) 78% 83%, transparent 86% 100%) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transform: scale(0.94);
+}
+
+.daily-ayah-reveal__inner {
+  position: relative;
+  z-index: 1;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  color: #fff9d6;
+  background: transparent;
+  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.24);
+}
+
+.daily-ayah-reveal__inner strong,
+.daily-ayah-reveal__inner small {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1;
+}
+
+.daily-ayah-reveal__inner strong {
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.daily-ayah-reveal__inner small {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #f4d779;
+}
+
+.daily-ayah-reveal__inner svg {
+  width: 36px;
+  height: 36px;
+  color: #fff;
+}
+
+.daily-ayah-card--spinning .daily-ayah-reveal__ring {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 252, 222, 0.86),
+    0 0 0 9px rgba(247, 217, 121, 0.14),
+    0 0 24px rgba(214, 167, 72, 0.28);
+}
+
+.daily-ayah-card--spinning .daily-ayah-reveal__ring::after {
+  opacity: 1;
+  animation: daily-ayah-orbit 0.9s cubic-bezier(0.34, 0.01, 0.28, 1) infinite;
+}
+
+.daily-ayah-card--spinning .daily-ayah-reveal::before {
+  animation: daily-ayah-glow 0.72s ease-in-out infinite alternate;
+}
+
+.daily-ayah-card--spinning .daily-ayah-reveal__inner {
+  animation: daily-ayah-breathe 0.72s ease-in-out infinite alternate;
+}
+
+.daily-ayah-card__status {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 13px;
+  color: #064e3b;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(205, 158, 62, 0.32);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.daily-ayah-card__status svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: #c89522;
+}
+
+.daily-ayah-result {
+  position: relative;
+  z-index: 1;
+  margin: 0 12px 12px;
+  padding: 18px 14px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(214, 167, 72, 0.36);
+  box-shadow: 0 8px 18px rgba(52, 42, 21, 0.07);
+}
+
+.daily-ayah-result::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 72px;
+  height: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, #d6a748, transparent);
+}
+
+.daily-ayah-result::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #d6a748;
+  border-radius: 2px;
+}
+
+.daily-ayah-result__arabic {
+  margin: 0 0 13px !important;
+  color: #073f32 !important;
+  font-family: var(--font-arabic);
+  font-size: clamp(1.55rem, 7vw, 2.08rem) !important;
+  font-weight: 400;
+  line-height: 2.18 !important;
+  letter-spacing: 0;
+  word-spacing: 0.08em;
+  direction: rtl;
+  text-align: center;
+  font-feature-settings: "liga" on, "clig" on, "calt" on;
+  font-variant-ligatures: common-ligatures;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.daily-ayah-result__translation {
+  margin: 0 auto !important;
+  max-width: 24rem;
+  color: #444f4a !important;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.88rem !important;
+  line-height: 1.58 !important;
+  text-align: center;
+}
+
+.daily-ayah-audio {
+  width: fit-content;
+  min-height: 36px;
+  margin: 14px auto 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(6, 78, 59, 0.16);
+  color: #064e3b;
+  background: rgba(236, 253, 245, 0.74);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.daily-ayah-audio__icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: #064e3b;
+  color: #fff9d6;
+  flex: 0 0 auto;
+}
+
+.daily-ayah-audio__icon::before {
+  content: "";
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid currentColor;
+}
+
+.daily-ayah-audio__icon--playing::before {
+  width: 7px;
+  height: 8px;
+  margin-left: 0;
+  border: 0;
+  border-left: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+}
+
+.daily-ayah-result__actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.daily-ayah-result__btn {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid rgba(205, 158, 62, 0.48);
+  border-radius: 12px;
+  color: #064e3b;
+  background: linear-gradient(180deg, #fffdf7, #fff8ec);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.daily-ayah-result__btn--primary {
+  color: #fff9d6;
+  background: linear-gradient(135deg, #075742, #064e3b);
+  border-color: rgba(214, 167, 72, 0.72);
+  box-shadow: 0 8px 16px rgba(6, 78, 59, 0.16);
+}
+
+.daily-ayah-result__btn-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+}
+
+.daily-ayah-result__btn-icon::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+
+.daily-ayah-result__btn-icon--copy {
+  border-radius: 4px;
+  transform: translate(-1px, 1px);
+}
+
+.daily-ayah-result__btn-icon--copy::before {
+  inset: auto;
+  width: 10px;
+  height: 10px;
+  right: -5px;
+  top: -5px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  background: inherit;
+}
+
+.daily-ayah-error {
+  position: relative;
+  z-index: 1;
+  margin: 0 18px 16px !important;
+  color: #b4534b !important;
+  font-size: 0.8rem !important;
+}
+
+.daily-reveal-enter-active,
+.daily-reveal-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.daily-reveal-enter-from,
+.daily-reveal-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes daily-ayah-orbit {
+  0% { transform: rotate(0deg) scale(0.94); }
+  70% { transform: rotate(300deg) scale(1.04); }
+  100% { transform: rotate(360deg) scale(0.94); }
+}
+
+@keyframes daily-ayah-glow {
+  from { opacity: 0.48; transform: scale(0.96); }
+  to { opacity: 0.9; transform: scale(1.04); }
+}
+
+@keyframes daily-ayah-breathe {
+  from { transform: scale(0.985); }
+  to { transform: scale(1.025); }
+}
+
+@media (min-width: 430px) {
+  .daily-ayah-card__content {
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-items: start;
+    text-align: left;
+    padding: 22px 22px 16px;
+  }
+
+  .daily-ayah-card__copy,
+  .daily-ayah-card h2,
+  .daily-ayah-card p {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .daily-ayah-reveal {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    width: 112px;
+    height: 112px;
+  }
+
+  .daily-ayah-card__status {
+    grid-column: 1 / -1;
+  }
+
+  .daily-ayah-result {
+    margin: 0 16px 16px;
+    padding: 20px 18px 18px;
+  }
+
+  .daily-ayah-result__actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 /* ================================================
    QUICK ACTIONS
    ================================================ */
