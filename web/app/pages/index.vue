@@ -412,9 +412,10 @@
       </section>
 
       <!-- ===== QUICK ACTIONS ===== -->
-      <section class="section animate-fade-in" style="animation-delay: 0.1s" v-if="dashboard?.last_session">
+      <section class="section animate-fade-in" style="animation-delay: 0.1s" v-if="dashboard?.last_session || lastReadAyah || ayahBookmarks.length">
         <div class="quick-actions">
           <NuxtLink
+            v-if="dashboard?.last_session"
             :to="{ path: `/remote/${dashboard.last_session.surah_id}/${dashboard.last_session.current_ayah_number}`, query: { mode: 'learning' } }"
             class="quick-action quick-action--primary"
           >
@@ -424,6 +425,35 @@
               </svg>
             </div>
             <span>Lanjut Murojaah {{ dashboard.last_session.surah_name }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
+          </NuxtLink>
+
+          <NuxtLink
+            v-if="lastReadAyah"
+            :to="{ path: `/mushaf/${lastReadAyah.page}`, query: { surah: lastReadAyah.surah, ayah: lastReadAyah.ayah } }"
+            class="quick-action quick-action--outline"
+          >
+            <div class="qa-icon-wrap qa-icon-wrap--outline">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+              </svg>
+            </div>
+            <span>Lanjut Baca Mushaf {{ lastReadAyah.surah_name || `Surat ${lastReadAyah.surah}` }}:{{ lastReadAyah.ayah }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
+          </NuxtLink>
+
+          <NuxtLink
+            v-if="ayahBookmarks.length"
+            to="/bookmarks"
+            class="quick-action quick-action--outline"
+          >
+            <div class="qa-icon-wrap qa-icon-wrap--outline">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+                <path d="m9 10 2 2 4-4"/>
+              </svg>
+            </div>
+            <span>Bookmark Ayat ({{ ayahBookmarks.length }})</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.6"><polyline points="9 18 15 12 9 6"/></svg>
           </NuxtLink>
         </div>
@@ -666,6 +696,7 @@ interface DashboardData {
 }
 
 const { getBadge, getNextBadge, getProgressToNext, getAyahsToNext, badges } = useBadge()
+const { bookmarks: ayahBookmarks, loadBookmarks: loadAyahBookmarks } = useAyahBookmarks()
 
 import type { Badge } from '~/composables/useBadge'
 
@@ -698,6 +729,26 @@ const totalAyah = computed(() => dashboard.value?.overall.total_reviewed || 0)
 
 const dashboard = ref<DashboardData | null>(null)
 const surahs = ref<SurahProgress[]>([])
+
+interface LastReadAyah {
+  surah: number
+  ayah: number
+  verse_key: string
+  page: number
+  surah_name?: string
+}
+
+const lastReadAyah = ref<LastReadAyah | null>(null)
+
+const loadLastReadAyah = () => {
+  if (process.server) return
+  try {
+    const raw = localStorage.getItem('murojaah_last_read')
+    lastReadAyah.value = raw ? JSON.parse(raw) : null
+  } catch {
+    lastReadAyah.value = null
+  }
+}
 
 const activeSurahs = computed(() =>
   surahs.value.filter(s => s.progress.fluent + s.progress.doubtful + s.progress.forgot > 0)
@@ -743,6 +794,8 @@ const goToRemote = (surah: any) => {
 }
 
 onMounted(async () => {
+  loadLastReadAyah()
+  loadAyahBookmarks()
   try {
     const [dashRes, surahRes] = await Promise.all([
       apiFetch<{ data: DashboardData }>('/dashboard'),

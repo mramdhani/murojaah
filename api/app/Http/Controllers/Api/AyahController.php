@@ -207,6 +207,7 @@ class AyahController extends Controller
                         'juz'             => $ayah->juz,
                         'page'            => $ayah->page,
                         'progress_status' => $progress ? $progress->status : 'unreviewed',
+                        'text_arabic'      => $this->cleanTajweedText($ayah->text_arabic),
                         'translation_id'  => $ayah->translation_id,
                     ];
                 })->values(),

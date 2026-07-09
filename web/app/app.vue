@@ -90,6 +90,7 @@ const showSplash = computed(() => {
 onMounted(() => {
   initSession()
   initTheme()
+  useOrientationLock()
   // Force-hide splash after 5s even if backend is down
   setTimeout(() => { splashTimedOut.value = true }, 5000)
 })

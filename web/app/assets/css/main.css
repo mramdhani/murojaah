@@ -545,4 +545,33 @@ button {
   }
 }
 
+/* ── iOS Portrait Lock ─────────────────────────────────────────────────────
+   iOS Safari and iOS PWA ignore the web-app-manifest `orientation: portrait`
+   field. This CSS trick rotates the root element 90° when the device enters
+   landscape AND the js composable (useOrientationLock) has set the class
+   `ios-portrait-lock` on <html>. The mushaf page is excluded from this lock.
+   ───────────────────────────────────────────────────────────────────────── */
+@media screen and (orientation: landscape) {
+  html.ios-portrait-lock {
+    /* Swap width/height so the "portrait" layout fills the physical screen */
+    width: 100vh;
+    height: 100vw;
+    overflow: hidden;
+
+    /* Rotate counter-clockwise so top-of-screen becomes left */
+    transform: rotate(-90deg);
+    transform-origin: top left;
+
+    /* Shift down so the rotated element sits within the viewport */
+    position: fixed;
+    top: 100%;
+    left: 0;
+  }
+
+  html.ios-portrait-lock body {
+    width: 100vh;
+    height: 100vw;
+    overflow: hidden;
+  }
+}
 

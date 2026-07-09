@@ -162,6 +162,8 @@
                                   'mushaf-word',
                                   ...tajweedClassesForWord(word.text_tajweed),
                                   index === 1 && isActiveVerse(word.verse_key) ? 'mushaf-word--active' : '',
+                                  index === 1 && isLastReadVerse(word.verse_key) ? 'mushaf-word--last-read' : '',
+                                  index === 1 && isBookmarkedVerse(word.verse_key) ? 'mushaf-word--bookmarked' : '',
                                   index === 1 ? getVerseProgressClass(word.verse_key) : ''
                                 ]"
                               >
@@ -175,6 +177,8 @@
                                   'mushaf-word',
                                   'mushaf-word--end',
                                   index === 1 && isActiveVerse(word.attachedOrnament.verse_key) ? 'mushaf-word--active' : '',
+                                  index === 1 && isLastReadVerse(word.attachedOrnament.verse_key) ? 'mushaf-word--last-read' : '',
+                                  index === 1 && isBookmarkedVerse(word.attachedOrnament.verse_key) ? 'mushaf-word--bookmarked' : '',
                                   index === 1 ? getVerseProgressClass(word.attachedOrnament.verse_key) : ''
                                 ]"
                               >
@@ -798,16 +802,34 @@
               <svg class="ayah-list-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
             </button>
 
-            <!-- 3. Tandai Terakhir Baca -->
-            <button type="button" class="ayah-list-item" @click="markLastRead">
-              <div class="ayah-list-item__icon-wrapper">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+            <!-- 3. Tandai Terakhir Baca / Hapus -->
+            <button type="button" class="ayah-list-item" @click="toggleLastRead">
+              <div class="ayah-list-item__icon-wrapper" :class="{ 'ayah-list-item__icon-wrapper--active': isSelectedAyahLastRead }">
+                <template v-if="isSelectedAyahLastRead">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 21V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2z"/></svg>
+                </template>
+                <template v-else>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2z"/></svg>
+                </template>
               </div>
-              <span class="ayah-list-item__label">Tandai Terakhir Baca</span>
+              <span class="ayah-list-item__label">{{ isSelectedAyahLastRead ? 'Hapus Tandai' : 'Tandai Terakhir Baca' }}</span>
+              <svg class="ayah-list-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <!-- 4. Bookmark (menggunakan icon bintang untuk favorit) -->
+            <button type="button" class="ayah-list-item" @click="toggleSelectedAyahBookmark">
+              <div class="ayah-list-item__icon-wrapper" :class="{ 'ayah-list-item__icon-wrapper--active': selectedAyahBookmarked }">
+                <template v-if="selectedAyahBookmarked">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </template>
+                <template v-else>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </template>
+              </div>
+              <span class="ayah-list-item__label">{{ selectedAyahBookmarked ? 'Hapus Bookmark' : 'Simpan Bookmark' }}</span>
               <svg class="ayah-list-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
             </button>
 
-            <!-- 4. Bagikan -->
+            <!-- 5. Bagikan -->
             <button type="button" class="ayah-list-item" @click="shareAyah">
               <div class="ayah-list-item__icon-wrapper">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -1052,6 +1074,7 @@ interface MushafPageData {
     ayah_number: number
     page: number
     progress_status: string
+    text_arabic?: string
     translation_id?: string
   }>
 }
@@ -1071,6 +1094,7 @@ const router = useRouter()
 const { apiFetch } = useApi()
 const { open: openMurojaahDrawer } = useMurojaahDrawer()
 const showToast = inject<(msg: string, type?: string) => void>('showToast')
+const { loadBookmarks, isBookmarked, toggleBookmark } = useAyahBookmarks()
 
 const pageData = ref<MushafPageData | null>(null)
 const surahOptions = ref<SurahOption[]>([])
@@ -1099,6 +1123,18 @@ const activeTranslationItemRef = ref<HTMLElement | null>(null)
 
 const showAyahDrawer = ref(false)
 const selectedAyahForDrawer = ref<{surah: number, ayah: number, verse_key: string, text?: string} | null>(null)
+
+interface LastReadAyah {
+  surah: number
+  ayah: number
+  verse_key: string
+  page: number
+  surah_name?: string
+  text?: string
+  marked_at?: string
+}
+
+const lastReadAyah = ref<LastReadAyah | null>(null)
 
 interface TranslationEdition {
   id: string
@@ -1235,31 +1271,32 @@ const handleTranslationScroll = (event: Event) => {
   }
 }
 
+const getAyahByVerseKey = (verseKey: string) =>
+  pageData.value?.ayahs.find(ayah => ayah.verse_key === verseKey)
+
+const getAyahArabicText = (verseKey: string): string => {
+  const ayah = getAyahByVerseKey(verseKey)
+  if (ayah?.text_arabic) return ayah.text_arabic.trim()
+
+  const segments: string[] = []
+  for (const line of pageData.value?.lines || []) {
+    const fallback = line.unicode_fallback?.find(item => item.verse_key === verseKey)
+    if (fallback?.text) segments.push(fallback.text.trim())
+  }
+
+  return segments.join(' ').trim()
+}
+
 const openAyahOptions = (verseKey: string) => {
   const [surah, ayah] = verseKey.split(':').map(Number)
   selectedSurahId.value = surah
   selectedAyah.value = ayah
   
-  // Extract full Arabic text from line fallbacks (reconstruct lines segments)
-  let arabicText = ''
-  if (pageData.value?.lines) {
-    const segments = []
-    for (const line of pageData.value.lines) {
-      if (line.unicode_fallback) {
-        const fb = line.unicode_fallback.find(f => f.verse_key === verseKey)
-        if (fb && fb.text) {
-          segments.push(fb.text.trim())
-        }
-      }
-    }
-    arabicText = segments.join(' ')
-  }
-  
   selectedAyahForDrawer.value = { 
     surah, 
     ayah, 
     verse_key: verseKey, 
-    text: arabicText || ''
+    text: getAyahArabicText(verseKey)
   }
   showAyahDrawer.value = true
 }
@@ -1282,15 +1319,84 @@ const selectedAyahSurahName = computed(() => {
   return surah ? surah.name_latin : ''
 })
 
-const markLastRead = () => {
+const isLastReadVerse = (verseKey: string): boolean =>
+  lastReadAyah.value?.verse_key === verseKey
+
+const isBookmarkedVerse = (verseKey: string): boolean =>
+  isBookmarked(verseKey)
+
+const loadLastReadAyah = () => {
+  if (process.server) return
+  try {
+    const raw = localStorage.getItem('murojaah_last_read')
+    lastReadAyah.value = raw ? JSON.parse(raw) : null
+  } catch {
+    lastReadAyah.value = null
+  }
+}
+
+const selectedAyahBookmarked = computed(() =>
+  selectedAyahForDrawer.value ? isBookmarked(selectedAyahForDrawer.value.verse_key) : false
+)
+
+const isSelectedAyahLastRead = computed(() =>
+  selectedAyahForDrawer.value ? lastReadAyah.value?.verse_key === selectedAyahForDrawer.value.verse_key : false
+)
+
+const toggleLastRead = () => {
   if (!selectedAyahForDrawer.value) return
-  localStorage.setItem('murojaah_last_read', JSON.stringify({
+  if (isSelectedAyahLastRead.value) {
+    // Remove last read
+    localStorage.removeItem('murojaah_last_read')
+    lastReadAyah.value = null
+    showToast?.('Tandai terakhir baca dihapus', 'info')
+  } else {
+    // Set last read
+    const payload: LastReadAyah = {
+      surah: selectedAyahForDrawer.value.surah,
+      ayah: selectedAyahForDrawer.value.ayah,
+      verse_key: selectedAyahForDrawer.value.verse_key,
+      page: pageNumber.value,
+      surah_name: selectedAyahSurahName.value,
+      text: selectedAyahForDrawer.value.text || getAyahArabicText(selectedAyahForDrawer.value.verse_key),
+      marked_at: new Date().toISOString()
+    }
+    localStorage.setItem('murojaah_last_read', JSON.stringify(payload))
+    lastReadAyah.value = payload
+    showToast?.(`Surat ${selectedAyahSurahName.value} Ayat ${selectedAyahForDrawer.value.ayah} ditandai sebagai terakhir baca`, 'fluent')
+  }
+  showAyahDrawer.value = false
+}
+
+const toggleSelectedAyahBookmark = () => {
+  if (!selectedAyahForDrawer.value) return
+  const saved = toggleBookmark({
     surah: selectedAyahForDrawer.value.surah,
     ayah: selectedAyahForDrawer.value.ayah,
     verse_key: selectedAyahForDrawer.value.verse_key,
-    page: pageNumber.value
-  }))
-  showToast?.(`Surat ${selectedAyahSurahName.value} Ayat ${selectedAyahForDrawer.value.ayah} ditandai sebagai terakhir baca`, 'success')
+    page: pageNumber.value,
+    surah_name: selectedAyahSurahName.value,
+    text: selectedAyahForDrawer.value.text || getAyahArabicText(selectedAyahForDrawer.value.verse_key),
+    translation: getAyahByVerseKey(selectedAyahForDrawer.value.verse_key)?.translation_id || ''
+  })
+  showToast?.(saved ? 'Ayat disimpan ke bookmark' : 'Bookmark ayat dihapus', saved ? 'fluent' : 'info')
+  showAyahDrawer.value = false
+}
+
+const markLastRead = () => {
+  if (!selectedAyahForDrawer.value) return
+  const payload: LastReadAyah = {
+    surah: selectedAyahForDrawer.value.surah,
+    ayah: selectedAyahForDrawer.value.ayah,
+    verse_key: selectedAyahForDrawer.value.verse_key,
+    page: pageNumber.value,
+    surah_name: selectedAyahSurahName.value,
+    text: selectedAyahForDrawer.value.text || getAyahArabicText(selectedAyahForDrawer.value.verse_key),
+    marked_at: new Date().toISOString()
+  }
+  localStorage.setItem('murojaah_last_read', JSON.stringify(payload))
+  lastReadAyah.value = payload
+  showToast?.(`Surat ${selectedAyahSurahName.value} Ayat ${selectedAyahForDrawer.value.ayah} ditandai sebagai terakhir baca`, 'fluent')
   showAyahDrawer.value = false
 }
 
@@ -1316,14 +1422,15 @@ const fallbackCopyText = (text: string) => {
 
 const shareAyah = async () => {
   if (!selectedAyahForDrawer.value) return
-  const text = `Surat ${selectedAyahSurahName.value} Ayat ${selectedAyahForDrawer.value.ayah}: ${selectedAyahForDrawer.value.text || ''}`
+  const arabicText = selectedAyahForDrawer.value.text || getAyahArabicText(selectedAyahForDrawer.value.verse_key)
+  const ayahUrl = `${window.location.origin}/mushaf/${pageNumber.value}?surah=${selectedAyahForDrawer.value.surah}&ayah=${selectedAyahForDrawer.value.ayah}`
+  const text = `QS. ${selectedAyahSurahName.value} ${selectedAyahForDrawer.value.ayah}\n\n${arabicText}\n\n${ayahUrl}`
   showAyahDrawer.value = false
   if (navigator.share) {
     try {
       await navigator.share({
-        title: 'Murojaah',
-        text: text,
-        url: window.location.href
+        title: `QS. ${selectedAyahSurahName.value} ${selectedAyahForDrawer.value.ayah}`,
+        text
       })
     } catch (e) {
       console.error('Share failed', e)
@@ -1335,37 +1442,44 @@ const shareAyah = async () => {
       } else {
         fallbackCopyText(text)
       }
-      showToast?.('Teks ayat disalin untuk dibagikan!', 'success')
+      showToast?.('Teks ayat disalin untuk dibagikan!', 'fluent')
     } catch (e) {
       if (fallbackCopyText(text)) {
-        showToast?.('Teks ayat disalin untuk dibagikan!', 'success')
+        showToast?.('Teks ayat disalin untuk dibagikan!', 'fluent')
       } else {
         console.error('Copy failed', e)
+        showToast?.('Gagal menyiapkan ayat untuk dibagikan', 'forgot')
       }
     }
   }
 }
 
 const copyAyahText = async () => {
-  if (selectedAyahForDrawer.value?.text) {
-    const textToCopy = selectedAyahForDrawer.value.text
+  if (selectedAyahForDrawer.value) {
+    const textToCopy = selectedAyahForDrawer.value.text || getAyahArabicText(selectedAyahForDrawer.value.verse_key)
+    if (!textToCopy) {
+      showToast?.('Tidak ada teks Arab untuk disalin', 'doubtful')
+      showAyahDrawer.value = false
+      return
+    }
+
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(textToCopy)
       } else {
         fallbackCopyText(textToCopy)
       }
-      showToast?.('Teks Arab berhasil disalin!', 'success')
+      showToast?.('Teks Arab berhasil disalin!', 'fluent')
     } catch (e) {
       if (fallbackCopyText(textToCopy)) {
-        showToast?.('Teks Arab berhasil disalin!', 'success')
+        showToast?.('Teks Arab berhasil disalin!', 'fluent')
       } else {
         console.error('Failed to copy', e)
-        showToast?.('Gagal menyalin teks Arab', 'error')
+        showToast?.('Gagal menyalin teks Arab', 'forgot')
       }
     }
   } else {
-    showToast?.('Tidak ada teks Arab untuk disalin', 'warning')
+    showToast?.('Tidak ada teks Arab untuk disalin', 'doubtful')
   }
   showAyahDrawer.value = false
 }
@@ -1851,7 +1965,7 @@ watch(activeHighlightVerse, async (newVerse) => {
         surah: activeAyahData.surah_id,
         ayah: activeAyahData.ayah_number,
         verse_key: activeAyahData.verse_key,
-        text: (activeAyahData as any).text_imlaei_simple || (activeAyahData as any).text_uthmani || ''
+        text: getAyahArabicText(activeAyahData.verse_key)
       }
     }
   }
@@ -2901,6 +3015,8 @@ watch(activePickerType, async (newVal) => {
 watch(() => route.params.pageNumber, handlePageChange)
 
 onMounted(() => {
+  loadLastReadAyah()
+  loadBookmarks()
   handlePageChange()
   loadSurahOptions()
   window.addEventListener('resize', fitQcfLines)
@@ -6390,6 +6506,50 @@ useHead({
 
 .mushaf-theme--dark .mushaf-word--active.mushaf-word--end {
   background: rgba(52, 211, 153, 0.32) !important;
+}
+
+.mushaf-word--last-read:not(.mushaf-word--active) {
+  background: rgba(212, 175, 55, 0.18);
+  box-shadow: 0 0 0 1px rgba(180, 125, 26, 0.16);
+  border-radius: 6px;
+}
+
+.mushaf-word--last-read.mushaf-word--end .mushaf-ayah-ornament {
+  position: relative;
+}
+
+.mushaf-word--last-read.mushaf-word--end .mushaf-ayah-ornament::after {
+  content: "";
+  position: absolute;
+  top: -0.3em;
+  right: -0.25em;
+  width: 0.36em;
+  height: 0.52em;
+  background: linear-gradient(180deg, #f6d974, #b98520);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%);
+  filter: drop-shadow(0 1px 2px rgba(91, 56, 10, 0.28));
+}
+
+.mushaf-word--bookmarked:not(.mushaf-word--active) {
+  background: rgba(10, 107, 79, 0.11);
+  box-shadow: 0 0 0 1px rgba(10, 107, 79, 0.12);
+  border-radius: 6px;
+}
+
+.mushaf-word--bookmarked.mushaf-word--end .mushaf-ayah-ornament {
+  position: relative;
+}
+
+.mushaf-word--bookmarked.mushaf-word--end .mushaf-ayah-ornament::before {
+  content: "";
+  position: absolute;
+  right: -0.24em;
+  bottom: -0.16em;
+  width: 0.42em;
+  height: 0.42em;
+  border-radius: 999px;
+  background: #0a6b4f;
+  box-shadow: 0 0 0 0.1em #f8f3df;
 }
 
 /* Soft pastel Tajweed colors for Dark Mode to avoid eye strain (Anti-Glare) */

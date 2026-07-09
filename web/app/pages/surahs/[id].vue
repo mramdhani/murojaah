@@ -104,6 +104,7 @@
 </template>
 
 <script setup lang="ts">
+useScrollRestore('surahs-detail')
 const route = useRoute()
 const router = useRouter()
 const { apiFetch } = useApi()

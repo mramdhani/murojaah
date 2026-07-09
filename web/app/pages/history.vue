@@ -191,6 +191,7 @@
 </template>
 
 <script setup lang="ts">
+useScrollRestore('history')
 const router = useRouter()
 const { apiFetch } = useApi()
 

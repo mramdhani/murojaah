@@ -345,6 +345,7 @@
 </template>
 
 <script setup lang="ts">
+useScrollRestore('progress-index')
 import type { Badge } from '~/composables/useBadge'
 const { apiFetch } = useApi()
 const { getBadge, getNextBadge, getAyahsToNext, getProgressToNext, badges } = useBadge()

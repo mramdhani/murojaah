@@ -102,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+useScrollRestore('progress-detail')
 const route = useRoute()
 const { apiFetch } = useApi()
 

@@ -195,6 +195,7 @@
 </template>
 
 <script setup lang="ts">
+useScrollRestore('surahs-index')
 const { apiFetch } = useApi()
 
 interface SurahItem {

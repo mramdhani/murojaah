@@ -526,6 +526,7 @@
 </template>
 
 <script setup lang="ts">
+useScrollRestore('profile')
 const { user, isLoggedIn, loginWithGoogle, logout, loading: authLoading } = useAuth()
 const { apiFetch } = useApi()
 const { currentThemeId, setTheme, themesList } = useTheme()
@@ -1250,28 +1251,29 @@ useHead({
 }
 
 .settings-card__group-head {
-  margin: -8px -16px 10px;
-  padding: 14px 16px 12px;
-  background: var(--color-primary-50);
+  margin: -8px -16px 0;
+  padding: 16px 16px 14px;
+  background: #F9FAFB;
+  border-bottom: 1.5px solid #F3F4F6;
   border-top-left-radius: 14px;
   border-top-right-radius: 14px;
 }
 
 .settings-card__group-head h3 {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-primary-dark);
-  margin-bottom: 6px;
+  color: #374151;
+  margin-bottom: 4px;
 }
 
 .settings-card__group-head p {
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #6B7280;
   font-weight: 500;
-  max-width: 34ch;
+  max-width: 100%;
 }
 
 .settings-note {
