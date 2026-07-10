@@ -337,6 +337,7 @@
             </div>
 
             <button
+              v-if="!dailyAyah"
               type="button"
               class="daily-ayah-reveal"
               :class="{ 'daily-ayah-reveal--done': dailyAyah }"
@@ -355,11 +356,11 @@
               </span>
             </button>
 
-            <div class="daily-ayah-card__status">
+            <div v-if="!dailyAyah" class="daily-ayah-card__status">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3l2.2 4.8L19 10l-4.8 2.2L12 17l-2.2-4.8L5 10l4.8-2.2L12 3Z"/>
               </svg>
-              <span>{{ dailyAyah ? 'Ayah hari ini sudah terbuka' : '1x / hari' }}</span>
+              <span>1x / hari</span>
             </div>
           </div>
 
