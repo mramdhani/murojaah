@@ -1,6 +1,6 @@
 <template>
   <Transition name="drawer-fade">
-    <div class="murojaah-drawer-wrapper" v-if="isOpen">
+    <div class="murojaah-drawer-wrapper" :class="{ 'murojaah-drawer-wrapper--dark': isMushafDarkMode }" v-if="isOpen">
       <!-- Backdrop overlay -->
       <div class="drawer-backdrop" @click="close"></div>
 
@@ -155,6 +155,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 
 const { isOpen, mode, format, close } = useMurojaahDrawer()
 const { apiFetch } = useApi()
+const mushafTheme = useCookie<'classic' | 'nabawiyyah' | 'dark'>('mushaf_theme', { default: () => 'classic', path: '/' })
 
 const murojaahSheet = useBottomSheet({
   mode: 'dismiss',
@@ -269,6 +270,7 @@ const filteredSurahs = computed(() => {
 
 const router = useRouter()
 const route = useRoute()
+const isMushafDarkMode = computed(() => route.path.startsWith('/mushaf') && mushafTheme.value === 'dark')
 
 const currentSurahIdFromRoute = computed(() => {
   if (route.params.surahId) {
@@ -694,4 +696,97 @@ const selectSurah = (surahId: number) => {
   transform: translateY(100%);
 }
 
+/* Dark theme when the drawer is opened from Mushaf dark mode */
+.murojaah-drawer-wrapper--dark .drawer-backdrop {
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(10px);
+}
+
+.murojaah-drawer-wrapper--dark .drawer-panel {
+  background: #101b16;
+  border-top-color: rgba(209, 164, 84, 0.24);
+  box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.52);
+  color: #eef5f1;
+}
+
+.murojaah-drawer-wrapper--dark .drawer-handle {
+  background: rgba(238, 245, 241, 0.28);
+}
+
+.murojaah-drawer-wrapper--dark .drawer-title {
+  color: #f4f7f5;
+}
+
+.murojaah-drawer-wrapper--dark .drawer-subtitle {
+  color: #a8b7b1;
+}
+
+.murojaah-drawer-wrapper--dark .drawer-close {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8c486;
+}
+
+.murojaah-drawer-wrapper--dark .drawer-close:hover {
+  background: rgba(244, 213, 138, 0.14);
+  color: #f4d58a;
+}
+
+.murojaah-drawer-wrapper--dark .journey-card {
+  background: #15261f;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #b7c7c0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.murojaah-drawer-wrapper--dark .journey-card--quiz.journey-card--active {
+  background: linear-gradient(145deg, #0b5f46 0%, #0c8c68 100%);
+  color: #f7fffb;
+  box-shadow: 0 8px 18px rgba(6, 78, 59, 0.28);
+}
+
+.murojaah-drawer-wrapper--dark .journey-card--mushaf.journey-card--active {
+  background: linear-gradient(145deg, #d9b45d 0%, #9b6a21 100%);
+  color: #112018;
+  box-shadow: 0 8px 18px rgba(209, 164, 84, 0.24);
+}
+
+.murojaah-drawer-wrapper--dark .journey-card--listening.journey-card--active {
+  background: linear-gradient(145deg, #1d5b4a 0%, #2f7e69 100%);
+  color: #f7fffb;
+  box-shadow: 0 8px 18px rgba(47, 126, 105, 0.24);
+}
+
+.murojaah-drawer-wrapper--dark .search-wrapper,
+.murojaah-drawer-wrapper--dark .drawer-surah-card {
+  background: #15261f;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.murojaah-drawer-wrapper--dark .search-wrapper:focus-within {
+  background: #192c24;
+  border-color: rgba(244, 213, 138, 0.44);
+  box-shadow: 0 0 0 3px rgba(244, 213, 138, 0.08);
+}
+
+.murojaah-drawer-wrapper--dark .search-input,
+.murojaah-drawer-wrapper--dark .surah-name,
+.murojaah-drawer-wrapper--dark .drawer-section-title {
+  color: #eef5f1;
+}
+
+.murojaah-drawer-wrapper--dark .search-input::placeholder,
+.murojaah-drawer-wrapper--dark .surah-meta,
+.murojaah-drawer-wrapper--dark .drawer-empty p {
+  color: #a8b7b1;
+}
+
+.murojaah-drawer-wrapper--dark .search-icon,
+.murojaah-drawer-wrapper--dark .surah-arabic {
+  color: #d8c486;
+}
+
+.murojaah-drawer-wrapper--dark .surah-badge-num {
+  background: rgba(244, 213, 138, 0.14);
+  color: #f4d58a;
+}
 </style>

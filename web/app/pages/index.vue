@@ -365,7 +365,7 @@
 
           <Transition name="daily-reveal">
             <div v-if="dailyAyah" class="daily-ayah-result">
-              <p class="daily-ayah-result__arabic" dir="rtl">{{ dailyAyah.text_arabic }}</p>
+              <p class="daily-ayah-result__arabic" dir="rtl" v-html="dailyAyahArabicHtml"></p>
               <p class="daily-ayah-result__translation">{{ dailyAyah.translation_id }}</p>
               <button type="button" class="daily-ayah-audio" @click="toggleDailyAyahAudio">
                 <span class="daily-ayah-audio__icon" :class="{ 'daily-ayah-audio__icon--playing': dailyAyahAudioPlaying }" aria-hidden="true"></span>
@@ -938,10 +938,15 @@ const hashString = (value: string) => {
   return Math.abs(hash)
 }
 
-const cleanDailyArabic = (text?: string) => (text || '')
-  .replace(/\[[a-z](?:\d+|:\d+)?\[/gi, '')
-  .replace(/\]/g, '')
-  .trim()
+const cleanDailyArabic = (text?: string) => {
+  if (!text) return ''
+  let cleanText = text.replace(/^\uFEFF/, '').replace(/\u0672/g, '\u0670')
+  cleanText = cleanText.replace(/[\u0610-\u061A\u06D6-\u06E4\u06E7-\u06ED\u08A0-\u08FF]/g, '')
+  cleanText = cleanText.replace(/\[([a-z0-9:]+)\[([^\]]*)\]/gi, '$2')
+  return cleanText.replace(/\]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+const dailyAyahArabicHtml = computed(() => cleanDailyArabic(dailyAyah.value?.text_arabic))
 
 const getDailyAyahTarget = () => {
   const seed = `${todayKey()}-${user.value?.id || user.value?.name || 'guest'}`
@@ -2083,29 +2088,37 @@ useHead({
 }
 
 .daily-ayah-result__arabic {
-  margin: 0 0 13px !important;
+  display: block;
+  width: 100%;
+  margin: 0 auto 16px !important;
+  padding: 0 6px;
   color: #073f32 !important;
   font-family: var(--font-arabic);
-  font-size: clamp(1.55rem, 7vw, 2.08rem) !important;
+  font-size: clamp(1.75rem, 6.2vw, 2.5rem) !important;
   font-weight: 400;
-  line-height: 2.18 !important;
+  line-height: 1.9 !important;
   letter-spacing: 0;
-  word-spacing: 0.08em;
+  word-spacing: 0.04em;
   direction: rtl;
-  text-align: center;
+  text-align: center !important;
+  unicode-bidi: isolate;
   font-feature-settings: "liga" on, "clig" on, "calt" on;
   font-variant-ligatures: common-ligatures;
   text-rendering: optimizeLegibility;
+  white-space: normal;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .daily-ayah-result__translation {
+  clear: both;
   margin: 0 auto !important;
   max-width: 24rem;
-  color: #444f4a !important;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.88rem !important;
-  line-height: 1.58 !important;
+  padding: 0 8px 1px;
+  color: #53625b !important;
+  font-family: var(--font-ui);
+  font-size: 0.94rem !important;
+  font-weight: 500;
+  line-height: 1.65 !important;
   text-align: center;
 }
 

@@ -917,7 +917,7 @@
             <p v-if="navigatorError" class="navigator-error">{{ navigatorError }}</p>
           </div>
 
-          <Transition name="picker">
+          <Transition name="picker" @after-enter="handleSurahPickerEnter">
             <div v-if="showSurahPicker" class="surah-picker">
               <header class="surah-picker__header">
                 <button type="button" aria-label="Kembali ke navigasi" @click="showSurahPicker = false">
@@ -939,13 +939,14 @@
                 <input v-model="surahSearch" type="search" placeholder="Cari nama atau nomor surat">
               </label>
 
-              <div class="surah-picker__list">
+              <div ref="surahPickerListRef" class="surah-picker__list">
                 <button
                   v-for="surah in filteredSurahOptions"
                   :key="surah.id"
                   type="button"
                   class="surah-picker__item"
                   :class="{ 'surah-picker__item--active': surah.id === selectedSurahId }"
+                  :data-surah-id="surah.id"
                   @click="chooseSurah(surah)"
                 >
                   <span class="surah-picker__number">{{ surah.number }}</span>
@@ -961,7 +962,7 @@
               </div>
             </div>
           </Transition>
-          <Transition name="picker">
+          <Transition name="picker" @after-enter="handleAyahPickerEnter">
             <div v-if="showAyahPicker" class="surah-picker ayah-picker">
               <header class="surah-picker__header">
                 <button type="button" aria-label="Kembali ke navigasi" @click="showAyahPicker = false">
@@ -979,12 +980,13 @@
                 Tersedia {{ selectedSurahTotalAyah }} ayat
               </p>
 
-              <div class="ayah-picker__grid">
+              <div ref="ayahPickerGridRef" class="ayah-picker__grid">
                 <button
                   v-for="ayah in availableAyahs"
                   :key="ayah"
                   type="button"
                   :class="{ 'ayah-picker__number--active': ayah === selectedAyah }"
+                  :data-ayah-number="ayah"
                   :aria-label="'Pilih ayat ' + ayah"
                   @click="chooseAyah(ayah)"
                 >
@@ -1490,6 +1492,8 @@ const directPage = ref(1)
 const showSurahPicker = ref(false)
 const showAyahPicker = ref(false)
 const showSectionPicker = ref(false)
+const surahPickerListRef = ref<HTMLElement | null>(null)
+const ayahPickerGridRef = ref<HTMLElement | null>(null)
 const sectionGridRef = ref<HTMLElement | null>(null)
 const surahSearch = ref('')
 const availablePages = Array.from({ length: 604 }, (_, index) => index + 1)
@@ -2418,10 +2422,37 @@ const openSectionPicker = () => {
   showSectionPicker.value = true
 }
 
-const handleSectionPickerEnter = () => {
-  const active = sectionGridRef.value?.querySelector<HTMLElement>(`[data-section-value="${selectedSection.value}"]`)
+const scrollActivePickerItem = (container: HTMLElement | null, selector: string) => {
+  if (!container) return
+  const active = container.querySelector<HTMLElement>(selector)
   active?.scrollIntoView({ block: 'center', behavior: 'auto' })
 }
+
+const handleSurahPickerEnter = async () => {
+  await nextTick()
+  scrollActivePickerItem(surahPickerListRef.value, `[data-surah-id="${selectedSurahId.value}"]`)
+}
+
+const handleAyahPickerEnter = async () => {
+  await nextTick()
+  scrollActivePickerItem(ayahPickerGridRef.value, `[data-ayah-number="${selectedAyah.value}"]`)
+}
+
+const handleSectionPickerEnter = () => {
+  scrollActivePickerItem(sectionGridRef.value, `[data-section-value="${selectedSection.value}"]`)
+}
+
+watch([showSurahPicker, selectedSurahId, () => filteredSurahOptions.value.length], async () => {
+  if (!showSurahPicker.value) return
+  await nextTick()
+  requestAnimationFrame(() => handleSurahPickerEnter())
+})
+
+watch([showAyahPicker, selectedAyah, selectedSurahTotalAyah], async () => {
+  if (!showAyahPicker.value) return
+  await nextTick()
+  requestAnimationFrame(() => handleAyahPickerEnter())
+})
 
 const chooseSection = (value: number) => {
   selectedSection.value = value
@@ -2937,8 +2968,16 @@ const openNavigator = () => {
   syncNavigationSelection()
   if (primarySurah.value) {
     selectedSurahId.value = primarySurah.value.id
-    const currentAyah = pageData.value?.ayahs?.[0]?.ayah_number
-    selectedAyah.value = currentAyah || 1
+    const queryAyah = Number(route.query.ayah)
+    const pageAyahs = pageData.value?.ayahs || []
+    const queryAyahOnPage = Number.isFinite(queryAyah)
+      ? pageAyahs.find(ayah => ayah.surah_id === primarySurah.value?.id && ayah.ayah_number === queryAyah)
+      : null
+    const selectedAyahOnPage = pageAyahs.find(
+      ayah => ayah.surah_id === primarySurah.value?.id && ayah.ayah_number === selectedAyah.value
+    )
+    const firstAyahInSurahOnPage = pageAyahs.find(ayah => ayah.surah_id === primarySurah.value?.id)
+    selectedAyah.value = queryAyahOnPage?.ayah_number || selectedAyahOnPage?.ayah_number || firstAyahInSurahOnPage?.ayah_number || 1
   }
   navigatorOpen.value = true
   loadSurahOptions()
