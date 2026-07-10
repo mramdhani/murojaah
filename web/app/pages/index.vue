@@ -369,7 +369,7 @@
               <p class="daily-ayah-result__translation">{{ dailyAyah.translation_id }}</p>
               <button type="button" class="daily-ayah-audio" @click="toggleDailyAyahAudio">
                 <span class="daily-ayah-audio__icon" :class="{ 'daily-ayah-audio__icon--playing': dailyAyahAudioPlaying }" aria-hidden="true"></span>
-                <span>{{ dailyAyahAudioPlaying ? 'Jeda Mishary' : 'Dengar Mishary' }}</span>
+                <span>{{ dailyAyahAudioPlaying ? 'Jeda Murottal' : 'Dengarkan Murottal' }}</span>
               </button>
               <div class="daily-ayah-result__actions">
                 <NuxtLink
@@ -2110,30 +2110,42 @@ useHead({
 }
 
 .daily-ayah-audio {
-  width: fit-content;
-  min-height: 36px;
-  margin: 14px auto 0;
+  width: 100%;
+  min-height: 42px;
+  margin: 16px auto 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(6, 78, 59, 0.16);
-  color: #064e3b;
-  background: rgba(236, 253, 245, 0.74);
-  font-size: 0.78rem;
+  gap: 9px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(202, 154, 55, 0.34);
+  color: #07513d;
+  background: linear-gradient(180deg, rgba(255, 252, 240, 0.96) 0%, rgba(255, 248, 226, 0.88) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 8px 18px rgba(138, 95, 28, 0.08);
+  font-size: 0.84rem;
   font-weight: 900;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.daily-ayah-audio:hover {
+  border-color: rgba(6, 78, 59, 0.32);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 10px 22px rgba(6, 78, 59, 0.12);
+}
+
+.daily-ayah-audio:active {
+  transform: translateY(1px);
 }
 
 .daily-ayah-audio__icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
-  background: #064e3b;
+  background: linear-gradient(135deg, #07513d 0%, #087052 100%);
   color: #fff9d6;
+  box-shadow: 0 3px 9px rgba(6, 78, 59, 0.2);
   flex: 0 0 auto;
 }
 
