@@ -1,12 +1,12 @@
 <template>
-  <div 
-    class="mushaf-page" 
-    :class="{ 
-      'mushaf-page--nabawiyyah': mushafTheme === 'nabawiyyah', 
+  <div
+    class="mushaf-page"
+    :class="{
+      'mushaf-page--nabawiyyah': mushafTheme === 'nabawiyyah',
       'mushaf-page--classic': mushafTheme === 'classic',
       'mushaf-page--dark': mushafTheme === 'dark',
       'mushaf-page--fullscreen': isFullscreenMode
-    }" 
+    }"
     @click.self="toggleFullscreen"
   >
     <header class="mushaf-header" :class="{ 'mushaf-header--hidden': isFullscreenMode }">
@@ -44,7 +44,7 @@
       <section
         ref="viewportRef"
         class="mushaf-viewport"
-        :class="{ 
+        :class="{
           'mushaf-viewport--dragging': swipeStartX !== null,
           'mushaf-viewport--monochrome': !showTajweedColors
         }"
@@ -465,7 +465,7 @@
     <Transition name="translate-sheet">
       <div v-if="showTranslationDrawer" class="translation-bottom-sheet" :class="{ 'translation-bottom-sheet--dark': mushafTheme === 'dark' }" :style="translationSheet.sheetStyle.value" @click.stop>
         <!-- Drag handle -->
-        <div 
+        <div
           class="translation-sheet-handle"
           v-bind="translationSheet.bindHandle"
         >
@@ -485,11 +485,11 @@
             </p>
           </div>
           <div class="translation-sheet-header__right-actions">
-            <button 
-              type="button" 
-              class="translation-sheet-settings-toggle" 
+            <button
+              type="button"
+              class="translation-sheet-settings-toggle"
               :class="{ 'translation-sheet-settings-toggle--active': showSettingsPanel }"
-              aria-label="Pengaturan Tampilan" 
+              aria-label="Pengaturan Tampilan"
               @click="showSettingsPanel = !showSettingsPanel"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-cog-icon">
@@ -505,7 +505,7 @@
         <!-- Scrollable list -->
         <div ref="translationListRef" class="translation-sheet-list" @scroll.passive="handleTranslationScroll">
           <template v-for="ayah in pageData?.ayahs" :key="ayah.id">
-            <div 
+            <div
               :ref="el => { if (el && ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}`) activeTranslationItemRef = el as HTMLElement }"
               class="translation-sheet-item"
               :class="{ 'translation-sheet-item--active': ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}` }"
@@ -522,11 +522,11 @@
                   {{ ayah.ayah_number }}
                 </span>
               </div>
-              
+
               <div class="translation-sheet-item__content">
                 <!-- Transliterasi (Latin) -->
-                <p 
-                  v-if="showTransliteration && transliterations[ayah.verse_key]" 
+                <p
+                  v-if="showTransliteration && transliterations[ayah.verse_key]"
                   class="translation-sheet-item__latin"
                   :style="{ fontSize: (translationFontSize * 0.92) + 'rem' }"
                 >
@@ -632,24 +632,24 @@
           <div class="mushaf-theme-row">
             <span class="theme-label-small">Tema Halaman</span>
             <div class="theme-segmented-control-new">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="theme-segment-btn-new theme-segment-btn-new--classic"
                 :class="{ 'theme-segment-btn-new--active': mushafTheme === 'classic' }"
                 @click="mushafTheme = 'classic'"
               >
                 Terang
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="theme-segment-btn-new theme-segment-btn-new--nabawiyyah"
                 :class="{ 'theme-segment-btn-new--active': mushafTheme === 'nabawiyyah' }"
                 @click="mushafTheme = 'nabawiyyah'"
               >
                 Krem
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="theme-segment-btn-new theme-segment-btn-new--dark"
                 :class="{ 'theme-segment-btn-new--active': mushafTheme === 'dark' }"
                 @click="mushafTheme = 'dark'"
@@ -675,9 +675,9 @@
                 <span class="tss-slider-toggle"></span>
               </label>
               <span class="tss-toggle-label">Tajwid</span>
-              <button 
-                type="button" 
-                class="tss-info-link-btn" 
+              <button
+                type="button"
+                class="tss-info-link-btn"
                 @click="showTajweedLegendSheet = true"
                 aria-label="Panduan Tajwid"
               >
@@ -691,12 +691,12 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tss-font-icon"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
             <span class="tss-font-value">{{ translationFontSizeLevel }}%</span>
             <div class="tss-slider-wrap">
-              <input 
-                v-model.number="translationFontSizeLevel" 
-                type="range" 
-                min="20" 
-                max="100" 
-                step="20" 
+              <input
+                v-model.number="translationFontSizeLevel"
+                type="range"
+                min="20"
+                max="100"
+                step="20"
                 class="tss-slider"
                 :style="{ background: 'linear-gradient(to right, #0a6b4f 0%, #0a6b4f ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea 100%)' }"
               />
@@ -1253,10 +1253,10 @@ const fetchTransliterations = async () => {
 const handleTranslationScroll = (event: Event) => {
   const container = event.target as HTMLElement
   if (!container || !pageData.value?.ayahs) return
-  
+
   const scrollTop = container.scrollTop
   const items = container.querySelectorAll('.translation-sheet-item')
-  
+
   let activeIndex = 0
   for (let i = 0; i < items.length; i++) {
     const item = items[i] as HTMLElement
@@ -1265,7 +1265,7 @@ const handleTranslationScroll = (event: Event) => {
       break
     }
   }
-  
+
   const activeAyah = pageData.value.ayahs[activeIndex]
   if (activeAyah) {
     currentScrollSurahId.value = activeAyah.surah_id
@@ -1293,11 +1293,11 @@ const openAyahOptions = (verseKey: string) => {
   const [surah, ayah] = verseKey.split(':').map(Number)
   selectedSurahId.value = surah
   selectedAyah.value = ayah
-  
-  selectedAyahForDrawer.value = { 
-    surah, 
-    ayah, 
-    verse_key: verseKey, 
+
+  selectedAyahForDrawer.value = {
+    surah,
+    ayah,
+    verse_key: verseKey,
     text: getAyahArabicText(verseKey)
   }
   showAyahDrawer.value = true
@@ -1539,6 +1539,10 @@ const mushafTheme = useCookie<'classic' | 'nabawiyyah' | 'dark'>('mushaf_theme',
   path: '/'
 })
 
+if (!['classic', 'nabawiyyah', 'dark'].includes(mushafTheme.value as string)) {
+  mushafTheme.value = 'classic'
+}
+
 
 watch(mushafTheme, () => {
   prefetchPages()
@@ -1615,7 +1619,7 @@ const selectAyahFromTranslation = (surahId: number, ayahNumber: number) => {
 
   selectedAyah.value = ayahNumber
   selectedSurahId.value = surahId
-  
+
   if (!isCustomRangeActive.value && pageData.value?.ayahs) {
     const idx = pageData.value.ayahs.findIndex(x => x.verse_key === `${surahId}:${ayahNumber}`)
     if (idx !== -1) {
@@ -1960,7 +1964,7 @@ watch(activeHighlightVerse, async (newVerse) => {
   if (showTranslationDrawer.value && activeTranslationItemRef.value && translationListRef.value) {
     activeTranslationItemRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
-  
+
   // Auto-update the single Ayah Options Drawer (Terjemahan) to follow Murottal
   if (showAyahDrawer.value) {
     const activeAyahData = pageData.value?.ayahs.find(a => a.surah_id === newVerse.surah && a.ayah_number === newVerse.ayah)
@@ -2229,7 +2233,7 @@ const handlePointerDown = (event: PointerEvent) => {
     clearTimeout(longPressTimeout.value)
     longPressTimeout.value = null
   }
-  
+
   // Find mushaf word element at down coordinates
   let target = event.target as HTMLElement
   let wordEl = target?.closest('.mushaf-word') as HTMLElement
@@ -2246,8 +2250,8 @@ const handlePointerDown = (event: PointerEvent) => {
       longPressTimeout.value = window.setTimeout(() => {
         isLongPressActive.value = true
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          const hasActivation = typeof navigator.userActivation !== 'undefined' 
-            ? navigator.userActivation.hasBeenActive 
+          const hasActivation = typeof navigator.userActivation !== 'undefined'
+            ? navigator.userActivation.hasBeenActive
             : true
           if (hasActivation) {
             try {
@@ -2291,10 +2295,10 @@ const handleTouchMove = (event: TouchEvent) => {
 
 const handlePointerMove = (event: PointerEvent) => {
   if (swipeStartX.value === null || swipeStartY.value === null || swipeAnimating.value) return
-  
+
   const deltaX = event.clientX - swipeStartX.value
   const deltaY = event.clientY - swipeStartY.value
-  
+
   // Cancel long press if user moves mouse/finger more than 8px (to allow swiping/panning)
   if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
     if (longPressTimeout.value) {
@@ -2316,7 +2320,7 @@ const handlePointerMove = (event: PointerEvent) => {
       return
     }
   }
-  
+
   if (swipeDirection.value === 'horizontal') {
     if (event.cancelable) event.preventDefault() // Stop iOS Safari from stealing the gesture for edge swiping
     let distance = deltaX
@@ -2342,7 +2346,7 @@ const handlePointerUp = async (event: PointerEvent) => {
   const direction = distance > 0 ? 1 : -1
   const targetPage = pageNumber.value + direction
   const canMove = targetPage >= 1 && targetPage <= 604
-  
+
   // Cancel any pending long press
   if (longPressTimeout.value) {
     clearTimeout(longPressTimeout.value)
@@ -2351,7 +2355,7 @@ const handlePointerUp = async (event: PointerEvent) => {
 
   const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .22 || (Math.abs(velocity) > .55 && Math.abs(distance) > 30))
 
-  
+
   swipeStartX.value = null
   swipeStartY.value = null
   swipeDirection.value = null
@@ -2579,9 +2583,9 @@ const playPlayerAyah = () => {
   playerAudio.onloadedmetadata = () => { playerDuration.value = Number.isFinite(playerAudio?.duration) ? (playerAudio?.duration || 0) : 0 }
   playerAudio.onplay = () => { isPlaying.value = true }
   playerAudio.onpause = () => { isPlaying.value = false }
-  playerAudio.onerror = (e) => { 
+  playerAudio.onerror = (e) => {
     console.error('Audio error:', e)
-    isPlaying.value = false 
+    isPlaying.value = false
   }
   playerAudio.onended = () => {
 
@@ -2666,12 +2670,12 @@ const togglePlayer = () => {
     })
     return
   }
-  
+
   if (!pageData.value?.ayahs) {
     shouldAutoplayNextPage.value = true
     return
   }
-  
+
   if (!isCustomRangeActive.value) {
     playingPageNumber.value = pageNumber.value
     playingAyahsList.value = [...pageData.value.ayahs]
@@ -3017,7 +3021,7 @@ const openSelectedAyah = async () => {
     )
     if (!response.data.page) throw new Error('Page mapping missing')
     closeNavigator()
-    
+
     const surahMeta = surahOptions.value.find(s => s.id === selectedSurahId.value)
     const surahNum = surahMeta ? surahMeta.number : 1
 
@@ -3062,7 +3066,7 @@ onMounted(() => {
   if (viewportRef.value) {
     viewportRef.value.addEventListener('touchmove', handleTouchMove, { passive: false })
   }
-  
+
   // Call multiple times as font resources load and UI layout finishes rendering
   setTimeout(fitQcfLines, 80)
   setTimeout(fitQcfLines, 300)
@@ -5230,7 +5234,7 @@ useHead({
   -webkit-user-select: none;
 }
 
-.qari-sheet__handle { 
+.qari-sheet__handle {
   width: 100%;
   padding: 4px 0 12px;
   display: flex;
@@ -7672,7 +7676,7 @@ useHead({
     padding-left: calc(10px + env(safe-area-inset-left)) !important;
     padding-right: calc(10px + env(safe-area-inset-right)) !important;
   }
-  /* Force typography to scale fully with screen width in landscape. 
+  /* Force typography to scale fully with screen width in landscape.
      Using vw instead of cqw for Safari iOS compatibility */
   .mushaf-line,
   .mushaf-line--qcf,
@@ -8352,4 +8356,5 @@ color: #75471a !important;
   border-color: rgba(244, 213, 138, 0.5) !important;
   color: #f4d58a !important;
 }
+
 </style>

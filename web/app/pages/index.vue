@@ -367,7 +367,7 @@
           <Transition name="daily-reveal">
             <div v-if="dailyAyah" class="daily-ayah-result">
               <p class="daily-ayah-result__arabic" dir="rtl" v-html="dailyAyahArabicHtml"></p>
-              <p class="daily-ayah-result__translation">{{ dailyAyah.translation_id }}</p>
+              <p class="daily-ayah-result__translation" lang="id">{{ dailyAyah.translation_id }}</p>
               <button type="button" class="daily-ayah-audio" @click="toggleDailyAyahAudio">
                 <span class="daily-ayah-audio__icon" :class="{ 'daily-ayah-audio__icon--playing': dailyAyahAudioPlaying }" aria-hidden="true"></span>
                 <span>{{ dailyAyahAudioPlaying ? 'Jeda Murottal' : 'Dengarkan Murottal' }}</span>
@@ -2092,16 +2092,16 @@ useHead({
   display: block;
   width: 100%;
   margin: 0 auto 16px !important;
-  padding: 0 6px;
+  padding: 0 4px;
   color: #073f32 !important;
   font-family: var(--font-arabic);
-  font-size: clamp(1.75rem, 6.2vw, 2.5rem) !important;
+  font-size: clamp(1.38rem, 5.15vw, 2.08rem) !important;
   font-weight: 400;
   line-height: 1.9 !important;
   letter-spacing: 0;
-  word-spacing: 0.04em;
+  word-spacing: 0.02em;
   direction: rtl;
-  text-align: center !important;
+  text-align: right !important;
   unicode-bidi: isolate;
   font-feature-settings: "liga" on, "clig" on, "calt" on;
   font-variant-ligatures: common-ligatures;
@@ -2113,14 +2113,20 @@ useHead({
 .daily-ayah-result__translation {
   clear: both;
   margin: 0 auto !important;
-  max-width: 24rem;
+  max-width: 22rem;
   padding: 0 8px 1px;
-  color: #53625b !important;
+  color: var(--color-text-secondary) !important;
   font-family: var(--font-ui);
-  font-size: 0.94rem !important;
+  font-size: 0.8125rem !important;
   font-weight: 500;
-  line-height: 1.65 !important;
-  text-align: center;
+  line-height: 1.52 !important;
+  text-align: justify;
+  text-justify: inter-word;
+  text-align-last: center;
+  text-wrap: pretty;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
 }
 
 .daily-ayah-audio {
