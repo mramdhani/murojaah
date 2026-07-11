@@ -2817,6 +2817,7 @@ const settleSwipe = () => {
 }
 
 const handlePointerDown = (event: PointerEvent) => {
+  if (event.pointerType === 'touch') return
   if (swipeAnimating.value) return
   clearIdleTimer()
   swipeStartX.value = event.clientX
@@ -2863,7 +2864,48 @@ const handlePointerDown = (event: PointerEvent) => {
       }, 450)
     }
   }
+}
 
+const handleTouchStart = (event: TouchEvent) => {
+  if (swipeAnimating.value) return
+  const touch = event.touches[0]
+  if (!touch) return
+
+  clearIdleTimer()
+  swipeStartX.value = touch.clientX
+  swipeStartY.value = touch.clientY
+  swipeDirection.value = null
+  swipeStartTime.value = performance.now()
+  swipeOffset.value = 0
+  suppressNextLineTap.value = false
+
+  // Long press for touch
+  isLongPressActive.value = false
+  if (longPressTimeout.value) {
+    clearTimeout(longPressTimeout.value)
+    longPressTimeout.value = null
+  }
+
+  const target = event.target as HTMLElement
+  let wordEl = target?.closest('.mushaf-word') as HTMLElement
+  if (!wordEl && touch.clientX && touch.clientY) {
+    const fromPoint = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement
+    wordEl = fromPoint?.closest('.mushaf-word') as HTMLElement
+  }
+
+  if (wordEl) {
+    const verseKey = wordEl.getAttribute('data-verse')
+    if (verseKey) {
+      longPressTimeout.value = window.setTimeout(() => {
+        isLongPressActive.value = true
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(24) } catch (e) {}
+        }
+        openAyahOptions(verseKey)
+        longPressTimeout.value = null
+      }, 450)
+    }
+  }
 }
 
 const handleTouchMove = (event: TouchEvent) => {
@@ -2875,24 +2917,45 @@ const handleTouchMove = (event: TouchEvent) => {
   const deltaX = touch.clientX - swipeStartX.value
   const deltaY = touch.clientY - swipeStartY.value
 
+  // Cancel long press if user moves finger more than 8px (to allow swiping/panning)
+  if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+    if (longPressTimeout.value) {
+      clearTimeout(longPressTimeout.value)
+      longPressTimeout.value = null
+    }
+  }
+
   if (!swipeDirection.value) {
+    // Detect swipe direction sooner (4px) to beat iOS Safari's native scroll-lock
     if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
-      if (Math.abs(deltaX) > Math.abs(deltaY) * 0.6) {
+      // Much more forgiving angle for thumb swipes (allows diagonal-ish horizontal swipes)
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
         swipeDirection.value = 'horizontal'
       } else {
         swipeDirection.value = 'vertical'
       }
+    } else {
+      return
     }
   }
 
   if (swipeDirection.value === 'horizontal') {
-    if (event.cancelable) {
-      event.preventDefault()
+    if (event.cancelable) event.preventDefault() // Stop iOS Safari from stealing the gesture for edge swiping
+    let distance = deltaX
+    const pullingPastFirst = pageNumber.value === 1 && distance < 0
+    const pullingPastLast = pageNumber.value === 604 && distance > 0
+    if (pullingPastFirst || pullingPastLast) {
+      // Smooth rubber-banding: resistance increases the further you pull
+      const absDist = Math.abs(distance)
+      distance = Math.sign(distance) * (absDist * 0.15 + 12 * Math.log2(absDist / 12 + 1) * 0.08)
     }
+    swipeOffset.value = distance
+    if (Math.abs(distance) > 20) suppressNextLineTap.value = true
   }
 }
 
 const handlePointerMove = (event: PointerEvent) => {
+  if (event.pointerType === 'touch') return
   if (swipeStartX.value === null || swipeStartY.value === null || swipeAnimating.value) return
 
   const deltaX = event.clientX - swipeStartX.value
@@ -2933,10 +2996,10 @@ const handlePointerMove = (event: PointerEvent) => {
     swipeOffset.value = distance
     if (Math.abs(distance) > 20) suppressNextLineTap.value = true
   }
-
 }
 
 const handlePointerUp = async (event: PointerEvent) => {
+  if (event.pointerType === 'touch') return
   if (swipeStartX.value === null || swipeAnimating.value) return
   const distance = event.clientX - swipeStartX.value
   const elapsed = Math.max(1, performance.now() - swipeStartTime.value)
@@ -2953,7 +3016,6 @@ const handlePointerUp = async (event: PointerEvent) => {
   }
 
   const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .22 || (Math.abs(velocity) > .55 && Math.abs(distance) > 30))
-
 
   swipeStartX.value = null
   swipeStartY.value = null
@@ -2977,7 +3039,64 @@ const handlePointerUp = async (event: PointerEvent) => {
 
   swipeAnimating.value = true
   swipeOffset.value = direction > 0 ? viewportWidth : -viewportWidth
-  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12)
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(12) } catch (e) {}
+  }
+
+  window.setTimeout(async () => {
+    await goToPage(targetPage)
+    swipeAnimating.value = false
+    swipeOffset.value = 0
+    startIdleTimer()
+  }, 360)
+}
+
+const handleTouchEnd = async (event: TouchEvent) => {
+  if (swipeStartX.value === null || swipeAnimating.value) return
+  const touch = event.changedTouches[0]
+  const distance = touch ? touch.clientX - swipeStartX.value : 0
+  const elapsed = Math.max(1, performance.now() - swipeStartTime.value)
+  const velocity = distance / elapsed
+  const viewportWidth = viewportRef.value?.clientWidth || window.innerWidth
+  const direction = distance > 0 ? 1 : -1
+  const targetPage = pageNumber.value + direction
+  const canMove = targetPage >= 1 && targetPage <= 604
+
+  // Cancel any pending long press
+  if (longPressTimeout.value) {
+    clearTimeout(longPressTimeout.value)
+    longPressTimeout.value = null
+  }
+
+  const shouldMove = swipeDirection.value === 'horizontal' && canMove && (Math.abs(distance) > viewportWidth * .22 || (Math.abs(velocity) > .55 && Math.abs(distance) > 30))
+
+  swipeStartX.value = null
+  swipeStartY.value = null
+  swipeDirection.value = null
+
+  if (!shouldMove) {
+    settleSwipe()
+    startIdleTimer()
+
+    // If it was a long press, ignore the release/up click (it already opened the drawer)
+    if (isLongPressActive.value) {
+      isLongPressActive.value = false
+      return
+    }
+
+    // Otherwise, this is a standard SINGLE-TAP!
+    // Prevent accidental toggles on dragging cancel by checking distance threshold
+    if (Math.abs(distance) < 5) {
+      toggleFullscreen()
+    }
+    return
+  }
+
+  swipeAnimating.value = true
+  swipeOffset.value = direction > 0 ? viewportWidth : -viewportWidth
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(12) } catch (e) {}
+  }
 
   window.setTimeout(async () => {
     await goToPage(targetPage)
@@ -3672,7 +3791,10 @@ onMounted(() => {
   loadSurahOptions()
   window.addEventListener('resize', fitQcfLines)
   if (viewportRef.value) {
+    viewportRef.value.addEventListener('touchstart', handleTouchStart, { passive: false })
     viewportRef.value.addEventListener('touchmove', handleTouchMove, { passive: false })
+    viewportRef.value.addEventListener('touchend', handleTouchEnd, { passive: false })
+    viewportRef.value.addEventListener('touchcancel', cancelSwipe, { passive: false })
   }
 
   // Call multiple times as font resources load and UI layout finishes rendering
@@ -3694,7 +3816,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', fitQcfLines)
   if (qcfFitFrame !== null) cancelAnimationFrame(qcfFitFrame)
   if (viewportRef.value) {
+    viewportRef.value.removeEventListener('touchstart', handleTouchStart)
     viewportRef.value.removeEventListener('touchmove', handleTouchMove)
+    viewportRef.value.removeEventListener('touchend', handleTouchEnd)
+    viewportRef.value.removeEventListener('touchcancel', cancelSwipe)
   }
 })
 
