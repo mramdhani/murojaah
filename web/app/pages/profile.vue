@@ -745,6 +745,10 @@ const executeLogout = () => {
 }
 
 const loadStats = async () => {
+  if (!user.value) {
+    stats.value = null
+    return
+  }
   statsLoading.value = true
   try {
     const res = await apiFetch<any>('/dashboard')
@@ -763,8 +767,14 @@ onMounted(() => {
 })
 
 // Reload stats when user session changes
-watch(user, () => {
-  loadStats()
+watch(user, (newUser) => {
+  if (newUser) {
+    loadStats()
+  } else {
+    stats.value = null
+    streak.value = 0
+    heatmap.value = {}
+  }
 })
 
 useHead({

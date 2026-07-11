@@ -1199,9 +1199,21 @@ const selectEdition = async (edition: TranslationEdition) => {
 
 const currentScrollSurahId = ref<number | null>(null)
 const currentScrollJuz = ref<number | null>(null)
-const translationFontSizeLevel = ref(60)
-const showTransliteration = ref(true)
-const showTajweedColors = useState<boolean>('mushafShowTajweedColors', () => true)
+const translationFontSizeLevel = useCookie<number>('mushaf_translation_font_size', {
+  default: () => 60,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+const showTransliteration = useCookie<boolean>('mushaf_show_transliteration', {
+  default: () => true,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+const showTajweedColors = useCookie<boolean>('mushaf_show_tajweed_colors', {
+  default: () => true,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
 const showTajweedLegendSheet = ref(false)
 const showSettingsPanel = ref(false)
 const transliterations = ref<Record<string, string>>({})

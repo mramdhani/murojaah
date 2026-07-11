@@ -8,6 +8,8 @@ interface AuthUser {
   is_guest: boolean
 }
 
+let initPromise: Promise<void> | null = null
+
 export const useAuth = () => {
   const config = useRuntimeConfig()
   const apiBase = config.public.apiBase as string
@@ -49,39 +51,47 @@ export const useAuth = () => {
   }
 
   const initSession = async () => {
-    if (loading.value) return
-    loading.value = true
-    try {
-      if (token.value) {
-        await fetchUser()
-      }
-      
-      // If token does not exist (first visit or token cleared), register as a guest
-      if (!token.value) {
-        const response = await fetch(`${apiBase}/auth/guest`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        })
-        if (response.ok) {
-          const json = await response.json()
-          token.value = json.token
-          user.value = {
-            id: json.user.id,
-            name: json.user.name,
-            email: json.user.email,
-            avatar: null,
-            is_guest: true
+    if (initPromise) {
+      return initPromise
+    }
+
+    initPromise = (async () => {
+      loading.value = true
+      try {
+        if (token.value) {
+          await fetchUser()
+        }
+        
+        // If token does not exist (first visit or token cleared), register as a guest
+        if (!token.value) {
+          const response = await fetch(`${apiBase}/auth/guest`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          })
+          if (response.ok) {
+            const json = await response.json()
+            token.value = json.token
+            user.value = {
+              id: json.user.id,
+              name: json.user.name,
+              email: json.user.email,
+              avatar: null,
+              is_guest: true
+            }
           }
         }
+      } catch (e) {
+        console.error('Failed to initialize session:', e)
+      } finally {
+        loading.value = false
+        initPromise = null
       }
-    } catch (e) {
-      console.error('Failed to initialize session:', e)
-    } finally {
-      loading.value = false
-    }
+    })()
+
+    return initPromise
   }
 
   const loginWithGoogle = () => {
