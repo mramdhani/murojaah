@@ -5,7 +5,8 @@
       'mushaf-page--nabawiyyah': mushafTheme === 'nabawiyyah',
       'mushaf-page--classic': mushafTheme === 'classic',
       'mushaf-page--dark': mushafTheme === 'dark',
-      'mushaf-page--fullscreen': isFullscreenMode
+      'mushaf-page--fullscreen': isFullscreenMode,
+      'mushaf-page--klasik': mushafMode === 'klasik'
     }"
     @click.self="toggleFullscreen"
   >
@@ -68,11 +69,78 @@
                   'mushaf-page-box--baqarah': slidePage === 2,
                   'mushaf-page-box--closing': slidePage === 604,
                   'mushaf-page-box--multi-surah': slidePage && getPageSurahCount(slidePage) > 1,
+                  'mushaf-page-box-klasik': mushafMode === 'klasik'
                 }
               ]"
             >
               <template v-if="slidePage">
-                <!-- Ornamental Frame -->
+                <!-- Mode Klasik (Gambar Scan HD) -->
+                <div v-if="mushafMode === 'klasik'" class="mushaf-classic-container">
+                  <div 
+                    class="mushaf-classic-wrapper" 
+                    :data-page="slidePage"
+                    :style="getKlassikLayout(slidePage).wrapperStyle"
+                  >
+                    <img
+                      :ref="el => { if (index === 1 && el) klassikImgRef = el as HTMLImageElement }"
+                      :src="localImageUrl(slidePage)"
+                      alt="Mushaf Cetak Madinah"
+                      class="mushaf-classic-img"
+                      :class="{ 
+                        'mushaf-classic-img--dark': mushafTheme === 'dark',
+                        'mushaf-classic-img--sepia': mushafTheme === 'nabawiyyah'
+                      }"
+                      :style="getKlassikLayout(slidePage).imgStyle"
+                      @load="index === 1 && onClassicImgLoad()"
+                    />
+                    <!-- SVG Overlay for ayah selection (only active for center slide) -->
+                    <svg
+                      v-if="index === 1 && klassikPageCoords"
+                      class="mushaf-classic-overlay"
+                      :viewBox="getKlassikLayout(slidePage).viewBox"
+                      preserveAspectRatio="none"
+                      @pointerdown.stop="handleClassicPointerDown"
+                      @pointerup.stop="handleClassicPointerUp"
+                      @pointermove.stop="handleClassicPointerMove"
+                      @pointercancel.stop="handleClassicPointerCancel"
+                      @mousemove="handleClassicHover"
+                      @mouseleave="klassikHoverAyah = null"
+                    >
+                      <!-- Hover highlight: full-height merged block -->
+                      <template v-if="klassikHoverAyah">
+                        <rect
+                          v-for="(line, li) in klassikHoverAyah.l"
+                          :key="'h' + li"
+                          :x="line[0]"
+                          :y="line[1]"
+                          :width="line[2] - line[0]"
+                          :height="line[3] - line[1]"
+                          rx="6"
+                          ry="6"
+                          class="klassik-hover-rect"
+                        />
+                      </template>
+                      <!-- Selected (tapped) highlight: full-height merged block -->
+                      <template v-if="klassikActiveHighlight">
+                        <rect
+                          v-for="(line, li) in klassikActiveHighlight.l"
+                          :key="'s' + li"
+                          :x="line[0]"
+                          :y="line[1]"
+                          :width="line[2] - line[0]"
+                          :height="line[3] - line[1]"
+                          rx="6"
+                          ry="6"
+                          class="klassik-selected-rect"
+                        />
+                      </template>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Mode Digital (Teks QCF V2) -->
+                <template v-else>
+                  <!-- Ornamental Frame -->
                 <div class="mushaf-frame" aria-hidden="true">
                   <!-- Corner ornaments -->
                   <div class="mushaf-frame__corner mushaf-frame__corner--tl"></div>
@@ -212,17 +280,18 @@
                   </div>
                 </div>
 
-                <!-- Page number footer -->
-                <div class="mushaf-page-footer">
-                  <span>{{ slidePage }}</span>
-                </div>
+                  <!-- Page number footer -->
+                  <div class="mushaf-page-footer">
+                    <span>{{ slidePage }}</span>
+                  </div>
+                </template>
               </template>
             </div>
           </div>
         </div>
 
         <!-- Line mask overlay for memorization (works on QCF too) -->
-        <div v-if="!qcfLoading && !isSwipeActive" class="line-masks" aria-label="Mask hafalan per baris">
+        <div v-if="mushafMode === 'digital' && !qcfLoading && !isSwipeActive" class="line-masks" aria-label="Mask hafalan per baris">
           <button
             v-for="line in lineCount"
             :key="line"
@@ -488,9 +557,9 @@
             <button
               type="button"
               class="translation-sheet-settings-toggle"
-              :class="{ 'translation-sheet-settings-toggle--active': showSettingsPanel }"
+              :class="{ 'translation-sheet-settings-toggle--active': showDisplaySettingsSheet }"
               aria-label="Pengaturan Tampilan"
-              @click="showSettingsPanel = !showSettingsPanel"
+              @click="showDisplaySettingsSheet = true"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-cog-icon">
                 <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -570,6 +639,150 @@
           </div>
         </Transition>
 
+        <!-- Display Settings Bottom Sheet (Slide Up) -->
+        <Transition name="sheet">
+          <div v-if="showDisplaySettingsSheet" class="qari-overlay" @click="showDisplaySettingsSheet = false">
+            <section class="qari-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" aria-labelledby="display-settings-title" :style="displaySettingsSheet.sheetStyle.value" @click.stop>
+              <div class="qari-sheet__handle" v-bind="displaySettingsSheet.bindHandle"></div>
+              <header class="qari-sheet__header">
+                <div>
+                  <span>Preferensi Tampilan</span>
+                  <h2 id="display-settings-title">Pengaturan Tampilan</h2>
+                  <p>Sesuaikan tema halaman, transliterasi, tajwid, dan ukuran teks</p>
+                </div>
+                <button type="button" aria-label="Tutup pengaturan" @click="showDisplaySettingsSheet = false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                </button>
+              </header>
+              <div class="qari-list settings-sheet-body">
+                <!-- Group 1: Visual & Tema -->
+                <div class="settings-card">
+                  <div class="settings-card-title">TAMPILAN MUSHAF</div>
+                  
+                  <!-- Row 1: Themes -->
+                  <div class="settings-row">
+                    <div class="settings-row-header">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M5 5l1.5 1.5M17.5 17.5 19 19M2 12h2M20 12h2M6.5 17.5 5 19M19 5l-1.5 1.5"/></svg>
+                      <span class="settings-row-label">Tema Halaman</span>
+                    </div>
+                    <div class="theme-segmented-control-new" style="margin-top: 4px;">
+                      <button
+                        type="button"
+                        class="theme-segment-btn-new theme-segment-btn-new--classic"
+                        :class="{ 'theme-segment-btn-new--active': mushafTheme === 'classic' }"
+                        @click="mushafTheme = 'classic'"
+                      >
+                        Terang
+                      </button>
+                      <button
+                        type="button"
+                        class="theme-segment-btn-new theme-segment-btn-new--nabawiyyah"
+                        :class="{ 'theme-segment-btn-new--active': mushafTheme === 'nabawiyyah' }"
+                        @click="mushafTheme = 'nabawiyyah'"
+                      >
+                        Krem
+                      </button>
+                      <button
+                        type="button"
+                        class="theme-segment-btn-new theme-segment-btn-new--dark"
+                        :class="{ 'theme-segment-btn-new--active': mushafTheme === 'dark' }"
+                        @click="mushafTheme = 'dark'"
+                      >
+                        Malam
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Row 2: Mushaf Mode -->
+                  <div class="settings-row">
+                    <div class="settings-row-header">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                      <span class="settings-row-label">Tipe Halaman</span>
+                    </div>
+                    <div class="theme-segmented-control-new" style="margin-top: 4px;">
+                      <button
+                        type="button"
+                        class="theme-segment-btn-new"
+                        :class="{ 'theme-segment-btn-new--active': mushafMode === 'digital' }"
+                        @click="mushafMode = 'digital'"
+                      >
+                        Teks Digital
+                      </button>
+                      <button
+                        type="button"
+                        class="theme-segment-btn-new"
+                        :class="{ 'theme-segment-btn-new--active': mushafMode === 'klasik' }"
+                        @click="mushafMode = 'klasik'"
+                      >
+                        Mushaf Cetak
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Group 2: Konten & Terjemahan -->
+                <div class="settings-card">
+                  <div class="settings-card-title">TEKS & TERJEMAHAN</div>
+                  
+                  <!-- Row 1: Transliterasi -->
+                  <div class="settings-row settings-row--switch">
+                    <div class="settings-row-header">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                      <span class="settings-row-label">Transliterasi</span>
+                    </div>
+                    <label class="tss-switch">
+                      <input type="checkbox" v-model="showTransliteration" />
+                      <span class="tss-slider-toggle"></span>
+                    </label>
+                  </div>
+
+                  <!-- Row 2: Tajwid -->
+                  <div class="settings-row settings-row--switch">
+                    <div class="settings-row-header">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.03454 19.176 5.09437 19.434 5.00898 19.6705C4.82587 20.1777 4.79373 20.7308 4.93329 21.2662C5.07285 21.8016 5.37877 22.2891 5.81188 22.6517C5.97341 22.787 6.1856 22.8427 6.39088 22.8038C6.98592 22.6908 7.59546 22.7712 8.15689 23.0371C8.36159 23.134 8.60155 23.1118 8.78465 22.9786C9.7562 22.2713 10.9275 22 12 22Z"/><circle cx="7.5" cy="10.5" r="1.5"/><circle cx="11.5" cy="7.5" r="1.5"/><circle cx="16.5" cy="9.5" r="1.5"/><circle cx="15.5" cy="14.5" r="1.5"/></svg>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="settings-row-label">Warna Tajwid</span>
+                        <button
+                          type="button"
+                          class="tss-info-link-btn"
+                          @click="showTajweedLegendSheet = true"
+                          aria-label="Panduan Tajwid"
+                        >
+                          Panduan
+                        </button>
+                      </div>
+                    </div>
+                    <label class="tss-switch">
+                      <input type="checkbox" v-model="showTajweedColors" />
+                      <span class="tss-slider-toggle"></span>
+                    </label>
+                  </div>
+
+                  <!-- Row 3: Font Size -->
+                  <div class="settings-row settings-row--slider">
+                    <div class="settings-row-header">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><path d="M4 9h12M4 15h12M10 3v18"/></svg>
+                      <span class="settings-row-label">Ukuran Teks Terjemahan</span>
+                      <span class="tss-font-value-new">{{ translationFontSizeLevel }}%</span>
+                    </div>
+                    <div class="tss-slider-wrap-new">
+                      <input
+                        v-model.number="translationFontSizeLevel"
+                        type="range"
+                        min="20"
+                        max="100"
+                        step="20"
+                        class="tss-slider-new"
+                        :style="{ background: 'linear-gradient(to right, #064e3b 0%, #064e3b ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e2e8f0 ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e2e8f0 100%)' }"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </Transition>
+
         <!-- Tajweed Legend Bottom Sheet (Slide Up) -->
         <Transition name="sheet">
           <div v-if="showTajweedLegendSheet" class="qari-overlay" @click="showTajweedLegendSheet = false">
@@ -625,84 +838,6 @@
             </section>
           </div>
         </Transition>
-
-        <!-- Settings Panel inside Translation Sheet (Fixed at Bottom, above player) -->
-        <div v-if="showSettingsPanel" class="translation-sheet-settings">
-          <!-- Row 1: Themes -->
-          <div class="mushaf-theme-row">
-            <span class="theme-label-small">Tema Halaman</span>
-            <div class="theme-segmented-control-new">
-              <button
-                type="button"
-                class="theme-segment-btn-new theme-segment-btn-new--classic"
-                :class="{ 'theme-segment-btn-new--active': mushafTheme === 'classic' }"
-                @click="mushafTheme = 'classic'"
-              >
-                Terang
-              </button>
-              <button
-                type="button"
-                class="theme-segment-btn-new theme-segment-btn-new--nabawiyyah"
-                :class="{ 'theme-segment-btn-new--active': mushafTheme === 'nabawiyyah' }"
-                @click="mushafTheme = 'nabawiyyah'"
-              >
-                Krem
-              </button>
-              <button
-                type="button"
-                class="theme-segment-btn-new theme-segment-btn-new--dark"
-                :class="{ 'theme-segment-btn-new--active': mushafTheme === 'dark' }"
-                @click="mushafTheme = 'dark'"
-              >
-                Malam
-              </button>
-            </div>
-          </div>
-
-          <!-- Row 2: Toggles -->
-          <div class="tss-toggles-row">
-            <div class="tss-toggle">
-              <label class="tss-switch">
-                <input type="checkbox" v-model="showTransliteration" />
-                <span class="tss-slider-toggle"></span>
-              </label>
-              <span class="tss-toggle-label">Transliterasi</span>
-            </div>
-
-            <div class="tss-toggle">
-              <label class="tss-switch">
-                <input type="checkbox" v-model="showTajweedColors" />
-                <span class="tss-slider-toggle"></span>
-              </label>
-              <span class="tss-toggle-label">Tajwid</span>
-              <button
-                type="button"
-                class="tss-info-link-btn"
-                @click="showTajweedLegendSheet = true"
-                aria-label="Panduan Tajwid"
-              >
-                Panduan
-              </button>
-            </div>
-          </div>
-
-          <!-- Row 3: Font Size -->
-          <div class="tss-font-size">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tss-font-icon"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-            <span class="tss-font-value">{{ translationFontSizeLevel }}%</span>
-            <div class="tss-slider-wrap">
-              <input
-                v-model.number="translationFontSizeLevel"
-                type="range"
-                min="20"
-                max="100"
-                step="20"
-                class="tss-slider"
-                :style="{ background: 'linear-gradient(to right, #0a6b4f 0%, #0a6b4f ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e6ecea 100%)' }"
-              />
-            </div>
-          </div>
-        </div>
 
         <!-- Player inside Translation Sheet (Fixed at Bottom) -->
         <footer class="translation-sheet-player" :class="{ 'translation-sheet-player--dark': mushafTheme === 'dark', 'mushaf-player--dark': mushafTheme === 'dark' }">
@@ -1215,7 +1350,7 @@ const showTajweedColors = useCookie<boolean>('mushaf_show_tajweed_colors', {
   path: '/'
 })
 const showTajweedLegendSheet = ref(false)
-const showSettingsPanel = ref(false)
+const showDisplaySettingsSheet = ref(false)
 const transliterations = ref<Record<string, string>>({})
 const transliterationsLoading = ref(false)
 
@@ -1240,6 +1375,7 @@ const translationFontSize = computed(() => {
 })
 
 const fetchTransliterations = async () => {
+  if (!showTransliteration.value) return
   if (!pageData.value?.surahs.length) return
   transliterationsLoading.value = true
   try {
@@ -1261,6 +1397,12 @@ const fetchTransliterations = async () => {
     transliterationsLoading.value = false
   }
 }
+
+watch(showTransliteration, (newVal) => {
+  if (newVal) {
+    fetchTransliterations()
+  }
+})
 
 const handleTranslationScroll = (event: Event) => {
   const container = event.target as HTMLElement
@@ -1555,6 +1697,403 @@ if (!['classic', 'nabawiyyah', 'dark'].includes(mushafTheme.value as string)) {
   mushafTheme.value = 'classic'
 }
 
+const mushafMode = useCookie<'digital' | 'klasik'>('mushaf_mode', {
+  default: () => 'digital',
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+
+// ── Mushaf Klasik: Koordinat Presisi (dari ayahinfo_1920.db) ──────────────
+
+// Tipe koordinat per baris: [minX, minY, maxX, maxY]
+interface KlassikAyahCoord {
+  s: number  // sura_number
+  a: number  // ayah_number
+  l: [number, number, number, number][]  // array of lines: [minX, minY, maxX, maxY]
+}
+
+const klassikImgRef = ref<HTMLImageElement | null>(null)
+const klassikPageCoords = ref<KlassikAyahCoord[] | null>(null)
+const klassikHoverAyah = ref<KlassikAyahCoord | null>(null)
+const klassikSelectedAyah = ref<KlassikAyahCoord | null>(null)
+let klassikRawCoordsCache: Record<number, KlassikAyahCoord[]> = {}
+let klassikCoordsCache: Record<number, KlassikAyahCoord[]> = {}
+
+// Statically returns the exact scan dimensions of each page based on its type
+const getKlassikPageDimensions = (pg: number): { w: number; h: number } => {
+  if (pg === 1 || pg === 2) {
+    return { w: 4884, h: 7665 }; // High-res cover templates
+  }
+  if (pg >= 3 && pg <= 61) {
+    return { w: 1563, h: 2453 }; // Taller format standard pages (Juz 1-3)
+  }
+  return { w: 1563, h: 2234 }; // Normal standard format pages (Juz 4-30)
+}
+
+// Maps a raw coordinate (ax, ay) from Android 1920x3106 DB space
+// to our WebP page coordinate space (1563x2234/2453 or 4884x7665 for page 1/2 covers)
+const mapCoordToNativeImage = (ax: number, ay: number, pg: number, imgW: number, imgH: number): { x: number; y: number } => {
+  let dbXMin, dbXMax, dbYMin, dbYMax;
+  let ourXMin, ourXMax, ourYMin, ourYMax;
+
+  if (pg === 1) {
+    // Al-Fatihah cover page: Android DB bounds
+    dbXMin = 391; dbXMax = 1534; dbYMin = 335; dbYMax = 1438;
+    // Map to our 4884x7665 page 1 central text block:
+    ourXMin = (1000 * imgW) / 4884;
+    ourXMax = (3799 * imgW) / 4884;
+    ourYMin = (1750 * imgH) / 7665;
+    ourYMax = (6500 * imgH) / 7665;
+  } else if (pg === 2) {
+    // Al-Baqarah start cover page: Android DB bounds
+    dbXMin = 393; dbXMax = 1533; dbYMin = 465; dbYMax = 1446;
+    // Map to our 4884x7665 page 2 central text block:
+    ourXMin = (1000 * imgW) / 4884;
+    ourXMax = (3799 * imgW) / 4884;
+    ourYMin = (1750 * imgH) / 7665;
+    ourYMax = (6500 * imgH) / 7665;
+  } else {
+    // Standard pages: Android DB bounds (calibrated to actual horizontal text range 95–1805)
+    dbXMin = 95; dbXMax = 1805; dbYMin = 45; dbYMax = 3013;
+    
+    // Map to our standard page text block (measured in native WebP page pixels):
+    if (imgH === 2453) {
+      ourXMin = 280; // calibrated to resolve left shift (Page 3-61)
+      ourXMax = 1285; // calibrated to resolve left shift (Page 3-61)
+      ourYMin = 406; // verified text start for taller format (Page 3-61)
+      ourYMax = 2032; // verified text end for taller format (Page 3-61)
+    } else {
+      ourXMin = 260; // verified left edge of text column (Page 62-604)
+      ourXMax = 1275; // verified right edge of text column (Page 62-604)
+      ourYMin = 301; // verified text start for standard format (Page 62-604)
+      ourYMax = 1933; // verified text end for standard format (Page 62-604)
+    }
+  }
+
+  const scaleX = (ourXMax - ourXMin) / (dbXMax - dbXMin);
+  const scaleY = (ourYMax - ourYMin) / (dbYMax - dbYMin);
+
+  return {
+    x: ourXMin + (ax - dbXMin) * scaleX,
+    y: ourYMin + (ay - dbYMin) * scaleY
+  };
+}
+
+// Load coordinate data for a given page and map it dynamically
+const loadKlassikCoords = async (pg: number) => {
+  if (!pg) return
+  if (klassikCoordsCache[pg]) {
+    klassikPageCoords.value = klassikCoordsCache[pg]
+    return
+  }
+  
+  let rawCoords = klassikRawCoordsCache[pg]
+  if (!rawCoords) {
+    try {
+      const res = await fetch('/data/ayah_coords.json')
+      const allCoords: Record<string, KlassikAyahCoord[]> = await res.json()
+      for (const [k, v] of Object.entries(allCoords)) {
+        klassikRawCoordsCache[Number(k)] = v
+      }
+      rawCoords = klassikRawCoordsCache[pg]
+    } catch (e) {
+      console.warn('Failed to load raw coords', e)
+      klassikPageCoords.value = null
+      return
+    }
+  }
+
+  if (!rawCoords) {
+    klassikPageCoords.value = null
+    return
+  }
+
+  // Get dimensions statically to avoid layout shifting
+  const { w: imgW, h: imgH } = getKlassikPageDimensions(pg);
+
+  // Deep clone to apply page-specific coordinate corrections safely
+  const processedCoords = JSON.parse(JSON.stringify(rawCoords)) as KlassikAyahCoord[]
+  if (pg === 603) {
+    // Correct database errors for Surah 111 (Al-Masad) Ayahs 1, 2, 3, 4, 5
+    const a1 = processedCoords.find(x => x.s === 111 && x.a === 1)
+    const a2 = processedCoords.find(x => x.s === 111 && x.a === 2)
+    const a3 = processedCoords.find(x => x.s === 111 && x.a === 3)
+    const a4 = processedCoords.find(x => x.s === 111 && x.a === 4)
+    const a5 = processedCoords.find(x => x.s === 111 && x.a === 5)
+    if (a1) a1.l = [[960, 2447, 1823, 2619]]
+    if (a2) a2.l = [[115, 2450, 960, 2590]] // Remove segment 2 on line 2 (which is actually part of Ayah 3)
+    if (a3) a3.l = [[850, 2658, 1817, 2824]] // Correct Y bounds and right margin (covers sayasla)
+    if (a4) a4.l = [[118, 2648, 850, 2824]] // Covers wamraatuhu hammaalata
+    if (a5) a5.l = [[105, 2858, 1821, 3026]] // Covers entire line 3 (fi jidiha)
+  } else if (pg === 604) {
+    // Correct database errors for Surah 112 (Al-Ikhlas) Ayahs 1, 2, 3, 4
+    const a1 = processedCoords.find(x => x.s === 112 && x.a === 1)
+    const a2 = processedCoords.find(x => x.s === 112 && x.a === 2)
+    const a3 = processedCoords.find(x => x.s === 112 && x.a === 3)
+    const a4 = processedCoords.find(x => x.s === 112 && x.a === 4)
+    if (a1) a1.l = [[1260, 438, 1810, 588]]
+    if (a2) a2.l = [[690, 446, 1260, 588]]
+    if (a3) a3.l = [[110, 452, 690, 599]] // Remove segment 2 on line 2 (which is part of Ayah 4)
+    if (a4) a4.l = [[118, 632, 1808, 804]] // Covers entire line 2 (walam yakun)
+  }
+
+  klassikCoordsCache[pg] = processedCoords.map(ayah => {
+    // 1. Map to raw coordinates
+    const mappedLines = ayah.l.map(([ax, ay, bx, by]) => {
+      let surahOffset = 0
+      if (pg === 603) {
+        if (ayah.s === 110) surahOffset = -15 // Shift Surah An-Nasr upwards moderately
+        if (ayah.s === 111) surahOffset = -30 // Shift Surah Al-Masad upwards moderately
+      } else if (pg === 604) {
+        if (ayah.s === 112) surahOffset = 25 // Shift Surah Al-Ikhlas downwards moderately
+        if (ayah.s === 113) surahOffset = 10
+        if (ayah.s === 114) surahOffset = -10
+      }
+
+      const p1 = mapCoordToNativeImage(ax, ay + surahOffset, pg, imgW, imgH)
+      const p2 = mapCoordToNativeImage(bx, by + surahOffset, pg, imgW, imgH)
+      
+      // Calculate dynamic horizontal boundaries
+      const ourXMinLimit = (imgH === 2453) ? 280 : 260;
+      const ourXMaxLimit = (imgH === 2453) ? 1285 : 1275;
+
+      // Detect if segment borders touch the left/right text margins in DB space (within 100px)
+      const dbXMinLimit = 95;
+      const dbXMaxLimit = 1805;
+
+      const isLeftOuter = (ax < dbXMinLimit + 100);
+      const isRightOuter = (bx > dbXMaxLimit - 100);
+
+      // Expand outer border segments to touch margins; shrink inner segments slightly to avoid overlapping adjacent words
+      const paddingLeft = isLeftOuter ? -12 : 12;
+      const paddingRight = isRightOuter ? 12 : -12;
+
+      // Handle rare case where segment is extremely narrow and padding overlaps itself
+      let x1 = Math.round(p1.x) + paddingLeft;
+      let x2 = Math.round(p2.x) + paddingRight;
+      if (x1 >= x2) {
+        // Keep original bounds for narrow elements to prevent visual flip
+        x1 = Math.round(p1.x);
+        x2 = Math.round(p2.x);
+      }
+
+      x1 = Math.max(ourXMinLimit, x1);
+      x2 = Math.min(ourXMaxLimit, x2);
+
+      return {
+        x1,
+        y1: Math.round(p1.y),
+        x2,
+        y2: Math.round(p2.y)
+      }
+    })
+
+    // 2. Adjust vertical bounds of consecutive lines to touch exactly
+    const n = mappedLines.length
+    for (let i = 0; i < n; i++) {
+      // Expand outer edges slightly for a richer highlight padding
+      if (i === 0) {
+        mappedLines[i].y1 -= 6
+      }
+      if (i === n - 1) {
+        mappedLines[i].y2 += 6
+      }
+
+      // Connect consecutive lines
+      if (i < n - 1) {
+        const mid = Math.round((mappedLines[i].y2 + mappedLines[i+1].y1) / 2)
+        mappedLines[i].y2 = mid
+        mappedLines[i+1].y1 = mid
+      }
+    }
+
+    // Convert back to [x, y, x2, y2] array format for template rect loop
+    const linesArray = mappedLines.map(line => [
+      line.x1,
+      line.y1,
+      line.x2,
+      line.y2
+    ])
+
+    return {
+      ...ayah,
+      l: linesArray
+    }
+  })
+  klassikPageCoords.value = klassikCoordsCache[pg]
+}
+
+// Returns layout configuration to crop white outer margins in CSS dynamically
+const getKlassikLayout = (pg: number) => {
+  if (!pg) {
+    return {
+      wrapperStyle: {},
+      imgStyle: {},
+      viewBox: '0 0 1563 2234'
+    }
+  }
+
+  const { w: imgW, h: imgH } = getKlassikPageDimensions(pg);
+  let xMin, yMin, frameW, frameH;
+
+  if (pg === 1 || pg === 2) {
+    // Page 1 & 2 Cover layout: crop outer whitespace, leave ornate cover frame
+    xMin = (96 * imgW) / 1563;
+    yMin = 0;
+    frameW = (1369 * imgW) / 1563;
+    frameH = imgH;
+  } else {
+    // Standard Pages: crop outer white margins, keep printed ornate border
+    if (imgH === 2453) {
+      // Taller format pages (Juz 1-3)
+      xMin = 173;
+      yMin = 120; // Show the printed paper header at the top
+      frameW = 1216;
+      frameH = 2078; // Expand height to keep bottom border aligned
+    } else {
+      // Normal format pages (Juz 4-30)
+      xMin = 90;
+      yMin = 50; // Show the printed paper header at the top
+      frameW = 1381;
+      frameH = 2038; // Expand height to keep bottom border aligned
+    }
+  }
+
+  // Calculate percentage crop styling for absolute positioned image inside the container wrapper
+  const scaleX = imgW / frameW;
+  const scaleY = imgH / frameH;
+  const leftPct = -(xMin / frameW) * 100;
+  const topPct = -(yMin / frameH) * 100;
+
+  return {
+    wrapperStyle: {
+      position: 'relative',
+      width: '100%',
+      aspectRatio: `${frameW} / ${frameH}`,
+      overflow: 'hidden',
+      display: 'block'
+    },
+    imgStyle: {
+      position: 'absolute',
+      width: `${scaleX * 100}%`,
+      height: `${scaleY * 100}%`,
+      left: `${leftPct}%`,
+      top: `${topPct}%`
+    },
+    viewBox: `${xMin} ${yMin} ${frameW} ${frameH}`
+  }
+}
+
+// When the center image loads, trigger coordinate loading
+const onClassicImgLoad = () => {
+  loadKlassikCoords(pageNumber.value)
+}
+
+// Convert pointer event to local coordinate space matching the SVG viewBox
+const getKlassikSvgPoint = (e: PointerEvent | MouseEvent): { x: number; y: number } | null => {
+  const wrapper = document.querySelector(`.mushaf-classic-wrapper[data-page="${pageNumber.value}"]`)
+  if (!wrapper) return null
+  const rect = wrapper.getBoundingClientRect()
+  const relX = e.clientX - rect.left
+  const relY = e.clientY - rect.top
+  
+  const layout = getKlassikLayout(pageNumber.value)
+  // Parse viewBox coordinates xmin, ymin, width, height
+  const parts = layout.viewBox.split(' ').map(Number)
+  const xMin = parts[0]
+  const yMin = parts[1]
+  const viewBoxW = parts[2]
+  const viewBoxH = parts[3]
+  
+  return {
+    x: xMin + (relX / rect.width) * viewBoxW,
+    y: yMin + (relY / rect.height) * viewBoxH
+  }
+}
+
+// Find which ayah's bounding box contains the given point
+const findKlassikAyah = (x: number, y: number): KlassikAyahCoord | null => {
+  if (!klassikPageCoords.value) return null
+  // Find ayah that contains this point in any of its lines
+  for (const ayah of klassikPageCoords.value) {
+    for (const [ax, ay, bx, by] of ayah.l) {
+      // Add small padding to hit area for easier selection
+      if (x >= ax - 8 && x <= bx + 8 && y >= ay - 6 && y <= by + 6) {
+        return ayah
+      }
+    }
+  }
+  return null
+}
+
+let classicPointerTimer: number | null = null
+let classicPointerStart = { x: 0, y: 0 }
+let isClassicLongPress = false
+
+const handleClassicPointerDown = (e: PointerEvent) => {
+  // Only handle primary button clicks/touches
+  if (e.button !== 0) return
+  
+  classicPointerStart = { x: e.clientX, y: e.clientY }
+  isClassicLongPress = false
+
+  // Set timeout for 500ms (standard long press duration)
+  classicPointerTimer = window.setTimeout(() => {
+    isClassicLongPress = true
+    
+    // Perform long press action: select ayah
+    const pt = getKlassikSvgPoint(e)
+    if (pt) {
+      const found = findKlassikAyah(pt.x, pt.y)
+      if (found) {
+        klassikSelectedAyah.value = found
+        klassikHoverAyah.value = null
+        openAyahOptions(`${found.s}:${found.a}`)
+      }
+    }
+  }, 500)
+}
+
+const handleClassicPointerMove = (e: PointerEvent) => {
+  if (classicPointerTimer) {
+    const dx = e.clientX - classicPointerStart.x
+    const dy = e.clientY - classicPointerStart.y
+    // If moved by more than 10px, cancel the long press timer (it is a scroll or swipe!)
+    if (Math.hypot(dx, dy) > 10) {
+      window.clearTimeout(classicPointerTimer)
+      classicPointerTimer = null
+    }
+  }
+}
+
+const handleClassicPointerUp = (e: PointerEvent) => {
+  if (classicPointerTimer) {
+    window.clearTimeout(classicPointerTimer)
+    classicPointerTimer = null
+  }
+
+  // If it was not a long press, treat as a single tap: toggle header/footer
+  if (!isClassicLongPress) {
+    toggleFullscreen()
+  }
+  
+  isClassicLongPress = false
+}
+
+const handleClassicPointerCancel = () => {
+  if (classicPointerTimer) {
+    window.clearTimeout(classicPointerTimer)
+    classicPointerTimer = null
+  }
+  isClassicLongPress = false
+}
+
+const handleClassicHover = (e: MouseEvent) => {
+  const pt = getKlassikSvgPoint(e)
+  if (!pt) return
+  klassikHoverAyah.value = findKlassikAyah(pt.x, pt.y)
+}
+
 
 watch(mushafTheme, () => {
   prefetchPages()
@@ -1593,6 +2132,31 @@ const pageNumber = computed(() => {
   return Number.isFinite(value) ? Math.min(604, Math.max(1, Math.trunc(value))) : 1
 })
 
+// ── Klassik mode: reset state on page change (needs pageNumber computed) ──
+watch(pageNumber, () => {
+  klassikSelectedAyah.value = null
+  klassikHoverAyah.value = null
+  klassikPageCoords.value = klassikCoordsCache[pageNumber.value] || null
+  if (!klassikPageCoords.value && mushafMode.value === 'klasik') {
+    loadKlassikCoords(pageNumber.value)
+  }
+})
+
+watch(mushafMode, (val) => {
+  klassikSelectedAyah.value = null
+  klassikHoverAyah.value = null
+  if (val === 'klasik') {
+    loadKlassikCoords(pageNumber.value)
+  }
+})
+
+// Close ayah drawer also clears selected highlight
+watch(showAyahDrawer, (val) => {
+  if (!val) {
+    klassikSelectedAyah.value = null
+  }
+})
+
 const carouselPages = computed(() => [
   pageNumber.value < 604 ? pageNumber.value + 1 : null,
   pageNumber.value,
@@ -1612,7 +2176,26 @@ const activeHighlightVerse = computed(() => {
       }
     }
   }
-  return { surah: selectedSurahId.value, ayah: selectedAyah.value }
+  return { surah: selectedSurahId.value || 0, ayah: selectedAyah.value || 0 }
+})
+
+const klassikActiveHighlight = computed(() => {
+  // 1. If audio is actively playing, prioritize the playing verse
+  if (isPlaying.value && activeHighlightVerse.value && klassikPageCoords.value) {
+    const { surah, ayah } = activeHighlightVerse.value
+    const found = klassikPageCoords.value.find(x => x.s === surah && x.a === ayah)
+    if (found) return found
+  }
+  // 2. Otherwise, fall back to selected tapped verse
+  if (klassikSelectedAyah.value) {
+    return klassikSelectedAyah.value
+  }
+  // 3. Fallback: if showAyahDrawer is open but not playing, highlight selectedAyah
+  if (showAyahDrawer.value && klassikPageCoords.value) {
+    const found = klassikPageCoords.value.find(x => x.s === selectedSurahId.value && x.a === selectedAyah.value)
+    if (found) return found
+  }
+  return null
 })
 
 const activeVerseTranslation = computed(() => {
@@ -1704,6 +2287,12 @@ const legendSheet = useBottomSheet({
   onClose: () => { showTajweedLegendSheet.value = false },
 })
 
+const displaySettingsSheet = useBottomSheet({
+  mode: 'dismiss',
+  closeThreshold: 80,
+  onClose: () => { showDisplaySettingsSheet.value = false },
+})
+
 watch(showTranslationDrawer, async (val) => {
   if (val) {
     translationSheet.reset()
@@ -1733,6 +2322,7 @@ watch([pageNumber, selectedEdition], async ([newPage, newEdition]) => {
 watch(showAyahDrawer, (val) => { if (val) ayahDrawerSheet.reset() })
 watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
 watch(showTajweedLegendSheet, (val) => { if (val) legendSheet.reset() })
+watch(showDisplaySettingsSheet, (val) => { if (val) displaySettingsSheet.reset() })
 watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
 watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
 watch(showEditionPicker, (val) => { if (val) editionPickerSheet.reset() })
@@ -1966,6 +2556,7 @@ const getVerseProgressClass = (verseKey: string): string => {
 
 watch(activeHighlightVerse, async (newVerse) => {
   if (process.server) return
+  if (!newVerse || !newVerse.surah || !newVerse.ayah) return
   await nextTick()
   const key = `${newVerse.surah}:${newVerse.ayah}`
   const centerSlide = document.querySelector('.mushaf-slide:nth-child(2)')
@@ -2075,11 +2666,7 @@ const findSectionForPage = (starts: number[]) => {
   return value
 }
 const localImageUrl = (page: number) => {
-  const theme = mushafTheme.value || 'nabawiyyah'
-  if (theme === 'classic') {
-    return '/mushaf/madinah-classic/page-' + String(page).padStart(3, '0') + '.jpg'
-  }
-  return '/mushaf/madinah-nabawiyyah/page-' + String(page).padStart(3, '0') + '.gif'
+  return '/images/mushaf/' + String(page).padStart(3, '0') + '.webp'
 }
 
 const mushafImageUrl = computed(() => localImageUrl(pageNumber.value))
@@ -2691,7 +3278,16 @@ const togglePlayer = () => {
   if (!isCustomRangeActive.value) {
     playingPageNumber.value = pageNumber.value
     playingAyahsList.value = [...pageData.value.ayahs]
-    playerAyahIndex.value = 0
+    
+    // Play from the selected verse if it exists on the page
+    const selSurah = selectedSurahId.value
+    const selAyah = selectedAyah.value
+    const idx = pageData.value.ayahs.findIndex(x => x.verse_key === `${selSurah}:${selAyah}`)
+    if (idx !== -1) {
+      playerAyahIndex.value = idx
+    } else {
+      playerAyahIndex.value = 0
+    }
   }
   playPlayerAyah()
 }
@@ -3111,6 +3707,153 @@ useHead({
 </script>
 
 <style scoped>
+/* ── Mushaf Klasik Mode: Mobile-First Width-Based Layout ──────────────── */
+
+/*
+ * Content area is constrained to 100dvh (no root scrolling in klasik mode)
+ */
+.mushaf-page--klasik .mushaf-content {
+  padding-top: calc(62px + var(--safe-top, 0px));
+  padding-bottom: calc(62px + var(--safe-bottom, 0px));
+  overflow: hidden !important;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Viewport: constrained to the safe height between fixed header (62px) and fixed player (62px) */
+.mushaf-page--klasik .mushaf-viewport {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: calc(100dvh - 124px - var(--safe-top, 0px) - var(--safe-bottom, 0px)) !important;
+  min-height: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Match viewport background to active theme to avoid white/black bleeding */
+.mushaf-page--klasik.mushaf-theme--classic .mushaf-viewport,
+.mushaf-page--klasik.mushaf-theme--classic .mushaf-slide {
+  background: #ffffff !important;
+}
+.mushaf-page--klasik.mushaf-theme--nabawiyyah .mushaf-viewport,
+.mushaf-page--klasik.mushaf-theme--nabawiyyah .mushaf-slide {
+  background: #fbf3db !important;
+}
+.mushaf-page--klasik.mushaf-theme--dark .mushaf-viewport,
+.mushaf-page--klasik.mushaf-theme--dark .mushaf-slide {
+  background: #151d1a !important;
+}
+
+/* Slide: aligns cropped page box to the top and enables vertical scroll when needed */
+.mushaf-page--klasik .mushaf-slide {
+  overflow-y: auto !important;
+  background: transparent !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding-bottom: 80px !important; /* padding to avoid player footer overlay */
+}
+
+/* Override page box — remove all sizing constraints */
+.mushaf-page-box-klasik {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  aspect-ratio: unset !important;
+}
+
+/* Container: simple passthrough, transparent */
+.mushaf-classic-container {
+  width: 100%;
+  background: transparent;
+  display: block;
+}
+
+/*
+ * Wrapper: relative positioning anchor for SVG overlay.
+ * Styles are applied inline from getKlassikLayout to crop white paper margins.
+ */
+.mushaf-classic-wrapper {
+  margin: 0 auto;
+}
+
+/*
+ * Image: positioned absolute inside wrapper to crop outer margins.
+ * Transition filter for smooth theme switching.
+ */
+.mushaf-classic-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  border-radius: 0;
+  box-shadow: none;
+  transition: filter 0.3s ease;
+}
+
+/* Dark mode: invert scanned pages */
+.mushaf-classic-img--dark {
+  filter: invert(0.9) hue-rotate(180deg) brightness(0.85) contrast(1.15);
+}
+
+/* Sepia / Nabawiyyah theme */
+.mushaf-classic-img--sepia {
+  filter: sepia(0.35) brightness(0.97) contrast(1.08);
+}
+
+/*
+ * SVG overlay: sits exactly on top of the visible cropped wrapper area.
+ */
+.mushaf-classic-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  pointer-events: all;
+  z-index: 5;
+}
+
+/* Hover highlight (semi-transparent green) */
+.klassik-hover-rect {
+  fill: rgba(10, 107, 79, 0.10);
+  stroke: rgba(10, 107, 79, 0.30);
+  stroke-width: 2; /* sleeker, thinner border */
+  pointer-events: none;
+}
+
+/* Selected highlight (stronger green) */
+.klassik-selected-rect {
+  fill: rgba(10, 107, 79, 0.20);
+  stroke: rgba(10, 107, 79, 0.65);
+  stroke-width: 3; /* sleeker, thinner border */
+  pointer-events: none;
+}
+
+/* Dark theme overrides for highlights */
+.mushaf-page--dark .klassik-hover-rect {
+  fill: rgba(52, 211, 153, 0.08);
+  stroke: rgba(52, 211, 153, 0.25);
+}
+.mushaf-page--dark .klassik-selected-rect {
+  fill: rgba(52, 211, 153, 0.18);
+  stroke: rgba(52, 211, 153, 0.55);
+}
+
+
+
 .mushaf-page {
   height: 100dvh;
   display: flex;
@@ -6727,10 +7470,13 @@ useHead({
 }
 
 .theme-segment-btn-new {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
   border: none;
   background: none;
-  padding: 4px 12px;
-  font-size: 0.74rem;
+  padding: 6px 12px;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #4a5d55;
   border-radius: 4px;
@@ -6741,8 +7487,8 @@ useHead({
 
 .theme-segment-btn-new--active {
   background: #fff;
-  color: #0a6b4f;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  color: #064e3b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .tss-toggles-row {
@@ -8367,6 +9113,176 @@ color: #75471a !important;
   background: #20362c !important;
   border-color: rgba(244, 213, 138, 0.5) !important;
   color: #f4d58a !important;
+}
+
+/* --- Premium Settings Card Layout --- */
+.settings-sheet-body {
+  padding: 16px 20px 30px 20px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fafcfb !important;
+}
+.qari-sheet--dark .settings-sheet-body {
+  background: #111a17 !important;
+}
+
+.settings-card {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.qari-sheet--dark .settings-card {
+  background: #16221f !important;
+  border-color: #23342f !important;
+  box-shadow: none;
+}
+
+.settings-card-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #8c9d96;
+  letter-spacing: 0.08em;
+  margin-bottom: -4px;
+}
+.qari-sheet--dark .settings-card-title {
+  color: #556c63;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-row--switch {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+.settings-row--slider {
+  gap: 12px;
+}
+
+.settings-row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2c3e35;
+}
+.qari-sheet--dark .settings-row-header {
+  color: #cbd5e1;
+}
+
+.setting-label-icon {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+.qari-sheet--dark .setting-label-icon {
+  color: #94a3b8;
+}
+
+.settings-row-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Switches iOS Theme */
+.tss-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.tss-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.tss-slider-toggle {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #e2e8f0;
+  transition: .3s;
+  border-radius: 99px;
+}
+.qari-sheet--dark .tss-slider-toggle {
+  background-color: #2a3b35;
+}
+.tss-slider-toggle:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.tss-switch input:checked + .tss-slider-toggle {
+  background-color: #059669;
+}
+.tss-switch input:checked + .tss-slider-toggle:before {
+  transform: translateX(20px);
+}
+
+/* Slider Sizing */
+.tss-font-value-new {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #064e3b;
+  margin-left: auto;
+  background: #eef7f4;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.qari-sheet--dark .tss-font-value-new {
+  color: #34d399;
+  background: #1c2e29;
+}
+
+.tss-slider-wrap-new {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.tss-slider-new {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  outline: none;
+  background: #e2e8f0;
+}
+.tss-slider-new::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #064e3b;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s ease;
+}
+.qari-sheet--dark .tss-slider-new::-webkit-slider-thumb {
+  background: #34d399;
+  border-color: #16221f;
+}
+.tss-slider-new::-webkit-slider-thumb:active {
+  transform: scale(1.2);
 }
 
 </style>

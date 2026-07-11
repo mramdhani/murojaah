@@ -56,7 +56,7 @@ export default defineNuxtConfig({
           }
         },
         {
-          urlPattern: /^\/mushaf\/(madinah-classic|madinah-nabawiyyah)\/.*/,
+          urlPattern: /^\/images\/mushaf\/.*\.webp/,
           handler: 'CacheFirst',
           options: {
             cacheName: 'mushaf-images',
