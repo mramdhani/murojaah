@@ -81,6 +81,12 @@
                     :data-page="slidePage"
                     :style="getKlassikLayout(slidePage).wrapperStyle"
                   >
+                    <!-- Show beautiful loading spinner overlay ONLY on the active center slide when not loaded -->
+                    <div v-if="index === 1 && !classicImgLoaded" class="mushaf-classic-loading">
+                      <div class="mushaf-spinner"></div>
+                      <span>Memuat Halaman...</span>
+                    </div>
+
                     <img
                       :ref="el => { if (index === 1 && el) klassikImgRef = el as HTMLImageElement }"
                       :src="localImageUrl(slidePage)"
@@ -88,7 +94,8 @@
                       class="mushaf-classic-img"
                       :class="{ 
                         'mushaf-classic-img--dark': mushafTheme === 'dark',
-                        'mushaf-classic-img--sepia': mushafTheme === 'nabawiyyah'
+                        'mushaf-classic-img--sepia': mushafTheme === 'nabawiyyah',
+                        'mushaf-classic-img--loaded': index !== 1 || classicImgLoaded
                       }"
                       :style="getKlassikLayout(slidePage).imgStyle"
                       @load="index === 1 && onClassicImgLoad()"
@@ -1236,6 +1243,7 @@ const { loadBookmarks, isBookmarked, toggleBookmark } = useAyahBookmarks()
 const pageData = ref<MushafPageData | null>(null)
 const surahOptions = ref<SurahOption[]>([])
 const imageLoaded = ref(false)
+const classicImgLoaded = ref(false)
 const hasRenderedPage = ref(false)
 const imageError = ref(false)
 const lineCount = 15
@@ -1831,10 +1839,45 @@ const loadKlassikCoords = async (pg: number) => {
     const a2 = processedCoords.find(x => x.s === 112 && x.a === 2)
     const a3 = processedCoords.find(x => x.s === 112 && x.a === 3)
     const a4 = processedCoords.find(x => x.s === 112 && x.a === 4)
-    if (a1) a1.l = [[1260, 438, 1810, 588]]
-    if (a2) a2.l = [[690, 446, 1260, 588]]
-    if (a3) a3.l = [[110, 452, 690, 599]] // Remove segment 2 on line 2 (which is part of Ayah 4)
+    if (a1) a1.l = [[1260, 438, 1810, 590]]
+    if (a2) a2.l = [[690, 438, 1260, 590]]
+    if (a3) a3.l = [[110, 438, 690, 590]] // Remove segment 2 on line 2 (which is part of Ayah 4) and unify Y
     if (a4) a4.l = [[118, 632, 1808, 804]] // Covers entire line 2 (walam yakun)
+
+    // Correct database errors and unify Y for Surah 113 (Al-Falaq) Ayahs 1, 2, 3, 4, 5
+    const f1 = processedCoords.find(x => x.s === 113 && x.a === 1)
+    const f2 = processedCoords.find(x => x.s === 113 && x.a === 2)
+    const f3 = processedCoords.find(x => x.s === 113 && x.a === 3)
+    const f4 = processedCoords.find(x => x.s === 113 && x.a === 4)
+    const f5 = processedCoords.find(x => x.s === 113 && x.a === 5)
+    
+    // Line 1 of Al-Falaq: Unify Y to 1243-1407
+    if (f1) f1.l = [[952, 1243, 1808, 1407]]
+    if (f2) f2.l = [[311, 1243, 953, 1407]]
+    if (f3) f3.l = [[133, 1243, 312, 1407], [992, 1451, 1809, 1616]] // Segment 1 Line 1, Segment 2 Line 2
+    
+    // Line 2 of Al-Falaq: Unify Y to 1451-1616
+    if (f4) f4.l = [[126, 1451, 993, 1616]] // Remove erroneous segment 2 on Line 3
+    
+    // Line 3 of Al-Falaq: Unify Y to 1652-1810
+    if (f5) f5.l = [[126, 1652, 1809, 1810]] // Entire Line 3 (wamin sharri hasidin...)
+
+    // Correct database errors and unify Y for Surah 114 (An-Nas) Ayahs 1, 2, 3, 4, 5, 6
+    const n1 = processedCoords.find(x => x.s === 114 && x.a === 1)
+    const n2 = processedCoords.find(x => x.s === 114 && x.a === 2)
+    const n3 = processedCoords.find(x => x.s === 114 && x.a === 3)
+    const n4 = processedCoords.find(x => x.s === 114 && x.a === 4)
+    const n5 = processedCoords.find(x => x.s === 114 && x.a === 5)
+    const n6 = processedCoords.find(x => x.s === 114 && x.a === 6)
+
+    // Line 1 of An-Nas: Unify Y to 2248-2408
+    if (n1) n1.l = [[971, 2248, 1809, 2408]]
+    if (n2) n2.l = [[319, 2248, 972, 2408]]
+    if (n3) n3.l = [[127, 2248, 320, 2408], [1397, 2440, 1805, 2616]] // Segment 1 Line 1, Segment 2 Line 2
+
+    // Line 2 of An-Nas: Unify Y to 2440-2616
+    if (n4) n4.l = [[311, 2440, 1398, 2616]]
+    if (n5) n5.l = [[126, 2440, 312, 2616], [352, 2657, 1571, 2815]] // Segment 1 Line 2, Segment 2 Line 3
   }
 
   klassikCoordsCache[pg] = processedCoords.map(ayah => {
@@ -1986,6 +2029,7 @@ const getKlassikLayout = (pg: number) => {
 
 // When the center image loads, trigger coordinate loading
 const onClassicImgLoad = () => {
+  classicImgLoaded.value = true
   loadKlassikCoords(pageNumber.value)
 }
 
@@ -2666,7 +2710,7 @@ const findSectionForPage = (starts: number[]) => {
   return value
 }
 const localImageUrl = (page: number) => {
-  return '/images/mushaf/' + String(page).padStart(3, '0') + '.webp'
+  return '/images/mushaf/' + String(page).padStart(3, '0') + '.webp?v=2'
 }
 
 const mushafImageUrl = computed(() => localImageUrl(pageNumber.value))
@@ -2788,6 +2832,12 @@ const handlePageChange = () => {
     queueIndex.value = savedIndex
   }
   imageLoaded.value = false
+  classicImgLoaded.value = false
+  nextTick(() => {
+    if (klassikImgRef.value && klassikImgRef.value.complete) {
+      classicImgLoaded.value = true
+    }
+  })
   imageError.value = false
   revealedLines.value = Array(lineCount).fill(true)
   directPage.value = pageNumber.value
@@ -3889,11 +3939,11 @@ useHead({
 .mushaf-page-box-klasik {
   width: 100% !important;
   height: auto !important;
-  max-width: 100% !important;
+  max-width: 600px !important; /* Cap to golden reading width so page fits screen height and remains laser-sharp */
   padding: 0 !important;
-  margin: 0 !important;
+  margin: 0 auto !important;
   border: 0 !important;
-  box-shadow: none !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
   background: transparent !important;
   aspect-ratio: unset !important;
 }
@@ -9408,6 +9458,67 @@ color: #75471a !important;
 }
 .tss-slider-new::-webkit-slider-thumb:active {
   transform: scale(1.2);
+}
+/* --- Mushaf Classic Loading Spinner & Transitions --- */
+.mushaf-classic-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #fffefa;
+  z-index: 5;
+  pointer-events: none;
+}
+.mushaf-theme--dark .mushaf-classic-loading {
+  background: #101b16;
+}
+.mushaf-theme--nabawiyyah .mushaf-classic-loading {
+  background: #faf5eb;
+}
+
+.mushaf-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(6, 78, 59, 0.08);
+  border-radius: 50%;
+  border-top-color: #064e3b;
+  animation: mushaf-spin 0.75s linear infinite;
+}
+.mushaf-theme--dark .mushaf-spinner {
+  border-color: rgba(52, 211, 153, 0.08);
+  border-top-color: #34d399;
+}
+.mushaf-theme--nabawiyyah .mushaf-spinner {
+  border-color: rgba(140, 120, 83, 0.08);
+  border-top-color: #8c7853;
+}
+
+.mushaf-classic-loading span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #52615b;
+  letter-spacing: 0.04em;
+}
+.mushaf-theme--dark .mushaf-classic-loading span {
+  color: #a8b7b1;
+}
+.mushaf-theme--nabawiyyah .mushaf-classic-loading span {
+  color: #8c7853;
+}
+
+@keyframes mushaf-spin {
+  to { transform: rotate(360deg); }
+}
+
+.mushaf-classic-img {
+  opacity: 0;
+  transition: opacity 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.mushaf-classic-img--loaded {
+  opacity: 1;
 }
 
 </style>
