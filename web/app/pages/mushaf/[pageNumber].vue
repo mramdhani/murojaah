@@ -7484,17 +7484,29 @@ useHead({
   /* Maintain book page aspect ratio and center vertically in viewport */
   align-self: center !important;
   flex: 0 0 auto !important; /* Prevent vertical stretching in flex layout */
-  display: flex !important;
-  flex-direction: column !important;
+  display: block !important; /* Changed from flex to block to support floated aspect-ratio */
   padding: 8px 10px 14px !important;
   width: 100% !important; /* Take full width of the slide column */
-  height: auto !important; /* Height is strictly calculated from width using aspect-ratio */
+  height: auto !important;
   min-height: auto !important; /* Override base class min-height: 100% to prevent vertical stretching */
   max-height: none !important; /* Never shrink vertically to fit screen height; scroll parent slide instead */
   max-width: 100% !important;
-  aspect-ratio: 1 / 1.52 !important; /* Keep page proportions strict & identical */
+  aspect-ratio: auto !important; /* Managed dynamically via ::before pseudo-element */
   box-sizing: border-box !important;
   position: relative !important;
+}
+/* Floated helper to maintain minimum 1:1.52 aspect ratio, growing if content is taller */
+.mushaf-page-box--with-frame::before {
+  content: "" !important;
+  float: left !important;
+  width: 0 !important;
+  padding-top: 152% !important; /* aspect-ratio: 1 / 1.52 */
+  pointer-events: none !important;
+}
+.mushaf-page-box--with-frame::after {
+  content: "" !important;
+  display: table !important;
+  clear: both !important;
 }
 /* ── Frame Border Box ─────────────────────────────── */
 .mushaf-page-box--with-frame .mushaf-frame {
@@ -7749,7 +7761,7 @@ useHead({
 
 /* Hairline gold separators — slightly stronger so rows are clearly visible */
 .mushaf-page-box--with-frame .mushaf-line {
-  font-size: 4.0cqw !important; /* Proportional font-size to fit all lines in aspect ratio */
+  font-size: 4.8cqw !important; /* Scaled up for better readability */
   line-height: 1.4 !important;
   border-bottom: 1px solid rgb(71 68 64 / 42%) !important;
   padding-top: 0.6cqw !important; /* Visual vertical alignment */
@@ -7758,6 +7770,10 @@ useHead({
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+}
+/* Unicode fallback has smaller baseline/glyphs, scale up slightly more for consistency */
+.mushaf-page-box--with-frame .mushaf-line--unicode {
+  font-size: 5.2cqw !important;
 }
 .mushaf-page-box--with-frame .mushaf-line:last-child,
 .mushaf-page-box--with-frame .mushaf-line--no-border {
