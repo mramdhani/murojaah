@@ -69,7 +69,10 @@
                   'mushaf-page-box--baqarah': slidePage === 2,
                   'mushaf-page-box--closing': slidePage === 604,
                   'mushaf-page-box--multi-surah': slidePage && getPageSurahCount(slidePage) > 1,
-                  'mushaf-page-box-klasik': mushafMode === 'klasik'
+                  'mushaf-page-box-klasik': mushafMode === 'klasik',
+                  'mushaf-page-box--with-frame': SHOW_DIGITAL_FRAME && mushafMode === 'digital',
+                  'mushaf-page-box--left-page': slidePage && slidePage % 2 === 0,
+                  'mushaf-page-box--right-page': slidePage && slidePage % 2 !== 0
                 }
               ]"
             >
@@ -179,37 +182,38 @@
                   <!-- Rendered lines -->
                   <template v-else>
                     <template v-for="line in getPageLines(slidePage)" :key="line.line_number">
-                      <!-- Surah name banner (shown before the first line of a surah) -->
+                      <!-- Surah Header Group (keeps banner and bismillah close together, ignoring space-between) -->
                       <div
                         v-if="getSurahBannerAtLine(line.line_number, slidePage)"
-                        class="mushaf-surah-banner"
+                        class="mushaf-surah-header-group"
                       >
-                        <div class="mushaf-surah-banner__inner">
-                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--left">
-                            {{ getSurahBannerAtLine(line.line_number, slidePage)?.revelation_place === 'meccan' ? 'Makkiyah' : (getSurahBannerAtLine(line.line_number, slidePage)?.revelation_place === 'medinan' ? 'Madaniyah' : '') }}
-                          </span>
-                          <span
-                            class="mushaf-surah-banner__name"
-                            :aria-label="getSurahBannerAtLine(line.line_number, slidePage)?.name_arabic"
-                          >{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
-                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--right">
-                            <template v-if="getSurahBannerAtLine(line.line_number, slidePage)?.total_ayah">
-                              {{ getSurahBannerAtLine(line.line_number, slidePage)?.total_ayah }} Ayat
-                            </template>
-                          </span>
+                        <div class="mushaf-surah-banner">
+                          <div class="mushaf-surah-banner__inner">
+                            <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--left">
+                              آيَاتُهَا {{ formatArabicNumber(getSurahBannerAtLine(line.line_number, slidePage)?.total_ayah || 0) }}
+                            </span>
+                            <span
+                              class="mushaf-surah-banner__name"
+                              :aria-label="getSurahBannerAtLine(line.line_number, slidePage)?.name_arabic"
+                            >{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
+                            <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--right">
+                              {{ getSurahBannerAtLine(line.line_number, slidePage)?.revelation_place === 'meccan' ? 'مَكِّيَّةٌ' : 'مَدَنِيَّةٌ' }}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      <div
-                        v-if="shouldShowBismillahAtLine(line.line_number, slidePage)"
-                        class="mushaf-bismillah-calligraphy"
-                        aria-label="Bismillahirrahmanirrahim"
-                      >﷽</div>
+                        <div
+                          v-if="shouldShowBismillahAtLine(line.line_number, slidePage)"
+                          class="mushaf-bismillah-calligraphy"
+                          aria-label="Bismillahirrahmanirrahim"
+                        >﷽</div>
+                      </div>
 
                       <!-- Normal text line -->
                       <div
                         v-if="line.unicode_fallback?.length"
                         class="mushaf-line mushaf-line--unicode"
+                        :class="{ 'mushaf-line--no-border': isLastLineOfSurah(line.line_number, slidePage) }"
                         :data-line="line.line_number"
                       >
                         <span
@@ -223,7 +227,12 @@
                         </span>
                       </div>
 
-                      <div v-else class="mushaf-line mushaf-line--qcf" :data-line="line.line_number">
+                      <div
+                        v-else
+                        class="mushaf-line mushaf-line--qcf"
+                        :class="{ 'mushaf-line--no-border': isLastLineOfSurah(line.line_number, slidePage) }"
+                        :data-line="line.line_number"
+                      >
                         <span class="mushaf-line__qcf-content">
                           <template v-for="word in getGroupedWords(line.words)" :key="word.word_id">
                             <span
@@ -1715,6 +1724,9 @@ const mushafMode = useCookie<'digital' | 'klasik'>('mushaf_mode', {
   path: '/'
 })
 
+//Konfirgurasi Frame Border
+const SHOW_DIGITAL_FRAME = true
+
 // ── Mushaf Klasik: Koordinat Presisi (dari ayahinfo_1920.db) ──────────────
 
 // Tipe koordinat per baris: [minX, minY, maxX, maxY]
@@ -2125,6 +2137,7 @@ const handleClassicPointerUp = (e: PointerEvent) => {
     toggleFullscreen()
   }
   
+  klassikHoverAyah.value = null
   isClassicLongPress = false
 }
 
@@ -2133,6 +2146,7 @@ const handleClassicPointerCancel = () => {
     window.clearTimeout(classicPointerTimer)
     classicPointerTimer = null
   }
+  klassikHoverAyah.value = null
   isClassicLongPress = false
 }
 
@@ -2568,9 +2582,7 @@ const getPageJuz = (page: number): string => {
 const getPageSurah = (page: number): string => {
   const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
   if (!surahs.length) return ''
-  return surahs.length === 1
-    ? surahs[0].number + '. ' + surahs[0].name_latin
-    : surahs[0].name_latin + ' – ' + surahs[surahs.length - 1].name_latin
+  return surahs[0].number + '. ' + surahs[0].name_latin
 }
 
 const getPageSurahCount = (page: number): number =>
@@ -2579,6 +2591,16 @@ const getPageSurahCount = (page: number): number =>
 const getSurahBannerAtLine = (lineNumber: any, page: number): MushafSurah | null => {
   const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
   return surahs.find(s => s.starts_at_line !== null && s.starts_at_line !== undefined && Number(s.starts_at_line) === Number(lineNumber)) || null
+}
+
+const isLastLineOfSurah = (lineNumber: number, page: number): boolean => {
+  const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
+  const nextSurah = surahs.find(s => s.starts_at_line !== null && Number(s.starts_at_line) > Number(lineNumber))
+  if (!nextSurah) return false
+
+  const lines = qcfPageCache.value[page]?.lines || pageData.value?.lines || []
+  const hasLineInBetween = lines.some(l => Number(l.line_number) > Number(lineNumber) && Number(l.line_number) < Number(nextSurah.starts_at_line))
+  return !hasLineInBetween
 }
 
 const getSurahForAyah = (surahId: number): MushafSurah | undefined => {
@@ -4497,6 +4519,13 @@ useHead({
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  padding: 0 10px !important;
+  /* Hide scrollbars so no grey separator lines appear in the middle of the screen */
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.mushaf-slide::-webkit-scrollbar {
+  display: none !important;
 }
 
 .mushaf-viewport--dragging { cursor: grabbing; }
@@ -6671,13 +6700,14 @@ useHead({
   justify-content: center;
   border: 1px solid #176a6d;
   border-radius: 999px;
-  padding: 2px 10px;
+  padding: 0px 10px;
   background: rgba(255, 253, 235, .97);
-  box-shadow:
+  /* box-shadow:
     0 0 0 2px #fff8d8,
-    0 0 0 3px rgba(23, 106, 109, .58);
+    0 0 0 3px rgba(23, 106, 109, .58); */
   line-height: 1;
   white-space: nowrap;
+  font-size: .6rem;
 }
 
 .mushaf-meta__juz,
@@ -7445,20 +7475,20 @@ useHead({
   margin: auto 0 !important;
 }
 
-/* Hide all ornate frames and borders */
-.mushaf-frame,
-.mushaf-frame__border,
-.mushaf-frame__corner,
-.mushaf-meta,
-.mushaf-text-frame__inner::before,
-.mushaf-text-frame__inner::after {
+/* Hide all ornate frames and borders on plain layout */
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-frame,
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-frame__border,
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-frame__corner,
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-meta,
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-text-frame__inner::before,
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-text-frame__inner::after {
   display: none !important;
 }
 
-/* Restyle text frame to be completely plain */
-.mushaf-text-frame,
-.mushaf-theme--nabawiyyah .mushaf-text-frame,
-.mushaf-theme--classic .mushaf-text-frame {
+/* Restyle text frame to be completely plain on plain layout */
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-text-frame,
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-theme--nabawiyyah .mushaf-text-frame,
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-theme--classic .mushaf-text-frame {
   margin: 0 !important;
   border: 0 !important;
   padding: 0 !important;
@@ -7466,19 +7496,302 @@ useHead({
   box-shadow: none !important;
 }
 
-.mushaf-text-frame__inner {
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-text-frame__inner {
   border: 0 !important;
   padding: 0 !important;
   background: transparent !important;
 }
 
-.mushaf-qcf-content {
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-qcf-content {
   flex: 1 0 auto !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
   padding: 0 4.5cqw !important;
   margin: 0 !important;
+}
+
+/* ══════════════════════════════════════════════════
+   DIGITAL MUSHAF FRAME — Consistent height & Layout
+   ══════════════════════════════════════════════════ */
+.mushaf-page-box--with-frame {
+  /* Maintain book page aspect ratio and center vertically in viewport */
+  align-self: center !important;
+  flex: 0 0 auto !important; /* Prevent vertical stretching in flex layout */
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 8px 10px 14px !important;
+  width: 100% !important; /* Take full width of the slide column */
+  height: auto !important; /* Height is strictly calculated from width using aspect-ratio */
+  min-height: auto !important; /* Override base class min-height: 100% to prevent vertical stretching */
+  max-height: none !important; /* Never shrink vertically to fit screen height; scroll parent slide instead */
+  max-width: 100% !important;
+  aspect-ratio: 1 / 1.52 !important; /* Keep page proportions strict & identical */
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+/* ── Frame Border Box ─────────────────────────────── */
+.mushaf-page-box--with-frame .mushaf-frame {
+  display: block !important;
+  inset: 44px 8px 8px !important;
+}
+.mushaf-page-box--with-frame .mushaf-frame__border {
+  display: block !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+/* Multi-layer gold frame lines via ::before */
+.mushaf-page-box--with-frame .mushaf-frame__border::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -7px !important;
+  border: none !important; /* Override default 1px gold border */
+  pointer-events: none !important;
+  box-shadow:
+    0 0 0 1px rgb(22, 109, 112),
+    0 0 0 3px rgb(255, 247, 207),
+    0 0 0 5px rgb(189, 140, 48),
+    0 0 0 7px rgb(248, 233, 168),
+    0 0 0 8px rgb(22, 109, 112) !important;
+}
+/* ── Arabesque Vine Pattern on Border ── */
+.mushaf-page-box--with-frame .mushaf-frame__border::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -6px !important;
+  border: none !important; /* Override default borders */
+  pointer-events: none !important;
+  opacity: 1 !important;
+  background:
+    /* TOP arabesque vine */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='11' viewBox='0 0 40 11'%3E%3Crect width='40' height='11' fill='rgb(251,243,208)'/%3E%3Crect y='3.5' width='40' height='4' fill='rgb(22,109,112)'/%3E%3Cpath d='M0 5.5 C5 1,10 1,13 5.5 C16 10,21 10,20 5.5 C19 1,24 1,27 5.5 C30 10,35 10,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M0 5.5 C5 10,10 10,13 5.5 C16 1,21 1,20 5.5 C19 10,24 10,27 5.5 C30 1,35 1,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='0' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='20' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='40' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='10' cy='2' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0' y1='0.6' x2='40' y2='0.6' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='0' y1='10.4' x2='40' y2='10.4' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") top / 40px 11px repeat-x,
+    /* BOTTOM arabesque vine */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='11' viewBox='0 0 40 11'%3E%3Crect width='40' height='11' fill='rgb(251,243,208)'/%3E%3Crect y='3.5' width='40' height='4' fill='rgb(22,109,112)'/%3E%3Cpath d='M0 5.5 C5 1,10 1,13 5.5 C16 10,21 10,20 5.5 C19 1,24 1,27 5.5 C30 10,35 10,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M0 5.5 C5 10,10 10,13 5.5 C16 1,21 1,20 5.5 C19 10,24 10,27 5.5 C30 1,35 1,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='0' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='20' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='40' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='10' cy='2' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0' y1='0.6' x2='40' y2='0.6' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='0' y1='10.4' x2='40' y2='10.4' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") bottom / 40px 11px repeat-x,
+    /* LEFT arabesque vine */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='40' viewBox='0 0 11 40'%3E%3Crect width='11' height='40' fill='rgb(251,243,208)'/%3E%3Crect x='3.5' width='4' height='40' fill='rgb(22,109,112)'/%3E%3Cpath d='M5.5 0 C1 5,1 10,5.5 13 C10 16,10 21,5.5 20 C1 19,1 24,5.5 27 C10 30,10 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M5.5 0 C10 5,10 10,5.5 13 C1 16,1 21,5.5 20 C10 19,10 24,5.5 27 C1 30,1 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='5.5' cy='0' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='20' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='40' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='2' cy='10' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='9' cy='30' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0.6' y1='0' x2='0.6' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='10.4' y1='0' x2='10.4' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") left / 11px 40px repeat-y,
+    /* RIGHT arabesque vine */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='40' viewBox='0 0 11 40'%3E%3Crect width='11' height='40' fill='rgb(251,243,208)'/%3E%3Crect x='3.5' width='4' height='40' fill='rgb(22,109,112)'/%3E%3Cpath d='M5.5 0 C1 5,1 10,5.5 13 C10 16,10 21,5.5 20 C1 19,1 24,5.5 27 C10 30,10 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M5.5 0 C10 5,10 10,5.5 13 C1 16,1 21,5.5 20 C10 19,10 24,5.5 27 C1 30,1 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='5.5' cy='0' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='20' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='40' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='2' cy='10' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='9' cy='30' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0.6' y1='0' x2='0.6' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='10.4' y1='0' x2='10.4' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") right / 11px 40px repeat-y !important;
+}
+/* ── Islamic Rosette Corner Medallions ──────────────── */
+.mushaf-page-box--with-frame .mushaf-frame__corner {
+  display: block !important;
+  width: 22px !important;
+  height: 22px !important;
+  border: none !important;
+  box-shadow: none !important;
+  /* Ottoman Rosette Corner Medallion */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='rgb(22,109,112)' stroke='rgb(189,140,48)' stroke-width='1.5'/%3E%3Ccircle cx='12' cy='6.5' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='12' cy='17.5' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='6.5' cy='12' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='17.5' cy='12' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='8.1' cy='8.1' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='15.9' cy='15.9' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='8.1' cy='15.9' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='15.9' cy='8.1' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='12' cy='12' r='3.8' fill='rgb(211,79,59)' stroke='rgb(189,140,48)' stroke-width='0.8'/%3E%3Ccircle cx='12' cy='12' r='1.4' fill='rgb(242,200,96)'/%3E%3C/svg%3E") center / contain no-repeat !important;
+}
+.mushaf-page-box--with-frame .mushaf-frame__corner--tl { top: -12px !important; left: -12px !important; }
+.mushaf-page-box--with-frame .mushaf-frame__corner--tr { top: -12px !important; right: -12px !important; }
+.mushaf-page-box--with-frame .mushaf-frame__corner--bl { bottom: -12px !important; left: -12px !important; }
+.mushaf-page-box--with-frame .mushaf-frame__corner--br { right: -12px !important; bottom: -12px !important; }
+
+/* ── Book Spine: Remove ENTIRE inner frame border on facing pages ──
+   Even Page (left side of book) → no right border/vines, no right corners
+   Odd Page (right side of book) → no left border/vines, no left corners */
+.mushaf-page-box--left-page .mushaf-frame__corner--tr,
+.mushaf-page-box--left-page .mushaf-frame__corner--br {
+  display: none !important;
+}
+.mushaf-page-box--left-page .mushaf-frame__border {
+  border: none !important;
+}
+.mushaf-page-box--left-page .mushaf-frame__border::before {
+  inset: -7px 0px -7px -7px !important; /* Align exactly to 0px on right */
+  border-right: 1px solid rgb(22, 109, 112) !important; /* Draw vertical line all the way to top frame (-7px) */
+  clip-path: inset(0px 0px 0px 0px) !important;
+}
+.mushaf-page-box--left-page .mushaf-frame__border::after {
+  inset: -6px 0px -6px -6px !important; /* Align exactly to 0px on right */
+  clip-path: inset(0px 0px 0px 0px) !important;
+}
+.mushaf-page-box--left-page .mushaf-frame__border::after {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='11' viewBox='0 0 40 11'%3E%3Crect width='40' height='11' fill='rgb(251,243,208)'/%3E%3Crect y='3.5' width='40' height='4' fill='rgb(22,109,112)'/%3E%3Cpath d='M0 5.5 C5 1,10 1,13 5.5 C16 10,21 10,20 5.5 C19 1,24 1,27 5.5 C30 10,35 10,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M0 5.5 C5 10,10 10,13 5.5 C16 1,21 1,20 5.5 C19 10,24 10,27 5.5 C30 1,35 1,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='0' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='20' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='40' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='10' cy='2' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0' y1='0.6' x2='40' y2='0.6' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='0' y1='10.4' x2='40' y2='10.4' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") top / 40px 11px repeat-x,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='11' viewBox='0 0 40 11'%3E%3Crect width='40' height='11' fill='rgb(251,243,208)'/%3E%3Crect y='3.5' width='40' height='4' fill='rgb(22,109,112)'/%3E%3Cpath d='M0 5.5 C5 1,10 1,13 5.5 C16 10,21 10,20 5.5 C19 1,24 1,27 5.5 C30 10,35 10,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M0 5.5 C5 10,10 10,13 5.5 C16 1,21 1,20 5.5 C19 10,24 10,27 5.5 C30 1,35 1,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='0' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='20' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='40' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='10' cy='2' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0' y1='0.6' x2='40' y2='0.6' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='0' y1='10.4' x2='40' y2='10.4' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") bottom / 40px 11px repeat-x,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='40' viewBox='0 0 11 40'%3E%3Crect width='11' height='40' fill='rgb(251,243,208)'/%3E%3Crect x='3.5' width='4' height='40' fill='rgb(22,109,112)'/%3E%3Cpath d='M5.5 0 C1 5,1 10,5.5 13 C10 16,10 21,5.5 20 C1 19,1 24,5.5 27 C10 30,10 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M5.5 0 C10 5,10 10,5.5 13 C1 16,1 21,5.5 20 C10 19,10 24,5.5 27 C1 30,1 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='5.5' cy='0' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='20' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='40' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='2' cy='10' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='9' cy='30' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0.6' y1='0' x2='0.6' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='10.4' y1='0' x2='10.4' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") left / 11px 40px repeat-y !important;
+}
+
+.mushaf-page-box--right-page .mushaf-frame__corner--tl,
+.mushaf-page-box--right-page .mushaf-frame__corner--bl {
+  display: none !important;
+}
+.mushaf-page-box--right-page .mushaf-frame__border {
+  border: none !important;
+}
+.mushaf-page-box--right-page .mushaf-frame__border::before {
+  inset: -7px -7px -7px 0px !important; /* Align exactly to 0px on left */
+  border-left: 1px solid rgb(22, 109, 112) !important; /* Draw vertical line all the way to top frame (-7px) */
+  clip-path: inset(0px 0px 0px 0px) !important;
+}
+.mushaf-page-box--right-page .mushaf-frame__border::after {
+  inset: -6px -6px -6px 0px !important; /* Align exactly to 0px on left */
+  clip-path: inset(0px 0px 0px 0px) !important;
+}
+.mushaf-page-box--right-page .mushaf-frame__border::after {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='11' viewBox='0 0 40 11'%3E%3Crect width='40' height='11' fill='rgb(251,243,208)'/%3E%3Crect y='3.5' width='40' height='4' fill='rgb(22,109,112)'/%3E%3Cpath d='M0 5.5 C5 1,10 1,13 5.5 C16 10,21 10,20 5.5 C19 1,24 1,27 5.5 C30 10,35 10,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M0 5.5 C5 10,10 10,13 5.5 C16 1,21 1,20 5.5 C19 10,24 10,27 5.5 C30 1,35 1,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='0' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='20' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='40' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='10' cy='2' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0' y1='0.6' x2='40' y2='0.6' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='0' y1='10.4' x2='40' y2='10.4' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") top / 40px 11px repeat-x,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='11' viewBox='0 0 40 11'%3E%3Crect width='40' height='11' fill='rgb(251,243,208)'/%3E%3Crect y='3.5' width='40' height='4' fill='rgb(22,109,112)'/%3E%3Cpath d='M0 5.5 C5 1,10 1,13 5.5 C16 10,21 10,20 5.5 C19 1,24 1,27 5.5 C30 10,35 10,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M0 5.5 C5 10,10 10,13 5.5 C16 1,21 1,20 5.5 C19 10,24 10,27 5.5 C30 1,35 1,40 5.5' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='0' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='20' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='40' cy='5.5' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='10' cy='2' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0' y1='0.6' x2='40' y2='0.6' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='0' y1='10.4' x2='40' y2='10.4' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") bottom / 40px 11px repeat-x,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='40' viewBox='0 0 11 40'%3E%3Crect width='11' height='40' fill='rgb(251,243,208)'/%3E%3Crect x='3.5' width='4' height='40' fill='rgb(22,109,112)'/%3E%3Cpath d='M5.5 0 C1 5,1 10,5.5 13 C10 16,10 21,5.5 20 C1 19,1 24,5.5 27 C10 30,10 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='1.3'/%3E%3Cpath d='M5.5 0 C10 5,10 10,5.5 13 C1 16,1 21,5.5 20 C10 19,10 24,5.5 27 C1 30,1 35,5.5 40' fill='none' stroke='rgb(189,140,48)' stroke-width='0.7' opacity='0.6'/%3E%3Ccircle cx='5.5' cy='0' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='20' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='5.5' cy='40' r='1.8' fill='rgb(211,79,59)'/%3E%3Ccircle cx='2' cy='10' r='1.2' fill='rgb(242,200,96)'/%3E%3Ccircle cx='9' cy='30' r='1.2' fill='rgb(242,200,96)'/%3E%3Cline x1='0.6' y1='0' x2='0.6' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3Cline x1='10.4' y1='0' x2='10.4' y2='40' stroke='rgb(189,140,48)' stroke-width='0.9'/%3E%3C/svg%3E") right / 11px 40px repeat-y !important;
+}
+
+/* Shift meta inward so pills never overlap the corner medallions */
+.mushaf-page-box--with-frame .mushaf-meta {
+  display: flex !important;
+  position: absolute !important;
+  top: 15px !important;
+  left: 36px !important;
+  right: 36px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: flex-end !important; /* Resting exactly on the border line */
+  z-index: 10 !important;
+}
+.mushaf-page-box--with-frame .mushaf-qcf-content {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important; /* Center lines vertically to keep gaps constant */
+  gap: 1.5cqw !important; /* Proportional line-spacing to fit within frame */
+  padding: 48px 3cqw 14px !important;
+  margin: 0 !important;
+}
+/* Hide redundant page footer at the bottom */
+.mushaf-page-box--with-frame .mushaf-page-footer {
+  display: none !important;
+}
+.mushaf-page-box--with-frame .mushaf-surah-header-group {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin-top: 4px !important;     /* Minimizes gap with previous surah's last line */
+  margin-bottom: 2px !important;  /* Minimizes gap with following first line */
+  gap: 3px !important;            /* Minimizes gap between banner and bismillah */
+  flex-shrink: 0 !important;
+}
+.mushaf-page-box--with-frame .mushaf-bismillah-calligraphy {
+  margin: 0 !important;
+  line-height: 1 !important;
+  font-size: clamp(20px, 4cqw, 32px) !important;
+}
+
+.mushaf-page-box--with-frame .mushaf-surah-banner {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+}
+.mushaf-page-box--with-frame .mushaf-surah-banner::before,
+.mushaf-page-box--with-frame .mushaf-surah-banner::after {
+  display: none !important;
+}
+.mushaf-page-box--with-frame .mushaf-surah-banner__inner,
+.mushaf-page-box--with-frame.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
+.mushaf-page-box--with-frame.mushaf-theme--classic .mushaf-surah-banner__inner,
+.mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__inner {
+  min-height: 34px !important; /* Slightly taller to accommodate 26px pills */
+  max-height: 38px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 4px 6px !important; /* Clean padding */
+  border-radius: 4px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  /* Premium Traditional Illuminated Arabesque/Floral Vignette Background */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='34' viewBox='0 0 80 34'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23fffcf3'/%3E%3Cstop offset='50%25' stop-color='%23fbf5e2'/%3E%3Cstop offset='100%25' stop-color='%23f5ebc8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='80' height='34' fill='url(%23bg)'/%3E%3Cpath d='M0 17 C15 5, 25 5, 40 17 C55 29, 65 29, 80 17' fill='none' stroke='%23d4af37' stroke-width='1.2' opacity='0.7'/%3E%3Cpath d='M0 17 C15 29, 25 29, 40 17 C55 5, 65 5, 80 17' fill='none' stroke='%23d4af37' stroke-width='1.2' opacity='0.7'/%3E%3Ccircle cx='40' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='40' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Ccircle cx='0' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='0' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Ccircle cx='80' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='80' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Cpath d='M12 11 Q20 7 28 13' fill='none' stroke='%23bd8c30' stroke-width='1'/%3E%3Cpath d='M52 23 Q60 27 68 21' fill='none' stroke='%23bd8c30' stroke-width='1'/%3E%3Ccircle cx='20' cy='9' r='1.8' fill='%23d34f3b'/%3E%3Ccircle cx='60' cy='25' r='1.8' fill='%23d34f3b'/%3E%3Ccircle cx='28' cy='22' r='1.5' fill='%23eec256'/%3E%3Ccircle cx='52' cy='12' r='1.5' fill='%23eec256'/%3E%3Cpath d='M15 15 C13 12, 9 14, 11 17 Z' fill='%233c763d' opacity='0.85'/%3E%3Cpath d='M65 19 C67 22, 71 20, 69 17 Z' fill='%233c763d' opacity='0.85'/%3E%3C/svg%3E") center / 80px 34px repeat !important;
+  /* 3-layer gold frame around banner */
+  box-shadow:
+    0 0 0 1px rgb(22, 109, 112),
+    0 0 0 3px rgb(255, 247, 207),
+    0 0 0 4.5px rgb(189, 140, 48) !important;
+}
+/* No pseudo-element scrolls — clean design */
+.mushaf-page-box--with-frame .mushaf-surah-banner__inner::before,
+.mushaf-page-box--with-frame .mushaf-surah-banner__inner::after {
+  display: none !important;
+}
+/* Calligraphic cartouche in the center for the Surah name */
+.mushaf-page-box--with-frame .mushaf-surah-banner__name,
+.mushaf-page-box--with-frame.mushaf-theme--nabawiyyah .mushaf-surah-banner__name,
+.mushaf-page-box--with-frame.mushaf-theme--classic .mushaf-surah-banner__name,
+.mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__name {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 26px !important; /* Increased height to prevent clipping */
+  min-height: 26px !important;
+  background: rgb(255, 255, 250) !important;
+  border: 1px solid rgb(189, 140, 48) !important;
+  border-radius: 999px !important;
+  padding: 0 14px !important;
+  /* Clean unified border-ring */
+  box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
+  color: rgb(22, 109, 112) !important;
+  font-family: 'QCF Surah Name V2', sans-serif !important;
+  font-size: 24px !important;
+  z-index: 3 !important;
+  margin: 0 auto !important;
+  transform: none !important;
+  text-shadow: none !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+/* Gold-bordered pills for Revelation Place and Ayah count */
+.mushaf-page-box--with-frame .mushaf-surah-banner__sub,
+.mushaf-page-box--with-frame.mushaf-theme--nabawiyyah .mushaf-surah-banner__sub,
+.mushaf-page-box--with-frame.mushaf-theme--classic .mushaf-surah-banner__sub,
+.mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__sub {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 26px !important; /* Match name pill height */
+  min-height: 26px !important;
+  background: rgb(255, 255, 250) !important;
+  border: 1px solid rgb(189, 140, 48) !important;
+  border-radius: 999px !important;
+  padding: 0px 8px !important;
+  box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
+  font-family: 'Amiri', 'Uthmanic Hafs', serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: rgb(22, 109, 112) !important;
+  z-index: 3 !important;
+  min-width: 52px !important;
+  max-width: 60px !important;
+  text-align: center !important;
+  text-transform: none !important;
+  direction: rtl !important;
+  flex-shrink: 0 !important;
+  line-height: 26px !important;
+}
+
+/* Hairline gold separators — slightly stronger so rows are clearly visible */
+.mushaf-page-box--with-frame .mushaf-line {
+  font-size: 4.0cqw !important; /* Proportional font-size to fit all lines in aspect ratio */
+  line-height: 1.4 !important;
+  border-bottom: 1px solid rgb(71 68 64 / 42%) !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+.mushaf-page-box--with-frame .mushaf-line:last-child,
+.mushaf-page-box--with-frame .mushaf-line--no-border {
+  border-bottom: 0 !important;
 }
 
 /* Restyle Surah Banner to match plain green box */
@@ -7522,7 +7835,7 @@ useHead({
   font-size: clamp(14px, 6.7cqw, 40px) !important;
   text-shadow: none !important;
   background: white !important;
-  padding: 5px 22px !important;
+  padding: 0px 22px !important;
   border-radius: 999px !important;
   border: 1px solid #c2e2cc !important;
   margin: 0 10px !important;
@@ -7577,8 +7890,8 @@ useHead({
 .mushaf-page-footer::before,
 .mushaf-page-footer::after { display: none; }
 
-/* Force remove line borders */
-.mushaf-line {
+/* Force remove line borders on plain layout */
+.mushaf-page-box:not(.mushaf-page-box--with-frame) .mushaf-line {
   border-bottom: 0 !important;
 }
 
