@@ -848,6 +848,7 @@ const selectQari = (qariId: string) => {
   triggerHaptic(50)
   const wasPlaying = isPlaying.value
   selectedQari.value = qariId
+  loadedTimings.value = null
   showQariPicker.value = false
   
   if (wasPlaying) {
@@ -860,6 +861,9 @@ const selectQari = (qariId: string) => {
 
 // Audio Player
 let audioObj: HTMLAudioElement | null = null
+const { fetchTimings } = useMurottalAudio()
+const loadedTimings = ref<any>(null)
+const timingsLoading = ref(false)
 let autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null
 
 const clearAutoAdvanceTimer = () => {
@@ -926,6 +930,8 @@ const stopAudio = () => {
   isPlaying.value = false
 }
 
+const isBismillahSurah = (surah: number) => surah !== 1 && surah !== 9
+
 const startAudioPlayback = (options: { withHaptic?: boolean, restart?: boolean } = {}) => {
   if (isUnmounted) return
 
@@ -947,6 +953,132 @@ const startAudioPlayback = (options: { withHaptic?: boolean, restart?: boolean }
     audioObj.pause()
   }
 
+  const qariId = QARI_MAP[selectedQari.value]
+  if (qariId) {
+    const timingsCacheKey = `timings_${qariId}_${surahId.value}`
+    if (!loadedTimings.value || loadedTimings.value.key !== timingsCacheKey) {
+      timingsLoading.value = true
+      fetchTimings(selectedQari.value, surahId.value).then((data) => {
+        timingsLoading.value = false
+        if (data && data.verse_timings && data.verse_timings.length > 0) {
+          loadedTimings.value = {
+            key: timingsCacheKey,
+            audio_url: data.audio_url,
+            verse_timings: data.verse_timings
+          }
+          startAudioPlayback(options)
+        } else {
+          loadedTimings.value = { key: timingsCacheKey, fallback: true }
+          startAudioPlayback(options)
+        }
+      }).catch((e) => {
+        console.error("Timings load error in remote page:", e)
+        timingsLoading.value = false
+        loadedTimings.value = { key: timingsCacheKey, fallback: true }
+        startAudioPlayback(options)
+      })
+      return
+    }
+  }
+
+  // --- GAPLESS AUDIO CONTINUOUS PLAYBACK ENGINE ---
+  if (loadedTimings.value && !loadedTimings.value.fallback) {
+    const timings = loadedTimings.value.verse_timings
+    const targetKey = `${surahId.value}:${currentAyahNumber.value}`
+    const activeTiming = timings.find((t: any) => t.verse_key === targetKey)
+
+    if (activeTiming) {
+      const src = loadedTimings.value.audio_url
+      const isSameSrc = audioObj.src === src
+
+      audioObj.onplay = () => {
+        isPlaying.value = true
+      }
+      audioObj.onpause = () => {
+        isPlaying.value = false
+      }
+      audioObj.onerror = () => {
+        isPlaying.value = false
+        showToast?.('Gagal memuat suara Qori', 'forgot')
+      }
+
+      audioObj.onended = () => {
+        isPlaying.value = false
+        audioCurrentTime.value = audioDuration.value || audioCurrentTime.value
+        if (isCustomRangeActive.value) {
+          void handleCustomRangeEnded()
+        } else {
+          scheduleAutoAdvance()
+        }
+      }
+
+      audioObj.ontimeupdate = () => {
+        if (audioObj?.seeking) return
+        const timeMs = (audioObj?.currentTime || 0) * 1000
+        audioCurrentTime.value = audioObj?.currentTime || 0
+
+        const activeT = timings.find((t: any) => timeMs >= t.timestamp_from && timeMs < t.timestamp_to)
+        
+        if (isListeningMode.value) {
+          if (activeT) {
+            const [sNum, aNum] = activeT.verse_key.split(':').map(Number)
+            if (aNum !== currentAyahNumber.value) {
+              void syncListeningAyahState(aNum, { restartAudio: false })
+            }
+          }
+        } else {
+          if (timeMs >= activeTiming.timestamp_to - 100) {
+            audioObj.pause()
+            isPlaying.value = false
+            audioCurrentTime.value = activeTiming.timestamp_to / 1000
+            
+            if (isCustomRangeActive.value) {
+              void handleCustomRangeEnded()
+            } else {
+              scheduleAutoAdvance()
+            }
+          }
+        }
+      }
+
+      const playWithSeek = () => {
+        if (!audioObj) return
+        const isStartOfSurah = Number(currentAyahNumber.value) === 1
+        const seekTime = (isStartOfSurah && isBismillahSurah(surahId.value)) ? 0 : (activeTiming.timestamp_from / 1000)
+
+        const diff = Math.abs(audioObj.currentTime - seekTime)
+        if (diff > 1.2) {
+          audioObj.currentTime = seekTime
+        }
+
+        audioObj.play().catch(err => {
+          isPlaying.value = false
+          if (err.name === 'NotAllowedError') {
+            console.warn('Autoplay blocked by browser. User interaction required to play audio.')
+          } else {
+            console.error('Playback error:', err)
+          }
+        })
+      }
+
+      if (!isSameSrc) {
+        audioObj.src = src
+        audioObj.load()
+        audioObj.onloadedmetadata = () => {
+          audioDuration.value = Number.isFinite(audioObj?.duration) ? (audioObj?.duration || 0) : 0
+          playWithSeek()
+        }
+      } else {
+        audioObj.onloadedmetadata = () => {
+          audioDuration.value = Number.isFinite(audioObj?.duration) ? (audioObj?.duration || 0) : 0
+        }
+        playWithSeek()
+      }
+      return
+    }
+  }
+
+  // --- ORIGINAL FALLBACK PLAYBACK ENGINE ---
   const pad = (num: number, size: number) => {
     let s = num + ""
     while (s.length < size) s = "0" + s

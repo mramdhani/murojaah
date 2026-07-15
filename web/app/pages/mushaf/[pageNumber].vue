@@ -1683,6 +1683,10 @@ const shouldAutoplayNextPage = useState<boolean>('shouldAutoplayNextPage', () =>
 const playingPageNumber = ref<number | null>(null)
 const playingAyahsList = ref<any[]>([])
 
+const { fetchTimings } = useMurottalAudio()
+const loadedTimings = ref<any>(null)
+const timingsLoading = ref(false)
+
 const legacyAutoNextAyah = useCookie<boolean>('auto_next_ayah', {
   default: () => false,
   maxAge: 60 * 60 * 24 * 365,
@@ -2144,6 +2148,8 @@ watch(mushafTheme, () => {
 })
 
 let playerAudio: HTMLAudioElement | null = null
+let lastSyncedVerseKey = ''
+let isContinuousPageTransition = false
 let preloadedAudio: HTMLAudioElement | null = null
 let preloadedAudioUrl = ''
 let idleReturnTimer: number | null = null
@@ -2762,6 +2768,24 @@ const loadPageMetadata = async () => {
       qcfPageCache.value[pageNumber.value] = response.data as any
     }
 
+    if (isPlaying.value) {
+      let playingSurahNum: number | null = null
+      if (loadedTimings.value && !loadedTimings.value.fallback) {
+        playingSurahNum = Number(loadedTimings.value.key.split('_')[2])
+      } else if (playerAyah.value) {
+        const [sNum] = playerAyah.value.verse_key.split(':').map(Number)
+        playingSurahNum = sNum
+      }
+
+      if (playingSurahNum) {
+        const isPlayingSurahOnNewPage = pageData.value?.surahs.some(s => s.number === playingSurahNum || s.id === playingSurahNum)
+        if (!isPlayingSurahOnNewPage) {
+          stopPlayer()
+          loadedTimings.value = null
+        }
+      }
+    }
+
     await loadSurahOptions()
     const querySurah = Number(route.query.surah)
     const queryAyah = Number(route.query.ayah)
@@ -2796,6 +2820,17 @@ const loadPageMetadata = async () => {
         playingAyahsList.value = [...(pageData.value?.ayahs || [])]
       }
       playPlayerAyah()
+    } else if (isPlaying.value && loadedTimings.value && !loadedTimings.value.fallback) {
+      playingPageNumber.value = pageNumber.value
+      playingAyahsList.value = [...(pageData.value?.ayahs || [])]
+      const timeMs = (playerAudio?.currentTime || 0) * 1000
+      const activeT = loadedTimings.value.verse_timings.find((t: any) => timeMs >= t.timestamp_from && timeMs < t.timestamp_to)
+      if (activeT) {
+        const idx = playingAyahsList.value.findIndex(x => x.verse_key === activeT.verse_key)
+        if (idx !== -1) {
+          playerAyahIndex.value = idx
+        }
+      }
     }
   } catch (error) {
     console.error('Failed to load Mushaf page metadata:', error)
@@ -2818,6 +2853,15 @@ const handlePageChange = () => {
   const savedQueue = [...activeMurottalQueue.value]
   const savedIndex = queueIndex.value
   const wasPlaying = isPlaying.value
+
+  if (isContinuousPageTransition) {
+    isContinuousPageTransition = false
+  } else {
+    if (isPlaying.value) {
+      stopPlayer()
+      loadedTimings.value = null
+    }
+  }
 
   if (wasAutoplay) {
     stopPlayer()
@@ -3176,6 +3220,7 @@ const closeQariPicker = () => { showQariPicker.value = false }
 const selectQari = (qariId: string) => {
   const wasPlaying = isPlaying.value
   selectedQari.value = qariId
+  loadedTimings.value = null
   if (wasPlaying) {
     stopPlayer()
     playPlayerAyah()
@@ -3268,6 +3313,12 @@ const startIdleTimer = () => {
 const stopPlayer = () => {
   clearIdleTimer()
   if (playerAudio) {
+    playerAudio.onplay = null
+    playerAudio.onpause = null
+    playerAudio.onended = null
+    playerAudio.onerror = null
+    playerAudio.ontimeupdate = null
+    playerAudio.onloadedmetadata = null
     playerAudio.pause()
     playerAudio.currentTime = 0
     // On iOS Safari, we MUST keep the audio element alive and "blessed".
@@ -3286,7 +3337,210 @@ let bismillahPendingSurah = 0
 const isBismillahSurah = (surah: number) => surah !== 1 && surah !== 9
 
 const playPlayerAyah = () => {
-  // Check if we need to play Bismillah first (ayah 1 of a surah that has Bismillah)
+  if (playingAyahsList.value.length === 0 && pageData.value?.ayahs) {
+    playingPageNumber.value = pageNumber.value
+    playingAyahsList.value = [...pageData.value.ayahs]
+  }
+
+  let verse: { surah: number; ayah: number } | null = null
+  if (isCustomRangeActive.value) {
+    verse = activeMurottalQueue.value[queueIndex.value]
+  } else {
+    const ayah = playerAyah.value
+    if (ayah) {
+      const [surah, number] = ayah.verse_key.split(':').map(Number)
+      verse = { surah, ayah: number }
+    }
+  }
+
+  if (!verse) return
+
+  const currentSurahNum = verse.surah
+  const qariId = QARI_MAP[selectedQari.value]
+
+  if (qariId) {
+    const timingsCacheKey = `timings_${qariId}_${currentSurahNum}`
+    if (!loadedTimings.value || loadedTimings.value.key !== timingsCacheKey) {
+      timingsLoading.value = true
+      fetchTimings(selectedQari.value, currentSurahNum).then((data) => {
+        timingsLoading.value = false
+        if (data && data.verse_timings && data.verse_timings.length > 0) {
+          loadedTimings.value = {
+            key: timingsCacheKey,
+            audio_url: data.audio_url,
+            verse_timings: data.verse_timings
+          }
+          playPlayerAyah()
+        } else {
+          loadedTimings.value = { key: timingsCacheKey, fallback: true }
+          playPlayerAyah()
+        }
+      }).catch((e) => {
+        console.error("Timings load error:", e)
+        timingsLoading.value = false
+        loadedTimings.value = { key: timingsCacheKey, fallback: true }
+        playPlayerAyah()
+      })
+      return
+    }
+  }
+
+  // --- GAPLESS AUDIO CONTINUOUS PLAYBACK ENGINE ---
+  if (loadedTimings.value && !loadedTimings.value.fallback) {
+    const timings = loadedTimings.value.verse_timings
+    const targetKey = `${verse.surah}:${verse.ayah}`
+    const activeTiming = timings.find((t: any) => t.verse_key === targetKey)
+
+    if (activeTiming) {
+      bismillahPendingSurah = 0 // Bismillah is built into full chapter MP3
+      const src = loadedTimings.value.audio_url
+
+      if (!playerAudio) {
+        playerAudio = new Audio()
+        playerAudio.preload = 'auto'
+      }
+
+      const isSameSrc = playerAudio.src === src
+
+      playerAudio.onplay = () => { isPlaying.value = true }
+      playerAudio.onpause = () => { isPlaying.value = false }
+      playerAudio.onerror = (e) => {
+        console.error('Audio playback error:', e)
+        isPlaying.value = false
+        showToast?.('Gagal memutar murottal. Periksa koneksi internet.', 'forgot')
+      }
+
+      playerAudio.onended = () => {
+        if (isCustomRangeActive.value) {
+          stopPlayer()
+          isCustomRangeActive.value = false
+        } else {
+          const nextTargetPage = (playingPageNumber.value || pageNumber.value) + 1
+          if (nextTargetPage <= 604) {
+            shouldAutoplayNextPage.value = true
+            if (nextTargetPage === pageNumber.value) {
+              loadPageMetadata()
+            } else {
+              slideToPage(nextTargetPage)
+            }
+          } else {
+            isPlaying.value = false
+            playerCurrentTime.value = playerDuration.value
+          }
+        }
+      }
+
+      playerAudio.ontimeupdate = () => {
+        if (playerAudio?.seeking) return
+        const timeMs = (playerAudio?.currentTime || 0) * 1000
+        playerCurrentTime.value = playerAudio?.currentTime || 0
+
+        const activeT = timings.find((t: any) => timeMs >= t.timestamp_from && timeMs < t.timestamp_to)
+        if (activeT) {
+          const idx = playingAyahsList.value.findIndex(x => x.verse_key === activeT.verse_key)
+          if (idx !== -1) {
+            if (playerAyahIndex.value !== idx) {
+              playerAyahIndex.value = idx
+              
+              // Check if page needs to slide
+              const activeAyahData = playingAyahsList.value[idx]
+              if (activeAyahData && activeAyahData.page && activeAyahData.page !== pageNumber.value) {
+                slideToPage(activeAyahData.page)
+              }
+            }
+          } else {
+            // Verse is not on the current page! We need to slide to the page containing this verse.
+            const [sNum, aNum] = activeT.verse_key.split(':').map(Number)
+            if (lastSyncedVerseKey !== activeT.verse_key) {
+              lastSyncedVerseKey = activeT.verse_key
+              syncPageForVerse(sNum, aNum, { isContinuous: true })
+            }
+          }
+
+          // Ayah Repeat / Custom Range handling
+          if (isCustomRangeActive.value) {
+            const lastVerse = activeMurottalQueue.value[activeMurottalQueue.value.length - 1]
+            const lastTiming = timings.find((t: any) => t.verse_key === lastVerse.verse_key)
+            
+            if (lastTiming && timeMs >= lastTiming.timestamp_to - 100) {
+              if (currentRangeRepeatCount.value < settingsRangeRepeat.value) {
+                currentRangeRepeatCount.value++
+                queueIndex.value = 0
+                currentAyahRepeatCount.value = 1
+                const firstVerse = activeMurottalQueue.value[0]
+                const firstTiming = timings.find((t: any) => t.verse_key === firstVerse.verse_key)
+                if (firstTiming && playerAudio) {
+                  playerAudio.currentTime = firstTiming.timestamp_from / 1000
+                }
+              } else {
+                stopPlayer()
+                isCustomRangeActive.value = false
+              }
+              return
+            }
+
+            if (settingsAyahRepeat.value > 1 && timeMs >= activeT.timestamp_to - 100) {
+              if (currentAyahRepeatCount.value < settingsAyahRepeat.value) {
+                currentAyahRepeatCount.value++
+                playerAudio.currentTime = activeT.timestamp_from / 1000
+              } else {
+                currentAyahRepeatCount.value = 1
+              }
+            }
+          } else {
+            if (localRepeatCount.value > 1 && timeMs >= activeT.timestamp_to - 100) {
+              if (currentLocalAyahRepeatCount.value < localRepeatCount.value) {
+                currentLocalAyahRepeatCount.value++
+                playerAudio.currentTime = activeT.timestamp_from / 1000
+              } else {
+                currentLocalAyahRepeatCount.value = 1
+              }
+            }
+          }
+        }
+      }
+
+      const playWithSeek = () => {
+        if (!playerAudio) return
+        const isStartOfSurah = Number(verse.ayah) === 1
+        const seekTime = (isStartOfSurah && isBismillahSurah(verse.surah)) ? 0 : (activeTiming.timestamp_from / 1000)
+
+        const diff = Math.abs(playerAudio.currentTime - seekTime)
+        if (diff > 1.2) {
+          playerAudio.currentTime = seekTime
+        }
+
+        playerAudio.play().catch((err: Error) => {
+          isPlaying.value = false
+          if (err.name === 'NotAllowedError') {
+            showToast?.('Ketuk layar terlebih dahulu, lalu tekan play kembali', 'doubtful')
+          } else if (err.name === 'NotSupportedError') {
+            showToast?.('Format audio tidak didukung browser ini', 'forgot')
+          } else {
+            showToast?.('Gagal memutar murottal. Periksa koneksi internet.', 'forgot')
+          }
+        })
+      }
+
+      if (!isSameSrc) {
+        playerAudio.src = src
+        playerAudio.load()
+        playerAudio.onloadedmetadata = () => {
+          playerDuration.value = Number.isFinite(playerAudio?.duration) ? (playerAudio?.duration || 0) : 0
+          playWithSeek()
+        }
+      } else {
+        playerAudio.onloadedmetadata = () => {
+          playerDuration.value = Number.isFinite(playerAudio?.duration) ? (playerAudio?.duration || 0) : 0
+        }
+        playWithSeek()
+      }
+      playerAudio.preload = 'auto'
+      return
+    }
+  }
+
+  // --- ORIGINAL FALLBACK PLAYBACK ENGINE (VERSE-BY-VERSE) ---
   if (bismillahPendingSurah > 0) {
     const surah = bismillahPendingSurah
     bismillahPendingSurah = 0
@@ -3306,25 +3560,17 @@ const playPlayerAyah = () => {
     playerAudio.onpause = () => { isPlaying.value = false }
     playerAudio.onerror = (e) => {
       console.error('Bismillah audio error:', e)
-      // If Bismillah fails, just continue to the actual ayah
       playPlayerAyah()
     }
     playerAudio.onended = () => {
-      // Bismillah finished, now play the actual ayah
       playPlayerAyah()
     }
     playerAudio.play().catch((err: Error) => {
       isPlaying.value = false
       console.error('Bismillah play error:', err)
-      // If Bismillah fails, try the actual ayah
       playPlayerAyah()
     })
     return
-  }
-
-  if (playingAyahsList.value.length === 0 && pageData.value?.ayahs) {
-    playingPageNumber.value = pageNumber.value
-    playingAyahsList.value = [...pageData.value.ayahs]
   }
 
   const src = playerAudioUrl()
@@ -3333,11 +3579,6 @@ const playPlayerAyah = () => {
     playerAudio = new Audio()
     playerAudio.preload = 'auto'
   }
-  // Change src on the persistent, user-blessed instance rather than swapping elements,
-  // which bypasses iOS Safari's strict media element blessing requirements.
-  // On iOS, we must call .load() after changing src to initiate the network fetch,
-  // otherwise the browser won't start loading the audio data. This is safe with
-  // a persistent (never-nulled) audio element that was already blessed by a user gesture.
   if (playerAudio.src !== src) {
     playerAudio.src = src
   }
@@ -3356,7 +3597,6 @@ const playPlayerAyah = () => {
     isPlaying.value = false
   }
   playerAudio.onended = () => {
-
     if (isCustomRangeActive.value) {
       if (currentAyahRepeatCount.value < settingsAyahRepeat.value) {
         currentAyahRepeatCount.value += 1
@@ -3561,6 +3801,7 @@ const generateVerseQueue = (startSurah: number, startAyah: number, endSurah: num
 }
 
 const slideToPage = async (targetPage: number) => {
+  isContinuousPageTransition = true
   const distance = targetPage - pageNumber.value
   if (Math.abs(distance) !== 1) {
     await goToPage(targetPage)
@@ -3576,13 +3817,15 @@ const slideToPage = async (targetPage: number) => {
   swipeOffset.value = 0
 }
 
-const syncPageForVerse = async (surah: number, ayah: number): Promise<boolean> => {
+const syncPageForVerse = async (surah: number, ayah: number, options: { isContinuous?: boolean } = {}): Promise<boolean> => {
   const isOnCurrentPage = pageData.value?.ayahs.some(x => x.verse_key === `${surah}:${ayah}`)
   if (isOnCurrentPage) return false
   try {
     const res = await apiFetch<{ data: { page: number } }>(`/surahs/${surah}/ayahs/${ayah}`)
     if (res.data && res.data.page !== pageNumber.value) {
-      shouldAutoplayNextPage.value = true
+      if (!options.isContinuous) {
+        shouldAutoplayNextPage.value = true
+      }
       await slideToPage(res.data.page)
       return true
     }
