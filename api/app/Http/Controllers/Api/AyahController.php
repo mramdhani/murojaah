@@ -127,38 +127,75 @@ class AyahController extends Controller
         $unicodeFallbackLines = [];
 
         // Build surah boundaries: which line does each surah start on?
-        // Some surahs have a wrapped layout where they start at a high line
-        // number (e.g. 15) and continue at low line numbers (e.g. 1-2).
-        // In that case, the surah banner should appear at the continuation
-        // line (the lowest line number for that surah), not at the physical
-        // start, so the user sees the banner before reading the surah.
         $surahBoundaries = [];
-        $surahLineRanges = []; // surah_num => [min_line, max_line]
         foreach ($mushafWords as $word) {
-            $surahNum = $word->surah_number;
-            if (!isset($surahLineRanges[$surahNum])) {
-                $surahLineRanges[$surahNum] = ['min' => $word->line_number, 'max' => $word->line_number];
-            } else {
-                $surahLineRanges[$surahNum]['min'] = min($surahLineRanges[$surahNum]['min'], $word->line_number);
-                $surahLineRanges[$surahNum]['max'] = max($surahLineRanges[$surahNum]['max'], $word->line_number);
-            }
             if ($word->ayah_number === 1 && $word->position === 1) {
-                $surahBoundaries[$surahNum] = $word->line_number;
+                $surahBoundaries[$word->surah_number] = $word->line_number;
             }
         }
 
-        // For wrapped surahs (where the first ayah appears at a high line
-        // number but the surah also has words at lower line numbers), adjust
-        // the boundary to the lowest line number so the banner appears at
-        // the reading start rather than the physical start.
-        foreach ($surahBoundaries as $surahNum => $startLine) {
-            $range = $surahLineRanges[$surahNum] ?? null;
-            if ($range && $startLine > $range['min']) {
-                // This surah is wrapped: first ayah is at a high line,
-                // but the surah continues at lower lines. Move the
-                // boundary to the lowest line so the banner appears
-                // at the reading start.
-                $surahBoundaries[$surahNum] = $range['min'];
+        // Always pad linesMap so it has exactly 15 keys (1..15)
+        for ($i = 1; $i <= 15; $i++) {
+            if (!isset($linesMap[$i])) {
+                $linesMap[$i] = [];
+            }
+        }
+        ksort($linesMap);
+
+        // Map surahs for the current page
+        $surahsList = $ayahs->map(function ($ayah) use ($surahBoundaries) {
+            $surahNum = $ayah->surah->number;
+            $startLine = $surahBoundaries[$surahNum] ?? null;
+            
+            $startsAtLine = null;
+            $bismillahAtLine = null;
+
+            if ($startLine !== null) {
+                if ($startLine === 2) {
+                    // Starts at line 2: banner belongs to the bottom of the previous page
+                    $startsAtLine = null;
+                    $bismillahAtLine = 1; // Bismillah is at line 1
+                } elseif ($startLine > 2) {
+                    $startsAtLine = $startLine - 2;
+                    $bismillahAtLine = $startLine - 1;
+                } else {
+                    // $startLine === 1: usually Surah 1 (Al-Fatihah) or full page surah.
+                    $startsAtLine = null;
+                    $bismillahAtLine = null;
+                }
+            }
+
+            return [
+                'id'                => $ayah->surah->id,
+                'number'            => $ayah->surah->number,
+                'name_latin'        => $ayah->surah->name_latin,
+                'name_arabic'       => $ayah->surah->name_arabic,
+                'revelation_place'  => $ayah->surah->revelation_place,
+                'total_ayah'        => $ayah->surah->total_ayah,
+                'starts_at_line'    => $startsAtLine,
+                'bismillah_at_line' => $bismillahAtLine,
+            ];
+        })->unique('id')->values()->toArray();
+
+        // Check if there is a surah that starts on the NEXT page at line 2
+        if ($pageNumber < 604) {
+            $nextPageFirstWord = MushafWord::where('page_number', $pageNumber + 1)
+                ->orderBy('word_id')
+                ->first();
+            if ($nextPageFirstWord && $nextPageFirstWord->ayah_number === 1 && $nextPageFirstWord->position === 1 && $nextPageFirstWord->line_number === 2) {
+                $nextSurah = \App\Models\Surah::where('number', $nextPageFirstWord->surah_number)->first();
+                if ($nextSurah) {
+                    $surahsList[] = [
+                        'id'                => $nextSurah->id,
+                        'number'            => $nextSurah->number,
+                        'name_latin'        => $nextSurah->name_latin,
+                        'name_arabic'       => $nextSurah->name_arabic,
+                        'revelation_place'  => $nextSurah->revelation_place,
+                        'total_ayah'        => $nextSurah->total_ayah,
+                        'starts_at_line'    => 15, // Render the banner at line 15 of this page
+                        'bismillah_at_line' => null,
+                    ];
+                }
             }
         }
 
@@ -166,15 +203,7 @@ class AyahController extends Controller
             'data' => [
                 'page_number'      => $pageNumber,
                 'juz'              => $ayahs->pluck('juz')->filter()->unique()->values(),
-                'surahs'           => $ayahs->map(fn ($ayah) => [
-                    'id'               => $ayah->surah->id,
-                    'number'           => $ayah->surah->number,
-                    'name_latin'       => $ayah->surah->name_latin,
-                    'name_arabic'      => $ayah->surah->name_arabic,
-                    'revelation_place' => $ayah->surah->revelation_place,
-                    'total_ayah'       => $ayah->surah->total_ayah,
-                    'starts_at_line'   => $surahBoundaries[$ayah->surah->number] ?? null,
-                ])->unique('id')->values(),
+                'surahs'           => $surahsList,
                 'lines'            => collect($linesMap)->map(function ($words, $lineNum) use ($unicodeFallbackLines, $ayahByVerseKey) {
                     $fallbackVerses = [];
                     if (isset($unicodeFallbackLines[$lineNum])) {

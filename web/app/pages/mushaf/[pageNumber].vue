@@ -182,12 +182,22 @@
                   <!-- Rendered lines -->
                   <template v-else>
                     <template v-for="line in getPageLines(slidePage)" :key="line.line_number">
-                      <!-- Surah Header Group (keeps banner and bismillah close together, ignoring space-between) -->
+                      <!-- Render banner/Bismillah as a direct line substitute if mapped to this line number -->
                       <div
-                        v-if="getSurahBannerAtLine(line.line_number, slidePage)"
-                        class="mushaf-surah-header-group"
+                        v-if="getSurahBannerAtLine(line.line_number, slidePage) || getBismillahAtLine(line.line_number, slidePage)"
+                        class="mushaf-line mushaf-line--qcf"
+                        :class="{
+                          'mushaf-line--banner-row': getSurahBannerAtLine(line.line_number, slidePage),
+                          'mushaf-line--bismillah-row': getBismillahAtLine(line.line_number, slidePage),
+                          'mushaf-line--no-border': true
+                        }"
+                        :data-line="line.line_number"
                       >
-                        <div class="mushaf-surah-banner">
+                        <!-- Surah Banner Row -->
+                        <div
+                          v-if="getSurahBannerAtLine(line.line_number, slidePage)"
+                          class="mushaf-surah-banner"
+                        >
                           <div class="mushaf-surah-banner__inner">
                             <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--left">
                               آيَاتُهَا {{ formatArabicNumber(getSurahBannerAtLine(line.line_number, slidePage)?.total_ayah || 0) }}
@@ -202,16 +212,17 @@
                           </div>
                         </div>
 
+                        <!-- Bismillah Calligraphy Row -->
                         <div
-                          v-if="shouldShowBismillahAtLine(line.line_number, slidePage)"
+                          v-else-if="getBismillahAtLine(line.line_number, slidePage)"
                           class="mushaf-bismillah-calligraphy"
                           aria-label="Bismillahirrahmanirrahim"
                         >﷽</div>
                       </div>
 
-                      <!-- Normal text line -->
+                      <!-- Normal text line (Unicode Fallback) -->
                       <div
-                        v-if="line.unicode_fallback?.length"
+                        v-else-if="line.unicode_fallback?.length"
                         class="mushaf-line mushaf-line--unicode"
                         :class="{ 'mushaf-line--no-border': isLastLineOfSurah(line.line_number, slidePage) }"
                         :data-line="line.line_number"
@@ -227,6 +238,7 @@
                         </span>
                       </div>
 
+                      <!-- Normal text line (QCF V2) -->
                       <div
                         v-else
                         class="mushaf-line mushaf-line--qcf"
@@ -271,10 +283,10 @@
                                   :aria-label="`Ayat ${ayahNumberFromVerseKey(word.attachedOrnament.verse_key)}`"
                                 >
                                   <svg viewBox="0 0 100 100" aria-hidden="true">
-                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/>
-                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/>
-                                    <circle cx="50" cy="50" r="23" fill="#fff" stroke="currentColor" stroke-width="2.5"/>
-                                    <circle cx="50" cy="50" r="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/>
+                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="#bd8c30" stroke-width="5" transform="rotate(45 50 50)"/>
+                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="#bd8c30" stroke-width="5"/>
+                                    <circle cx="50" cy="50" r="26" fill="#fffcf5" stroke="#166d70" stroke-width="2.5"/>
+                                    <circle cx="50" cy="50" r="21.5" fill="none" stroke="#d34f3b" stroke-width="1.5" stroke-dasharray="3 2.5"/>
                                   </svg>
                                   <span>{{ formatArabicNumber(ayahNumberFromVerseKey(word.attachedOrnament.verse_key)) }}</span>
                                 </span>
@@ -2559,6 +2571,13 @@ const getSurahBannerAtLine = (lineNumber: any, page: number): MushafSurah | null
   return surahs.find(s => s.starts_at_line !== null && s.starts_at_line !== undefined && Number(s.starts_at_line) === Number(lineNumber)) || null
 }
 
+const getBismillahAtLine = (lineNumber: any, page: number): MushafSurah | null => {
+  const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
+  const found = surahs.find(s => s.bismillah_at_line !== null && s.bismillah_at_line !== undefined && Number(s.bismillah_at_line) === Number(lineNumber)) || null
+  if (found && (found.number === 1 || found.number === 9)) return null
+  return found
+}
+
 const isLastLineOfSurah = (lineNumber: number, page: number): boolean => {
   const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
   const nextSurah = surahs.find(s => s.starts_at_line !== null && Number(s.starts_at_line) > Number(lineNumber))
@@ -2572,11 +2591,6 @@ const isLastLineOfSurah = (lineNumber: number, page: number): boolean => {
 const getSurahForAyah = (surahId: number): MushafSurah | undefined => {
   const surahs = pageData.value?.surahs || []
   return surahs.find(s => s.id === surahId)
-}
-
-const shouldShowBismillahAtLine = (lineNumber: number, page: number): boolean => {
-  const surah = getSurahBannerAtLine(lineNumber, page)
-  return Boolean(surah && surah.number !== 1 && surah.number !== 9)
 }
 
 const isActiveVerse = (verseKey: string): boolean => {
@@ -7484,34 +7498,24 @@ useHead({
   /* Maintain book page aspect ratio and center vertically in viewport */
   align-self: center !important;
   flex: 0 0 auto !important; /* Prevent vertical stretching in flex layout */
-  display: block !important; /* Changed from flex to block to support floated aspect-ratio */
-  padding: 8px 10px 14px !important;
+  display: flex !important; /* Flex container to distribute space for children */
+  flex-direction: column !important;
+  padding: 8px 5px 14px !important; /* Increased left/right padding to prevent corner rosette clipping */
   width: 100% !important; /* Take full width of the slide column */
   height: auto !important;
   min-height: auto !important; /* Override base class min-height: 100% to prevent vertical stretching */
   max-height: none !important; /* Never shrink vertically to fit screen height; scroll parent slide instead */
   max-width: 100% !important;
-  aspect-ratio: auto !important; /* Managed dynamically via ::before pseudo-element */
+  min-width: 0 !important; /* Prevent expanding horizontally */
+  overflow: visible !important; /* Allow corner rosettes to overflow borders without clipping */
+  aspect-ratio: 1 / 1.52 !important; /* Restored locked aspect ratio */
   box-sizing: border-box !important;
   position: relative !important;
-}
-/* Floated helper to maintain minimum 1:1.52 aspect ratio, growing if content is taller */
-.mushaf-page-box--with-frame::before {
-  content: "" !important;
-  float: left !important;
-  width: 0 !important;
-  padding-top: 152% !important; /* aspect-ratio: 1 / 1.52 */
-  pointer-events: none !important;
-}
-.mushaf-page-box--with-frame::after {
-  content: "" !important;
-  display: table !important;
-  clear: both !important;
 }
 /* ── Frame Border Box ─────────────────────────────── */
 .mushaf-page-box--with-frame .mushaf-frame {
   display: block !important;
-  inset: 44px 8px 8px !important;
+  inset: 11cqw 2.1cqw 2.1cqw !important;
 }
 .mushaf-page-box--with-frame .mushaf-frame__border {
   display: block !important;
@@ -7555,17 +7559,17 @@ useHead({
 /* ── Islamic Rosette Corner Medallions ──────────────── */
 .mushaf-page-box--with-frame .mushaf-frame__corner {
   display: block !important;
-  width: 22px !important;
-  height: 22px !important;
+  width: 5.8cqw !important; /* Proportional size */
+  height: 5.8cqw !important;
   border: none !important;
   box-shadow: none !important;
   /* Ottoman Rosette Corner Medallion */
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='rgb(22,109,112)' stroke='rgb(189,140,48)' stroke-width='1.5'/%3E%3Ccircle cx='12' cy='6.5' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='12' cy='17.5' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='6.5' cy='12' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='17.5' cy='12' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='8.1' cy='8.1' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='15.9' cy='15.9' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='8.1' cy='15.9' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='15.9' cy='8.1' r='1.8' fill='rgb(242,200,96)'/%3E%3Ccircle cx='12' cy='12' r='3.8' fill='rgb(211,79,59)' stroke='rgb(189,140,48)' stroke-width='0.8'/%3E%3Ccircle cx='12' cy='12' r='1.4' fill='rgb(242,200,96)'/%3E%3C/svg%3E") center / contain no-repeat !important;
 }
-.mushaf-page-box--with-frame .mushaf-frame__corner--tl { top: -12px !important; left: -12px !important; }
-.mushaf-page-box--with-frame .mushaf-frame__corner--tr { top: -12px !important; right: -12px !important; }
-.mushaf-page-box--with-frame .mushaf-frame__corner--bl { bottom: -12px !important; left: -12px !important; }
-.mushaf-page-box--with-frame .mushaf-frame__corner--br { right: -12px !important; bottom: -12px !important; }
+.mushaf-page-box--with-frame .mushaf-frame__corner--tl { top: -3.2cqw !important; left: -3.2cqw !important; }
+.mushaf-page-box--with-frame .mushaf-frame__corner--tr { top: -3.2cqw !important; right: -3.2cqw !important; }
+.mushaf-page-box--with-frame .mushaf-frame__corner--bl { bottom: -3.2cqw !important; left: -3.2cqw !important; }
+.mushaf-page-box--with-frame .mushaf-frame__corner--br { right: -3.2cqw !important; bottom: -3.2cqw !important; }
 
 /* ── Book Spine: Remove ENTIRE inner frame border on facing pages ──
    Even Page (left side of book) → no right border/vines, no right corners
@@ -7578,12 +7582,12 @@ useHead({
   border: none !important;
 }
 .mushaf-page-box--left-page .mushaf-frame__border::before {
-  inset: -7px 0px -7px -7px !important; /* Align exactly to 0px on right */
-  border-right: 1px solid rgb(22, 109, 112) !important; /* Draw vertical line all the way to top frame (-7px) */
+  inset: -1.9cqw 0px -1.9cqw -1.9cqw !important; /* Align exactly to 0px on right */
+  border-right: 1px solid rgb(22, 109, 112) !important; /* Draw vertical line all the way to top frame */
   clip-path: inset(0px 0px 0px 0px) !important;
 }
 .mushaf-page-box--left-page .mushaf-frame__border::after {
-  inset: -6px 0px -6px -6px !important; /* Align exactly to 0px on right */
+  inset: -1.6cqw 0px -1.6cqw -1.6cqw !important; /* Align exactly to 0px on right */
   clip-path: inset(0px 0px 0px 0px) !important;
 }
 .mushaf-page-box--left-page .mushaf-frame__border::after {
@@ -7601,12 +7605,12 @@ useHead({
   border: none !important;
 }
 .mushaf-page-box--right-page .mushaf-frame__border::before {
-  inset: -7px -7px -7px 0px !important; /* Align exactly to 0px on left */
-  border-left: 1px solid rgb(22, 109, 112) !important; /* Draw vertical line all the way to top frame (-7px) */
+  inset: -1.9cqw -1.9cqw -1.9cqw 0px !important; /* Align exactly to 0px on left */
+  border-left: 1px solid rgb(22, 109, 112) !important; /* Draw vertical line all the way to top frame */
   clip-path: inset(0px 0px 0px 0px) !important;
 }
 .mushaf-page-box--right-page .mushaf-frame__border::after {
-  inset: -6px -6px -6px 0px !important; /* Align exactly to 0px on left */
+  inset: -1.6cqw -1.6cqw -1.6cqw 0px !important; /* Align exactly to 0px on left */
   clip-path: inset(0px 0px 0px 0px) !important;
 }
 .mushaf-page-box--right-page .mushaf-frame__border::after {
@@ -7620,23 +7624,39 @@ useHead({
 .mushaf-page-box--with-frame .mushaf-meta {
   display: flex !important;
   position: absolute !important;
-  top: 15px !important;
-  left: 36px !important;
-  right: 36px !important;
-  height: 34px !important;
+  top: 3.8cqw !important; /* Proportional top offset */
+  left: 9.0cqw !important; /* Proportional left offset */
+  right: 9.0cqw !important; /* Proportional right offset */
+  height: 8.5cqw !important; /* Proportional height */
   margin: 0 !important;
   padding: 0 !important;
   align-items: flex-end !important; /* Resting exactly on the border line */
   z-index: 10 !important;
 }
+.mushaf-page-box--with-frame .mushaf-meta > span {
+  min-height: 5.5cqw !important;
+  font-size: 2.6cqw !important;
+  padding: 0 2.5cqw !important;
+  border-width: 1px !important;
+  line-height: 1 !important;
+}
+.mushaf-page-box--with-frame .mushaf-meta__page {
+  width: 12cqw !important;
+  flex: 0 0 12cqw !important;
+  font-size: 2.8cqw !important;
+}
 .mushaf-page-box--with-frame .mushaf-qcf-content {
   flex: 1 1 auto !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important; /* Center lines vertically to keep gaps constant */
-  gap: 0cqw !important; /* Proportional line-spacing to fit within frame */
-  padding: 48px 3cqw 0px !important;
+  justify-content: space-between !important; /* Distribute lines evenly to fill frame */
+  gap: 0 !important;
+  padding: 11.5cqw 4.5cqw 0cqw !important; /* 4.5cqw left/right gives ~2.4cqw breathing room inside frame border */
   margin: 0 !important;
+  box-sizing: border-box !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
 }
 /* Hide redundant page footer at the bottom */
 .mushaf-page-box--with-frame .mushaf-page-footer {
@@ -7648,13 +7668,14 @@ useHead({
   align-items: center !important;
   justify-content: center !important;
   width: 100% !important;
-  margin-top: 0px !important;     /* Minimizes gap with previous surah's last line */
-  margin-bottom: 0px !important;  /* Minimizes gap with following first line */
-  gap: 3px !important;            /* Minimizes gap between banner and bismillah */
+  margin-top: 2.0cqw !important;     /* Safe spacing from previous text */
+  margin-bottom: 2.0cqw !important;  /* Safe spacing to next text */
+  gap: 1.5cqw !important;            /* Safe gap between banner and bismillah */
   flex-shrink: 0 !important;
 }
 .mushaf-page-box--with-frame .mushaf-bismillah-calligraphy {
   margin: 0 !important;
+  margin-bottom: 0.5cqw !important;
   line-height: 1 !important;
   font-size: clamp(20px, 4cqw, 32px) !important;
 }
@@ -7669,6 +7690,8 @@ useHead({
   justify-content: center !important;
   align-items: center !important;
   width: 100% !important;
+  flex: 1 1 auto !important; /* Override layout flex properties */
+  flex-basis: auto !important; /* Prevent 9% flex-basis squish along the row axis */
   flex-shrink: 0 !important;
 }
 .mushaf-page-box--with-frame .mushaf-surah-banner::before,
@@ -7679,14 +7702,16 @@ useHead({
 .mushaf-page-box--with-frame.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
 .mushaf-page-box--with-frame.mushaf-theme--classic .mushaf-surah-banner__inner,
 .mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__inner {
-  min-height: 34px !important; /* Slightly taller to accommodate 26px pills */
-  max-height: 38px !important;
+  width: 100% !important; /* Stretch fully across the text column */
+  box-sizing: border-box !important;
+  min-height: 8.5cqw !important; /* Proportional sizing */
+  max-height: 9.5cqw !important;
   display: flex !important;
   flex-direction: row !important;
   justify-content: space-between !important;
   align-items: center !important;
-  gap: 2px !important;
-  padding: 4px 6px !important; /* Clean padding */
+  gap: 0.5cqw !important;
+  padding: 1.0cqw 1.5cqw !important;
   border-radius: 0px !important;
   position: relative !important;
   overflow: hidden !important;
@@ -7712,17 +7737,17 @@ useHead({
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  height: 26px !important; /* Increased height to prevent clipping */
-  min-height: 26px !important;
+  height: 6.8cqw !important; /* Proportional height to prevent parent stretching */
+  min-height: 6.8cqw !important;
   background: rgb(255, 255, 250) !important;
   border: 1px solid rgb(189, 140, 48) !important;
   border-radius: 999px !important;
-  padding: 0 30px !important;
+  padding: 0 4.0cqw !important; /* Proportional padding */
   /* Clean unified border-ring */
   box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
   color: #000000 !important;
   font-family: 'QCF Surah Name V2', sans-serif !important;
-  font-size: 24px !important;
+  font-size: 6.2cqw !important; /* Proportional font-size */
   z-index: 3 !important;
   margin: 0 auto !important;
   transform: none !important;
@@ -7738,46 +7763,66 @@ useHead({
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  height: 26px !important; /* Match name pill height */
-  min-height: 26px !important;
+  height: 6.8cqw !important; /* Match name pill height proportionally */
+  min-height: 6.8cqw !important;
   background: rgb(255, 255, 250) !important;
   border: 1px solid rgb(189, 140, 48) !important;
   border-radius: 999px !important;
-  padding: 0px 8px !important;
+  padding: 0px 2.0cqw !important; /* Proportional padding */
   box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
   font-family: 'Amiri', 'Uthmanic Hafs', serif !important;
-  font-size: 11px !important;
+  font-size: 2.8cqw !important; /* Proportional font-size */
   font-weight: 400 !important;
   color: #000000 !important;
   z-index: 3 !important;
-  min-width: 52px !important;
-  max-width: 60px !important;
+  min-width: 14cqw !important; /* Proportional min-width */
+  max-width: 18cqw !important; /* Proportional max-width */
   text-align: center !important;
   text-transform: none !important;
   direction: rtl !important;
   flex-shrink: 0 !important;
-  line-height: 26px !important;
+  line-height: 6.8cqw !important;
 }
 
 /* Hairline gold separators — slightly stronger so rows are clearly visible */
-.mushaf-page-box--with-frame .mushaf-line {
-  font-size: 4.8cqw !important; /* Scaled up for better readability */
-  line-height: 1.4 !important;
-  border-bottom: 1px solid rgb(71 68 64 / 42%) !important;
-  padding-top: 0.6cqw !important; /* Visual vertical alignment */
-  padding-bottom: 1.0cqw !important; /* Compensate for Arabic font baseline sag */
+.mushaf-page-box--with-frame .mushaf-line,
+.mushaf-page-box--with-frame .mushaf-qcf-content--short .mushaf-line,
+.mushaf-page-box--with-frame .mushaf-qcf-content--short .mushaf-line--qcf {
+  font-size: 6cqw !important; /* Uniform font size matching both pages to prevent bottom cutoff */
+  line-height: 1.25 !important; /* Compact to fit 15 lines perfectly inside the frame */
+  border-bottom: 1px solid rgb(71 68 64 / 32%) !important;
+  padding-top: 0.3cqw !important;
+  padding-bottom: 0.5cqw !important;
   margin-bottom: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
-/* Unicode fallback has smaller baseline/glyphs, scale up slightly more for consistency */
-.mushaf-page-box--with-frame .mushaf-line--unicode {
+/* Unicode fallback has matching font-size */
+.mushaf-page-box--with-frame .mushaf-line--unicode,
+.mushaf-page-box--with-frame .mushaf-qcf-content--short .mushaf-line--unicode {
   font-size: 5.2cqw !important;
 }
 .mushaf-page-box--with-frame .mushaf-line:last-child,
 .mushaf-page-box--with-frame .mushaf-line--no-border {
   border-bottom: 0 !important;
+}
+.mushaf-page-box--with-frame .mushaf-line--banner-row {
+  padding: 0 !important;
+  border-bottom: 0 !important;
+  height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+/* Bismillah gets a separator line below it so the first verse starts cleanly */
+.mushaf-page-box--with-frame .mushaf-line--bismillah-row {
+  padding: 0 !important;
+  border-bottom: 1px solid rgb(71 68 64 / 32%) !important;
+  height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Restyle Surah Banner to match plain green box */
@@ -7972,17 +8017,19 @@ useHead({
 
 .mushaf-ayah-ornament {
   position: relative;
-  width: 1.6em;
-  height: 1.6em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #a87542;
-  font-family: 'Inter', sans-serif;
-  font-size: .82em;
-  font-weight: 900;
-  line-height: 1;
-  vertical-align: middle;
+  width: 1.85em !important; /* Expanded for 3-digit support and breathing room */
+  height: 1.85em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #bd8c30 !important;
+  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-size: .88em !important; /* Slightly larger text */
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+  margin-left: 0px !important;
+  margin-right: 0px !important;
 }
 
 .mushaf-ayah-ornament svg {
@@ -7992,12 +8039,40 @@ useHead({
   height: 100%;
 }
 
+/* Premium Traditional Mushaf Rosette Coloring */
+.mushaf-ayah-ornament svg rect {
+  stroke: #bd8c30 !important; /* Gold/Bronze outer frames */
+  stroke-width: 5 !important;
+}
+.mushaf-ayah-ornament svg circle:nth-of-type(1) {
+  stroke: #166d70 !important; /* Teal outline */
+  fill: #fffcf5 !important;   /* Cream fill */
+  stroke-width: 3.5 !important;
+}
+.mushaf-ayah-ornament svg circle:nth-of-type(2) {
+  stroke: #d34f3b !important; /* Red inner dashed dot ring */
+  stroke-width: 1.5 !important;
+}
+
 .mushaf-ayah-ornament > span {
   position: relative;
-  z-index: 1;
-  color: #704821;
-  font-size: .72em;
-  font-weight: 900;
+  z-index: 2;
+  /* Force number color to dark brown regardless of parent tajweed coloring */
+  color: #261607 !important;
+  font-size: 0.55em !important; /* Proportional font size to leave elegant padding around numbers */
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transform: translateY(0.6px) !important; /* Micro-adjust for perfect vertical alignment inside larger circle */
+  line-height: .8 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+/* Extra specificity to prevent any tajweed span color from bleeding into ornament numbers */
+.mushaf-word--end .mushaf-ayah-ornament > span,
+.mushaf-viewport:not(.mushaf-viewport--monochrome) .mushaf-word--end .mushaf-ayah-ornament > span {
+  color: #261607 !important;
 }
 
 /* Tajweed Class Color Overrides (Applied when showTajweedColors is ON) */
@@ -9259,12 +9334,26 @@ useHead({
     font-size: clamp(22px, 4.8vw, 36px) !important;
   }
 
-  /* Adjust content padding to fit expanded frame */
+  /* Adjust content padding to fit expanded frame.
+     Use fixed symmetric padding so text is aligned equally on both sides
+     inside the frame borders, regardless of notch/safe-area position.
+     Safe-area insets are applied at the viewport level, not inside the page frame. */
   .mushaf-page-box--with-frame .mushaf-qcf-content {
     padding-top: 52px !important;
     padding-bottom: 0px !important;
-    padding-left: calc(0px + env(safe-area-inset-left)) !important;
-    padding-right: calc(0px + env(safe-area-inset-right)) !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+  /* Banner and Bismillah rows: ensure they stretch to fill the frame width */
+  .mushaf-page-box--with-frame .mushaf-line--banner-row,
+  .mushaf-page-box--with-frame .mushaf-line--bismillah-row {
+    width: 100% !important;
+    font-size: 5.6vw !important;
+  }
+  /* Ensure ALL lines (text, banner, bismillah) use the same landscape font-size */
+  .mushaf-page-box--with-frame .mushaf-line {
+    font-size: 5.6vw !important;
+    width: 100% !important;
   }
 }
 
