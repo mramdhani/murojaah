@@ -2219,8 +2219,8 @@ onMounted(async () => {
 })
 
 useHead({
-  title: computed(() => currentAyah.value
-    ? `${currentAyah.value.surah_name} ${currentAyahNumber.value} - Murojaah`
+  title: computed(() => surahName.value && surahName.value !== '...'
+    ? `${surahName.value} ${currentAyahNumber.value} - Murojaah`
     : 'Murojaah'
   ),
 })

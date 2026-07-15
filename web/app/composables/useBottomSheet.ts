@@ -142,7 +142,7 @@ export function useBottomSheet(options: UseBottomSheetOptions) {
 
   // ── Bind to handle element ───────────────────────────────────────────────────
   const bindHandle = {
-    onTouchstart: (e: TouchEvent) => { e.preventDefault(); onDragStart(e) },
+    onTouchstart: (e: TouchEvent) => { if (e.cancelable) e.preventDefault(); onDragStart(e) },
     onMousedown: (e: MouseEvent) => { e.preventDefault(); onDragStart(e) },
   }
 
