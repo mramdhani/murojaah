@@ -692,45 +692,11 @@
                       </button>
                       <button
                         type="button"
-                        class="theme-segment-btn-new theme-segment-btn-new--nabawiyyah"
-                        :class="{ 'theme-segment-btn-new--active': mushafTheme === 'nabawiyyah' }"
-                        @click="mushafTheme = 'nabawiyyah'"
-                      >
-                        Krem
-                      </button>
-                      <button
-                        type="button"
                         class="theme-segment-btn-new theme-segment-btn-new--dark"
                         :class="{ 'theme-segment-btn-new--active': mushafTheme === 'dark' }"
                         @click="mushafTheme = 'dark'"
                       >
                         Malam
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Row 2: Mushaf Mode -->
-                  <div class="settings-row">
-                    <div class="settings-row-header">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                      <span class="settings-row-label">Tipe Halaman</span>
-                    </div>
-                    <div class="theme-segmented-control-new" style="margin-top: 4px;">
-                      <button
-                        type="button"
-                        class="theme-segment-btn-new"
-                        :class="{ 'theme-segment-btn-new--active': mushafMode === 'digital' }"
-                        @click="mushafMode = 'digital'"
-                      >
-                        Teks Digital
-                      </button>
-                      <button
-                        type="button"
-                        class="theme-segment-btn-new"
-                        :class="{ 'theme-segment-btn-new--active': mushafMode === 'klasik' }"
-                        @click="mushafMode = 'klasik'"
-                      >
-                        Mushaf Cetak
                       </button>
                     </div>
                   </div>
@@ -7657,7 +7623,7 @@ useHead({
   flex-direction: column !important;
   justify-content: center !important; /* Center lines vertically to keep gaps constant */
   gap: 0cqw !important; /* Proportional line-spacing to fit within frame */
-  padding: 48px 3cqw 14px !important;
+  padding: 48px 3cqw 0px !important;
   margin: 0 !important;
 }
 /* Hide redundant page footer at the bottom */
@@ -7709,7 +7675,7 @@ useHead({
   align-items: center !important;
   gap: 2px !important;
   padding: 4px 6px !important; /* Clean padding */
-  border-radius: 4px !important;
+  border-radius: 0px !important;
   position: relative !important;
   overflow: hidden !important;
   /* Premium Traditional Illuminated Arabesque/Floral Vignette Background */
@@ -7739,10 +7705,10 @@ useHead({
   background: rgb(255, 255, 250) !important;
   border: 1px solid rgb(189, 140, 48) !important;
   border-radius: 999px !important;
-  padding: 0 14px !important;
+  padding: 0 30px !important;
   /* Clean unified border-ring */
   box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
-  color: rgb(22, 109, 112) !important;
+  color: #000000 !important;
   font-family: 'QCF Surah Name V2', sans-serif !important;
   font-size: 24px !important;
   z-index: 3 !important;
@@ -7769,8 +7735,8 @@ useHead({
   box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
   font-family: 'Amiri', 'Uthmanic Hafs', serif !important;
   font-size: 11px !important;
-  font-weight: 600 !important;
-  color: rgb(22, 109, 112) !important;
+  font-weight: 400 !important;
+  color: #000000 !important;
   z-index: 3 !important;
   min-width: 52px !important;
   max-width: 60px !important;
@@ -9178,6 +9144,112 @@ useHead({
     font-size: 5.6vw !important;
     width: 100% !important;
   }
+
+  /* Scale up digital frame padding and margins in landscape */
+  .mushaf-page-box--with-frame {
+    padding: 24px 30px 24px !important;
+  }
+  .mushaf-page-box--with-frame .mushaf-frame {
+    inset: 64px 18px 18px !important;
+  }
+  /* Scale up corner medallions */
+  .mushaf-page-box--with-frame .mushaf-frame__corner {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .mushaf-page-box--with-frame .mushaf-frame__corner--tl { top: -17px !important; left: -17px !important; }
+  .mushaf-page-box--with-frame .mushaf-frame__corner--tr { top: -17px !important; right: -17px !important; }
+  .mushaf-page-box--with-frame .mushaf-frame__corner--bl { bottom: -17px !important; left: -17px !important; }
+  .mushaf-page-box--with-frame .mushaf-frame__corner--br { right: -17px !important; bottom: -17px !important; }
+
+  /* Scale up frame border lines thickness */
+  .mushaf-page-box--with-frame .mushaf-frame__border::before {
+    border-width: 2px !important;
+    box-shadow: 
+      0 0 0 2px rgb(22, 109, 112), 
+      0 0 0 5px rgb(255, 247, 207), 
+      0 0 0 8px rgb(189, 140, 48), 
+      0 0 0 11px rgb(248, 233, 168), 
+      0 0 0 13px rgb(22, 109, 112) !important;
+  }
+  .mushaf-page-box--with-frame .mushaf-frame__border::after {
+    background-size: 58px 16px, 58px 16px, 16px 58px, 16px 58px !important;
+  }
+  .mushaf-page-box--left-page .mushaf-frame__border::before {
+    inset: -12px 0px -12px -12px !important;
+  }
+  .mushaf-page-box--left-page .mushaf-frame__border::after {
+    inset: -11px 0px -11px -11px !important;
+  }
+  .mushaf-page-box--right-page .mushaf-frame__border::before {
+    inset: -12px -12px -12px 0px !important;
+  }
+  .mushaf-page-box--right-page .mushaf-frame__border::after {
+    inset: -11px -11px -11px 0px !important;
+  }
+
+  /* Scale up meta header */
+  .mushaf-page-box--with-frame .mushaf-meta {
+    top: 29px !important;
+    left: 48px !important;
+    right: 48px !important;
+    height: 40px !important;
+  }
+  .mushaf-page-box--with-frame .mushaf-meta > span {
+    min-height: 28px !important;
+    font-size: 0.85rem !important;
+    padding: 0 16px !important;
+    border-width: 1.5px !important;
+  }
+  .mushaf-page-box--with-frame .mushaf-meta__page {
+    width: 60px !important;
+    flex: 0 0 60px !important;
+  }
+
+  /* Scale up Surah Banner */
+  .mushaf-page-box--with-frame .mushaf-surah-banner__inner,
+  .mushaf-page-box--with-frame.mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
+  .mushaf-page-box--with-frame.mushaf-theme--classic .mushaf-surah-banner__inner,
+  .mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__inner {
+    min-height: 48px !important;
+    max-height: 54px !important;
+    padding: 6px 12px !important;
+    gap: 4px !important;
+  }
+  .mushaf-page-box--with-frame .mushaf-surah-banner__name,
+  .mushaf-page-box--with-frame.mushaf-theme--nabawiyyah .mushaf-surah-banner__name,
+  .mushaf-page-box--with-frame.mushaf-theme--classic .mushaf-surah-banner__name,
+  .mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__name {
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 50px !important;
+    padding: 0 80px 0px !important; /* Bottom padding to shift Arabic text up */
+    box-shadow: 0 0 0 2px rgb(22, 109, 112) !important;
+  }
+  .mushaf-page-box--with-frame .mushaf-surah-banner__sub,
+  .mushaf-page-box--with-frame.mushaf-theme--nabawiyyah .mushaf-surah-banner__sub,
+  .mushaf-page-box--with-frame.mushaf-theme--classic .mushaf-surah-banner__sub,
+  .mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__sub {
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 18px !important;
+    min-width: 72px !important;
+    line-height: 38px !important;
+    box-shadow: 0 0 0 2px rgb(22, 109, 112) !important;
+  }
+
+  /* Scale up Bismillah */
+  .mushaf-page-box--with-frame .mushaf-bismillah-calligraphy {
+    font-size: clamp(22px, 4.8vw, 36px) !important;
+  }
+
+  /* Adjust content padding to fit expanded frame */
+  .mushaf-page-box--with-frame .mushaf-qcf-content {
+    padding-top: 52px !important;
+    padding-bottom: 0px !important;
+    padding-left: calc(0px + env(safe-area-inset-left)) !important;
+    padding-right: calc(0px + env(safe-area-inset-right)) !important;
+  }
 }
 
 /* ── Fullscreen Viewport Height Expansion ─── */
@@ -10079,6 +10151,40 @@ color: #75471a !important;
 }
 .mushaf-classic-img--loaded {
   opacity: 1;
+}
+
+/* ===== Dark Theme (Malam) Meta & Surah Banner overrides ===== */
+.mushaf-theme--dark .mushaf-meta > span {
+  background: rgba(22, 33, 29, 0.95) !important;
+  border: 1px solid rgba(189, 140, 48, 0.7) !important;
+  color: rgb(212, 175, 55) !important; /* Elegant gold text */
+  box-shadow: 
+    inset 0 1px 3px rgba(0,0,0,0.5),
+    0 0 0 1.5px rgb(22, 109, 112) !important;
+}
+
+/* Dark mode Surah Banner Background using inline dark arabesque SVG */
+.mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__inner {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='34' viewBox='0 0 80 34'%3E%3Cdefs%3E%3ClinearGradient id='bgDark' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%2316221f'/%3E%3Cstop offset='50%25' stop-color='%231b2d29'/%3E%3Cstop offset='100%25' stop-color='%23121d1b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='80' height='34' fill='url(%23bgDark)'/%3E%3Cpath d='M0 17 C15 5, 25 5, 40 17 C55 29, 65 29, 80 17' fill='none' stroke='%23bd8c30' stroke-width='1.2' opacity='0.45'/%3E%3Cpath d='M0 17 C15 29, 25 29, 40 17 C55 5, 65 5, 80 17' fill='none' stroke='%23bd8c30' stroke-width='1.2' opacity='0.45'/%3E%3Ccircle cx='40' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='40' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Ccircle cx='0' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='0' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Ccircle cx='80' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='80' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Cpath d='M12 11 Q20 7 28 13' fill='none' stroke='%23bd8c30' stroke-width='1' opacity='0.7'/%3E%3Cpath d='M52 23 Q60 27 68 21' fill='none' stroke='%23bd8c30' stroke-width='1' opacity='0.7'/%3E%3Ccircle cx='20' cy='9' r='1.8' fill='%23d34f3b' opacity='0.8'/%3E%3Ccircle cx='60' cy='25' r='1.8' fill='%23d34f3b' opacity='0.8'/%3E%3Ccircle cx='28' cy='22' r='1.5' fill='%23eec256' opacity='0.8'/%3E%3Ccircle cx='52' cy='12' r='1.5' fill='%23eec256' opacity='0.8'/%3E%3Cpath d='M15 15 C13 12, 9 14, 11 17 Z' fill='%233c763d' opacity='0.65'/%3E%3Cpath d='M65 19 C67 22, 71 20, 69 17 Z' fill='%233c763d' opacity='0.65'/%3E%3C/svg%3E") center / 80px 34px repeat !important;
+  box-shadow:
+    0 0 0 1px rgb(22, 109, 112),
+    0 0 0 3px rgb(22, 33, 29),
+    0 0 0 4.5px rgb(189, 140, 48) !important;
+}
+
+/* Dark mode pills inside the banner */
+.mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__name {
+  background: rgb(22, 33, 29) !important;
+  border: 1px solid rgb(189, 140, 48) !important;
+  box-shadow: 0 0 0 1.5px rgb(189, 140, 48) !important;
+  color: rgb(212, 175, 55) !important; /* Gold text color */
+}
+.mushaf-page-box--with-frame.mushaf-theme--dark .mushaf-surah-banner__sub {
+  background: rgb(22, 33, 29) !important;
+  border: 1px solid rgb(189, 140, 48) !important;
+  box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
+  color: rgb(212, 175, 55) !important; /* Gold text color */
 }
 
 </style>
