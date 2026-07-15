@@ -7656,7 +7656,7 @@ useHead({
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important; /* Center lines vertically to keep gaps constant */
-  gap: 1.5cqw !important; /* Proportional line-spacing to fit within frame */
+  gap: 0cqw !important; /* Proportional line-spacing to fit within frame */
   padding: 48px 3cqw 14px !important;
   margin: 0 !important;
 }
@@ -7670,8 +7670,8 @@ useHead({
   align-items: center !important;
   justify-content: center !important;
   width: 100% !important;
-  margin-top: 4px !important;     /* Minimizes gap with previous surah's last line */
-  margin-bottom: 2px !important;  /* Minimizes gap with following first line */
+  margin-top: 0px !important;     /* Minimizes gap with previous surah's last line */
+  margin-bottom: 0px !important;  /* Minimizes gap with following first line */
   gap: 3px !important;            /* Minimizes gap between banner and bismillah */
   flex-shrink: 0 !important;
 }
@@ -7786,8 +7786,12 @@ useHead({
   font-size: 4.0cqw !important; /* Proportional font-size to fit all lines in aspect ratio */
   line-height: 1.4 !important;
   border-bottom: 1px solid rgb(71 68 64 / 42%) !important;
-  padding-bottom: 0 !important;
+  padding-top: 0.6cqw !important; /* Visual vertical alignment */
+  padding-bottom: 1.0cqw !important; /* Compensate for Arabic font baseline sag */
   margin-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 .mushaf-page-box--with-frame .mushaf-line:last-child,
 .mushaf-page-box--with-frame .mushaf-line--no-border {
@@ -8376,7 +8380,7 @@ useHead({
   .mushaf-page-box--multi-surah .mushaf-line--qcf {
     font-size: 5.7cqw !important;
     line-height: 1.42 !important;
-    margin: 1cqw 0 !important;
+    margin: 0 0 1cqw !important;
   }
 }
 
