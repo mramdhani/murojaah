@@ -197,7 +197,7 @@
                       <div class="mushaf-surah-banner" style="margin-top: 0 !important; margin-bottom: 0 !important;" @click="openSurahDetails(1)">
                         <div class="mushaf-surah-banner__inner">
                           <div class="mushaf-surah-banner__name-box">
-                            <span class="mushaf-surah-banner__name" aria-label="Al-Fatihah">surah-iconsurah001</span>
+                            <span class="mushaf-surah-banner__name" aria-label="Al-Fatihah">surah001 surah-icon</span>
                           </div>
                         </div>
                       </div>
@@ -225,7 +225,7 @@
                               <span
                                 class="mushaf-surah-banner__name"
                                 :aria-label="getSurahBannerAtLine(line.line_number, slidePage)?.name_arabic"
-                              >surah-icon{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
+                              >{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }} surah-icon</span>
                             </div>
                           </div>
                         </div>
@@ -1197,7 +1197,7 @@
           </header>
           
           <div class="surah-info-modal-content">
-            <div class="surah-info-modal-arabic">surah-icon{{ surahNameGlyph(activeSurahModalData.number) }}</div>
+            <div class="surah-info-modal-arabic">{{ surahNameGlyph(activeSurahModalData.number) }} surah-icon</div>
             <h2 class="surah-info-modal-title">Surat {{ activeSurahModalData.number }}. {{ activeSurahModalData.name_latin }}</h2>
             <p class="surah-info-modal-translation">"{{ activeSurahModalData.name_translation }}"</p>
 
@@ -2780,11 +2780,16 @@ const primarySurah = computed(() => {
 
   return pageData.value.surahs[0] || null
 })
-const currentSurahTitle = computed(() =>
-  primarySurah.value
-    ? primarySurah.value.number + '. ' + primarySurah.value.name_latin
-    : 'Al-Quran'
-)
+const currentSurahTitle = computed(() => {
+  if (!pageData.value?.surahs || pageData.value.surahs.length === 0) {
+    return 'Al-Quran'
+  }
+  if (pageData.value.surahs.length === 1) {
+    const s = pageData.value.surahs[0]
+    return s.number + '. ' + s.name_latin
+  }
+  return pageData.value.surahs.map(s => s.name_latin).join(', ')
+})
 const juzLabel = computed(() => pageData.value?.juz.join('-') || '-')
 const selectedSurah = computed(() =>
   surahOptions.value.find(surah => surah.id === selectedSurahId.value)
