@@ -161,9 +161,22 @@
 
                 <!-- Page Meta Header -->
                 <div class="mushaf-meta">
-                  <span class="mushaf-meta__juz">{{ getPageJuz(slidePage) }}</span>
-                  <span class="mushaf-meta__page">{{ slidePage }}</span>
-                  <span class="mushaf-meta__surah">{{ getPageSurah(slidePage) }}</span>
+                  <div class="mushaf-meta__left">
+                    <template v-if="slidePage">
+                      <img 
+                        v-for="s in getPageSurahsList(slidePage)" 
+                        :key="s.number" 
+                        :src="`/images/sura_names/${s.number}.png`" 
+                        class="mushaf-meta-img mushaf-meta-img--surah" 
+                        alt="Surah Name" 
+                      />
+                    </template>
+                  </div>
+                  <div class="mushaf-meta__right">
+                    <template v-if="slidePage && getJuzImage(slidePage)">
+                      <img :src="getJuzImage(slidePage)" class="mushaf-meta-img mushaf-meta-img--juz" alt="Juz Name" />
+                    </template>
+                  </div>
                 </div>
 
                 <!-- QCF V2 Text Content -->
@@ -181,17 +194,11 @@
                   <template v-else>
                     <!-- Manual Surah Banner for Al-Fatihah on Page 1 -->
                     <div v-if="slidePage === 1" class="mushaf-line mushaf-line--qcf mushaf-line--banner-row" style="border-bottom: none !important; margin-bottom: 0 !important;">
-                      <div class="mushaf-surah-banner" style="margin-top: 0 !important; margin-bottom: 0 !important;">
+                      <div class="mushaf-surah-banner" style="margin-top: 0 !important; margin-bottom: 0 !important;" @click="openSurahDetails(1)">
                         <div class="mushaf-surah-banner__inner">
-                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--left">
-                            {{ '\u0622\u064a\u064e\u0627\u062a\u064f\u0647\u064e\u0627' }} {{ formatArabicNumber(7) }}
-                          </span>
-                          <span class="mushaf-surah-banner__name" aria-label="Al-Fatihah">
-                            {{ surahNameGlyph(1) }}
-                          </span>
-                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--right">
-                            {{ '\u0645\u064e\u0643\u0650\u0651\u064a\u064e\u0651\u0629\u064c' }}
-                          </span>
+                          <div class="mushaf-surah-banner__name-box">
+                            <span class="mushaf-surah-banner__name" aria-label="Al-Fatihah">surah001</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -211,18 +218,15 @@
                         <div
                           v-if="getSurahBannerAtLine(line.line_number, slidePage)"
                           class="mushaf-surah-banner"
+                          @click="openSurahDetails(getSurahBannerAtLine(line.line_number, slidePage)?.number)"
                         >
                           <div class="mushaf-surah-banner__inner">
-                            <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--left">
-                              {{ '\u0622\u064a\u064e\u0627\u062a\u064f\u0647\u064e\u0627' }} {{ formatArabicNumber(getSurahBannerAtLine(line.line_number, slidePage)?.total_ayah || 0) }}
-                            </span>
-                            <span
-                              class="mushaf-surah-banner__name"
-                              :aria-label="getSurahBannerAtLine(line.line_number, slidePage)?.name_arabic"
-                            >{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
-                            <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--right">
-                              {{ getSurahBannerAtLine(line.line_number, slidePage)?.revelation_place === 'meccan' ? '\u0645\u064e\u0643\u0650\u0651\u064a\u064e\u0651\u0629\u064c' : '\u0645\u064e\u062f\u064e\u0646\u0650\u064a\u064e\u0651\u0629\u064c' }}
-                            </span>
+                            <div class="mushaf-surah-banner__name-box">
+                              <span
+                                class="mushaf-surah-banner__name"
+                                :aria-label="getSurahBannerAtLine(line.line_number, slidePage)?.name_arabic"
+                              >{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
+                            </div>
                           </div>
                         </div>
 
@@ -335,7 +339,7 @@
 
                   <!-- Page number footer -->
                   <div class="mushaf-page-footer">
-                    <span>{{ slidePage }}</span>
+                    <span>{{ formatArabicNumber(slidePage) }}</span>
                   </div>
                 </template>
               </template>
@@ -1180,6 +1184,50 @@
         </section>
       </div>
     </Transition>
+
+    <!-- Surah Details Modal Popup -->
+    <Transition name="sheet">
+      <div v-if="isSurahModalOpen && activeSurahModalData" class="qari-overlay" @click="closeSurahModal">
+        <section class="qari-sheet surah-info-modal-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" @click.stop>
+          <div class="qari-sheet__handle"></div>
+          <header class="qari-sheet__header" style="position: relative; padding-bottom: 0;">
+            <button type="button" class="surah-info-close-btn" aria-label="Tutup" @click="closeSurahModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          
+          <div class="surah-info-modal-content">
+            <div class="surah-info-modal-arabic">{{ activeSurahModalData.name_arabic }}</div>
+            <h2 class="surah-info-modal-title">Surat {{ activeSurahModalData.number }}. {{ activeSurahModalData.name_latin }}</h2>
+            <p class="surah-info-modal-translation">"{{ activeSurahModalData.name_translation }}"</p>
+
+            <div class="surah-info-modal-grid">
+              <div class="surah-info-card">
+                <span class="surah-info-card-label">Jumlah Ayat</span>
+                <strong class="surah-info-card-val">{{ activeSurahModalData.total_ayah }} Ayat</strong>
+              </div>
+              <div class="surah-info-card">
+                <span class="surah-info-card-label">Tempat Turun</span>
+                <strong class="surah-info-card-val">{{ activeSurahModalData.revelation_place === 'meccan' ? 'Makkiyah' : 'Madaniyah' }}</strong>
+              </div>
+            </div>
+
+            <div class="surah-info-asbabun-nuzul-box">
+              <span class="surah-info-card-label">Asbabun Nuzul &amp; Ringkasan</span>
+              <p class="surah-info-asbabun-nuzul-text">
+                {{ getSurahAsbabunNuzul(activeSurahModalData.number) }}
+              </p>
+            </div>
+
+            <div class="surah-info-modal-actions">
+              <button type="button" class="surah-info-action-btn" @click="startMurojaahForSurah(activeSurahModalData.id)">
+                Mulai Murojaah Surat Ini
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -1280,6 +1328,50 @@ const activeTranslationItemRef = ref<HTMLElement | null>(null)
 
 const showAyahDrawer = ref(false)
 const selectedAyahForDrawer = ref<{surah: number, ayah: number, verse_key: string, text?: string} | null>(null)
+
+const isSurahModalOpen = ref(false)
+const activeSurahModalData = ref<any>(null)
+const allSurahsMetadata = ref<any[]>([])
+
+const fetchAllSurahsMetadata = async () => {
+  if (allSurahsMetadata.value.length > 0) return
+  try {
+    const res = await apiFetch<{ data: any[] }>('/surahs')
+    allSurahsMetadata.value = res.data
+  } catch (e) {
+    console.error('Failed to load surahs metadata for modal:', e)
+  }
+}
+
+const openSurahDetails = async (surahNumber?: number) => {
+  if (!surahNumber) return
+  await fetchAllSurahsMetadata()
+  const found = allSurahsMetadata.value.find(s => s.number === Number(surahNumber))
+  if (found) {
+    activeSurahModalData.value = found
+    isSurahModalOpen.value = true
+  }
+}
+
+const closeSurahModal = () => {
+  isSurahModalOpen.value = false
+}
+
+const startMurojaahForSurah = (surahId: number) => {
+  closeSurahModal()
+  router.push({ path: `/remote/${surahId}/1`, query: { mode: 'learning' } })
+}
+
+const getSurahAsbabunNuzul = (surahNumber: number): string => {
+  const stories: Record<number, string> = {
+    1: 'Diturunkan di Makkah (Ummul Qur\'an). Mencakup inti ajaran Al-Qur\'an tentang tauhid, pujian kepada Allah, dan permohonan petunjuk ke jalan lurus.',
+    112: 'Diturunkan ketika kaum musyrikin Makkah menanyakan sifat dan keturunan Allah. Surat ini menegaskan kemurnian tauhid bahwa Allah Maha Esa, tempat bergantung segala sesuatu, tidak beranak dan tidak diperanakkan.',
+    113: 'Diturunkan bersama Surat An-Nas (Al-Mu\'awwidzatain) sebagai perlindungan dari gangguan kejahatan malam, tukang sihir, serta pendengki.',
+    114: 'Surat penutup Al-Qur\'an yang mengajarkan umat manusia memohon perlindungan kepada Allah dari bisikan jahat setan dan manusia.'
+  }
+  if (stories[surahNumber]) return stories[surahNumber]
+  return `Surat ke-${surahNumber} dalam Al-Qur'an. Diturunkan sebagai petunjuk, hikmah, serta pengajaran bagi seluruh umat manusia.`
+}
 
 interface LastReadAyah {
   surah: number
@@ -2535,6 +2627,15 @@ const getGroupedWords = (words: MushafWord[]): GroupedMushafWord[] => {
 
 const formatArabicNumber = (value: number): string =>
   new Intl.NumberFormat('ar-EG', { useGrouping: false }).format(value)
+
+const getJuzImage = (page: number): string => {
+  const juz = qcfPageCache.value[page]?.juz || pageData.value?.juz || []
+  if (!juz.length) return ''
+  return `/images/part_names/${juz[0]}.png`
+}
+
+const getPageSurahsList = (page: number): any[] =>
+  qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
 
 const ayahNumberFromVerseKey = (verseKey: string): number =>
   Number(verseKey.split(':')[1] || 0)
@@ -7631,26 +7732,36 @@ useHead({
 .mushaf-page-box--with-frame .mushaf-meta {
   display: flex !important;
   position: absolute !important;
-  top: 3.8cqw !important; /* Proportional top offset */
-  left: 9.0cqw !important; /* Proportional left offset */
-  right: 9.0cqw !important; /* Proportional right offset */
-  height: 8.5cqw !important; /* Proportional height */
+  top: 0cqw !important; /* Move higher up inside white margin space */
+  left: 2.1cqw !important; /* Flush with the frame left border */
+  right: 2.1cqw !important; /* Flush with the frame right border */
+  height: 8.8cqw !important; /* Proportional height */
   margin: 0 !important;
   padding: 0 !important;
   align-items: flex-end !important; /* Resting exactly on the border line */
+  justify-content: space-between !important;
   z-index: 10 !important;
 }
-.mushaf-page-box--with-frame .mushaf-meta > span {
-  min-height: 5.5cqw !important;
-  font-size: 2.6cqw !important;
-  padding: 0 2.5cqw !important;
-  border-width: 1px !important;
-  line-height: 1 !important;
+.mushaf-meta__left {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: flex-end !important;
+  gap: 2.2cqw !important; /* Space between multiple surah names */
+  flex: 1 !important;
+  height: 100% !important;
 }
-.mushaf-page-box--with-frame .mushaf-meta__page {
-  width: 12cqw !important;
-  flex: 0 0 12cqw !important;
-  font-size: 2.8cqw !important;
+.mushaf-meta__right {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: flex-end !important;
+  flex: 1 !important;
+  height: 100% !important;
+}
+.mushaf-meta-img {
+  height: 8.8cqw !important; /* Scale up image size further */
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
 }
 .mushaf-page-box--with-frame .mushaf-qcf-content {
   flex: 1 1 auto !important;
@@ -7658,7 +7769,7 @@ useHead({
   flex-direction: column !important;
   justify-content: space-between !important; /* Distribute lines evenly to fill frame */
   gap: 0 !important;
-  padding: 11.5cqw 4.5cqw 0cqw !important; /* 4.5cqw left/right gives ~2.4cqw breathing room inside frame border */
+  padding: 9.8cqw 4.5cqw 0cqw !important; /* Reduced padding-top to tighten top gap */
   margin: 0 !important;
   box-sizing: border-box !important;
   min-height: 0 !important;
@@ -7666,9 +7777,32 @@ useHead({
   width: 100% !important;
 }
 
-/* Hide redundant page footer at the bottom */
+.mushaf-page-box--with-frame .mushaf-bismillah-calligraphy {
+  margin: 0 !important;
+  margin-top: 1.2cqw !important;
+  margin-bottom: 0.5cqw !important;
+  line-height: 1 !important;
+  font-size: clamp(20px, 4cqw, 32px) !important;
+}
+
+/* Position footer page number at the bottom center of frame */
 .mushaf-page-box--with-frame .mushaf-page-footer {
-  display: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  position: absolute !important;
+  bottom: -4.8cqw !important; /* Move completely below bottom frame border further down */
+  left: 0 !important;
+  right: 0 !important;
+  height: 4.5cqw !important; /* Explicit height to prevent default min-height stretching */
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 4.2cqw !important; /* Scale up font size */
+  font-family: 'Amiri Quran', 'Uthmanic Hafs', serif !important; /* Use proper font names */
+  z-index: 10 !important;
 }
 .mushaf-page-box--with-frame .mushaf-surah-header-group {
   display: flex !important;
@@ -7832,35 +7966,77 @@ useHead({
 }
 
 /* Restyle Surah Banner to match plain green box */
-.mushaf-surah-banner {
-  margin: 2cqw 0 3cqw !important;
+/* Surah Banner Container - Full Width Madinah Green Row */
+.mushaf-surah-banner,
+.mushaf-page-box .mushaf-surah-banner,
+.mushaf-page-box--with-frame .mushaf-surah-banner {
+  width: 100% !important;
+  margin: 0.6cqw 0 1.2cqw !important;
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: 10 !important;
+  pointer-events: auto !important;
+  transition: opacity 0.2s ease !important;
 }
 
-.mushaf-surah-banner::before,
-.mushaf-surah-banner::after {
-  display: none !important;
+.mushaf-surah-banner:hover {
+  opacity: 0.92 !important;
 }
 
 .mushaf-surah-banner__inner,
+.mushaf-page-box .mushaf-surah-banner__inner,
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__inner,
+.mushaf-page-box--with-frame .mushaf-surah-banner__inner,
 .mushaf-theme--nabawiyyah .mushaf-surah-banner__inner,
 .mushaf-theme--classic .mushaf-surah-banner__inner,
 .mushaf-page-box--opening .mushaf-surah-banner__inner {
   width: 100% !important;
-  min-height: 0 !important;
-  border: 1px solid #c2e2cc !important;
-  border-radius: 4px !important;
-  padding: 8px 16px !important;
-  background: #e6f7ec !important; /* Light green background */
-  box-shadow: none !important;
+  max-width: 100% !important;
+  min-height: 6.8cqw !important;
+  padding: 4px 12px !important;
+  border: 1.5px solid #166d70 !important;
+  border-radius: 6px !important;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='36' viewBox='0 0 120 36'%3E%3Crect width='120' height='36' fill='%23f7fbf8'/%3E%3Crect y='2' width='120' height='32' fill='%23e2f4e7'/%3E%3Cpath d='M0 18 C15 6, 30 6, 45 18 C60 30, 75 30, 90 18 C105 6, 120 6, 120 18 C105 30, 90 30, 75 18 C60 6, 45 6, 30 18 C15 30, 0 30, 0 18' fill='none' stroke='%23166d70' stroke-width='1.6' opacity='0.85'/%3E%3Cpath d='M0 18 C15 30, 30 30, 45 18 C60 6, 75 6, 90 18 C105 30, 120 30, 120 18 C105 6, 90 6, 75 18 C60 30, 45 30, 30 18 C15 6, 0 6, 0 18' fill='none' stroke='%23bd8c30' stroke-width='1.3' opacity='0.75'/%3E%3Ccircle cx='15' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='15' cy='18' r='2.2' fill='%23f2c860'/%3E%3Ccircle cx='45' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='45' cy='18' r='2.2' fill='%23f2c860'/%3E%3Ccircle cx='75' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='75' cy='18' r='2.2' fill='%23f2c860'/%3E%3Ccircle cx='105' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='105' cy='18' r='2.2' fill='%23f2c860'/%3E%3Cline x1='0' y1='2' x2='120' y2='2' stroke='%23bd8c30' stroke-width='1.5'/%3E%3Cline x1='0' y1='34' x2='120' y2='34' stroke='%23bd8c30' stroke-width='1.5'/%3E%3Cline x1='0' y1='4.5' x2='120' y2='4.5' stroke='%23166d70' stroke-width='0.9'/%3E%3Cline x1='0' y1='31.5' x2='120' y2='31.5' stroke='%23166d70' stroke-width='0.9'/%3E%3C/svg%3E") center / 120px 36px repeat-x !important;
+  box-shadow: inset 0 0 0 1px rgba(22, 109, 112, 0.25) !important;
   display: flex !important;
-  flex-direction: row !important; /* Force horizontal layout */
+  flex-direction: row !important;
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: center !important;
   direction: ltr !important;
+  margin: 0 auto !important;
+}
+
+/* Centered White Cartouche Badge */
+.mushaf-surah-banner__name-box,
+.mushaf-page-box .mushaf-surah-banner__name-box,
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__name-box,
+.mushaf-page-box--with-frame .mushaf-surah-banner__name-box {
+  background: #ffffff !important;
+  border: 1.5px solid #166d70 !important;
+  border-radius: 999px !important;
+  padding: 3px 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  margin: 0 auto !important;
+  z-index: 2 !important;
+}
+
+/* Calligraphic Image inside Cartouche */
+.mushaf-surah-banner-img {
+  height: 5.5cqw !important;
+  min-height: 26px !important;
+  max-height: 42px !important;
+  width: auto !important;
+  display: block !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
 }
 
 .mushaf-surah-banner__inner::before {
@@ -9310,22 +9486,21 @@ useHead({
     inset: -11px -11px -11px 0px !important;
   }
 
-  /* Scale up meta header */
   .mushaf-page-box--with-frame .mushaf-meta {
-    top: 29px !important;
-    left: 48px !important;
-    right: 48px !important;
+    top: 12px !important;
+    left: 18px !important;
+    right: 18px !important;
+    height: 44px !important;
+  }
+  .mushaf-meta-img {
     height: 40px !important;
   }
-  .mushaf-page-box--with-frame .mushaf-meta > span {
-    min-height: 28px !important;
-    font-size: 0.85rem !important;
-    padding: 0 16px !important;
-    border-width: 1.5px !important;
-  }
-  .mushaf-page-box--with-frame .mushaf-meta__page {
-    width: 60px !important;
-    flex: 0 0 60px !important;
+  .mushaf-page-box--with-frame .mushaf-page-footer {
+    bottom: -20px !important; /* Move completely below bottom border in landscape */
+    height: 24px !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    font-size: 20px !important;
   }
 
   /* Scale up Surah Banner */
@@ -11076,6 +11251,200 @@ color: #75471a !important;
   font-size: 6cqw !important;
   line-height: 1.55 !important;
   transform: none !important;
+}
+
+/* Dark mode overrides for calligraphic headers and footer */
+.mushaf-theme--dark .mushaf-meta-img {
+  filter: invert(1) brightness(2) !important;
+}
+.mushaf-theme--dark .mushaf-surah-banner__inner {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='36' viewBox='0 0 120 36'%3E%3Crect width='120' height='36' fill='%230b1410'/%3E%3Crect y='2' width='120' height='32' fill='%23122119'/%3E%3Cpath d='M0 18 C15 6, 30 6, 45 18 C60 30, 75 30, 90 18 C105 6, 120 6, 120 18 C105 30, 90 30, 75 18 C60 6, 45 6, 30 18 C15 30, 0 30, 0 18' fill='none' stroke='%2334d399' stroke-width='1.6' opacity='0.7'/%3E%3Cpath d='M0 18 C15 30, 30 30, 45 18 C60 6, 75 6, 90 18 C105 30, 120 30, 120 18 C105 6, 90 6, 75 18 C60 30, 45 30, 30 18 C15 6, 0 6, 0 18' fill='none' stroke='%23d8c486' stroke-width='1.3' opacity='0.7'/%3E%3Ccircle cx='15' cy='18' r='4.5' fill='%23087681'/%3E%3Ccircle cx='15' cy='18' r='2.2' fill='%23f4d58a'/%3E%3Ccircle cx='45' cy='18' r='4.5' fill='%23087681'/%3E%3Ccircle cx='45' cy='18' r='2.2' fill='%23f4d58a'/%3E%3Ccircle cx='75' cy='18' r='4.5' fill='%23087681'/%3E%3Ccircle cx='75' cy='18' r='2.2' fill='%23f4d58a'/%3E%3Ccircle cx='105' cy='18' r='4.5' fill='%23087681'/%3E%3Ccircle cx='105' cy='18' r='2.2' fill='%23f4d58a'/%3E%3Cline x1='0' y1='2' x2='120' y2='2' stroke='%23d8c486' stroke-width='1.5'/%3E%3Cline x1='0' y1='34' x2='120' y2='34' stroke='%23d8c486' stroke-width='1.5'/%3E%3C/svg%3E") center / 120px 36px repeat-x !important;
+  border-color: rgba(209, 164, 84, 0.4) !important;
+}
+.mushaf-theme--dark .mushaf-surah-banner__name-box {
+  background: #16261e !important;
+  border-color: #d8c486 !important;
+}
+.mushaf-theme--dark .mushaf-surah-banner-img {
+  filter: invert(1) brightness(2) !important;
+}
+.mushaf-theme--dark .mushaf-page-footer {
+  color: #ffffff !important;
+}
+
+/* Surah Info Modal Popup Styles */
+.surah-info-modal-sheet {
+  max-width: 480px !important;
+  margin: 0 auto !important;
+  border-radius: 28px 28px 0 0 !important;
+  background: #fffdf9 !important;
+  padding: 12px 24px 32px !important;
+}
+
+.surah-info-close-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.surah-info-close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #1f2937;
+}
+
+.surah-info-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 8px;
+}
+
+.surah-info-modal-arabic {
+  font-family: 'Amiri Quran', 'Uthmanic Hafs', serif;
+  font-size: 2.8rem;
+  color: #044d33;
+  line-height: 1.4 !important;
+  margin-bottom: 16px !important;
+  display: block !important;
+}
+
+.surah-info-modal-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: -0.02em;
+  margin: 0 0 2px;
+}
+
+.surah-info-modal-translation {
+  font-size: 0.92rem;
+  font-style: italic;
+  color: #6b7280;
+  margin: 0 0 20px;
+}
+
+.surah-info-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.surah-info-card {
+  background: #f4f3ed;
+  border: 1.5px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.surah-info-card-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8c8262;
+}
+
+.surah-info-card-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #042719;
+}
+
+.surah-info-asbabun-nuzul-box {
+  width: 100%;
+  background: #f4f3ed;
+  border: 1.5px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.surah-info-asbabun-nuzul-text {
+  font-size: 0.88rem;
+  color: #374151;
+  line-height: 1.5;
+  margin: 6px 0 0;
+}
+
+.surah-info-modal-actions {
+  width: 100%;
+}
+
+.surah-info-action-btn {
+  width: 100%;
+  min-height: 50px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #054f38 0%, #0a9e72 100%);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(5, 79, 56, 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.surah-info-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(5, 79, 56, 0.35);
+}
+
+.qari-sheet--dark .surah-info-modal-sheet {
+  background: #101b16 !important;
+}
+
+.qari-sheet--dark .surah-info-modal-arabic {
+  color: #d8c486 !important;
+}
+
+.qari-sheet--dark .surah-info-modal-title {
+  color: #f4f7f5 !important;
+}
+
+.qari-sheet--dark .surah-info-modal-translation {
+  color: #a8b7b1 !important;
+}
+
+.qari-sheet--dark .surah-info-card {
+  background: #15261f !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.qari-sheet--dark .surah-info-card-label {
+  color: #a8b7b1 !important;
+}
+
+.qari-sheet--dark .surah-info-card-val {
+  color: #eef5f1 !important;
+}
+
+.qari-sheet--dark .surah-info-asbabun-nuzul-box {
+  background: #15261f !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.qari-sheet--dark .surah-info-asbabun-nuzul-text {
+  color: #d1d5db !important;
 }
 
 </style>
