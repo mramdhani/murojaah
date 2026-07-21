@@ -197,7 +197,7 @@
                       <div class="mushaf-surah-banner" style="margin-top: 0 !important; margin-bottom: 0 !important;" @click="openSurahDetails(1)">
                         <div class="mushaf-surah-banner__inner">
                           <div class="mushaf-surah-banner__name-box">
-                            <span class="mushaf-surah-banner__name" aria-label="Al-Fatihah">surah001</span>
+                            <span class="mushaf-surah-banner__name" aria-label="Al-Fatihah">surah-iconsurah001</span>
                           </div>
                         </div>
                       </div>
@@ -225,7 +225,7 @@
                               <span
                                 class="mushaf-surah-banner__name"
                                 :aria-label="getSurahBannerAtLine(line.line_number, slidePage)?.name_arabic"
-                              >{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
+                              >surah-icon{{ surahNameGlyph(getSurahBannerAtLine(line.line_number, slidePage)?.number) }}</span>
                             </div>
                           </div>
                         </div>
@@ -7964,9 +7964,15 @@ useHead({
   align-items: center !important;
   justify-content: center !important;
 }
+/* Surah Banner Container — transparent wrapper for click target */
+@font-face {
+  font-family: 'SurahNameV4';
+  src: url('/fonts/qcf/surah-name-v4.woff2') format('woff2'),
+       url('/fonts/qcf/surah-name-v4.woff') format('woff'),
+       url('/fonts/qcf/surah-name-v4.ttf') format('truetype');
+  font-display: swap;
+}
 
-/* Restyle Surah Banner to match plain green box */
-/* Surah Banner Container - Full Width Madinah Green Row */
 .mushaf-surah-banner,
 .mushaf-page-box .mushaf-surah-banner,
 .mushaf-page-box--with-frame .mushaf-surah-banner {
@@ -7987,6 +7993,7 @@ useHead({
   opacity: 0.92 !important;
 }
 
+/* Ornate arabesque banner background — colors matched to frame border */
 .mushaf-surah-banner__inner,
 .mushaf-page-box .mushaf-surah-banner__inner,
 .mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__inner,
@@ -7996,13 +8003,20 @@ useHead({
 .mushaf-page-box--opening .mushaf-surah-banner__inner {
   width: 100% !important;
   max-width: 100% !important;
-  min-height: 6.8cqw !important;
-  padding: 4px 12px !important;
-  border: 1.5px solid #166d70 !important;
-  border-radius: 6px !important;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='36' viewBox='0 0 120 36'%3E%3Crect width='120' height='36' fill='%23f7fbf8'/%3E%3Crect y='2' width='120' height='32' fill='%23e2f4e7'/%3E%3Cpath d='M0 18 C15 6, 30 6, 45 18 C60 30, 75 30, 90 18 C105 6, 120 6, 120 18 C105 30, 90 30, 75 18 C60 6, 45 6, 30 18 C15 30, 0 30, 0 18' fill='none' stroke='%23166d70' stroke-width='1.6' opacity='0.85'/%3E%3Cpath d='M0 18 C15 30, 30 30, 45 18 C60 6, 75 6, 90 18 C105 30, 120 30, 120 18 C105 6, 90 6, 75 18 C60 30, 45 30, 30 18 C15 6, 0 6, 0 18' fill='none' stroke='%23bd8c30' stroke-width='1.3' opacity='0.75'/%3E%3Ccircle cx='15' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='15' cy='18' r='2.2' fill='%23f2c860'/%3E%3Ccircle cx='45' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='45' cy='18' r='2.2' fill='%23f2c860'/%3E%3Ccircle cx='75' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='75' cy='18' r='2.2' fill='%23f2c860'/%3E%3Ccircle cx='105' cy='18' r='4.5' fill='%23166d70'/%3E%3Ccircle cx='105' cy='18' r='2.2' fill='%23f2c860'/%3E%3Cline x1='0' y1='2' x2='120' y2='2' stroke='%23bd8c30' stroke-width='1.5'/%3E%3Cline x1='0' y1='34' x2='120' y2='34' stroke='%23bd8c30' stroke-width='1.5'/%3E%3Cline x1='0' y1='4.5' x2='120' y2='4.5' stroke='%23166d70' stroke-width='0.9'/%3E%3Cline x1='0' y1='31.5' x2='120' y2='31.5' stroke='%23166d70' stroke-width='0.9'/%3E%3C/svg%3E") center / 120px 36px repeat-x !important;
-  box-shadow: inset 0 0 0 1px rgba(22, 109, 112, 0.25) !important;
+  min-height: 8cqw !important;
+  padding: 6px 12px !important;
+  border-top: 2px solid #b88a30 !important;
+  border-bottom: 2px solid #b88a30 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  background-color: #dbeed8 !important;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='42' viewBox='0 0 150 42'%3E%3Crect width='150' height='42' fill='%23dbeed8'/%3E%3Crect x='3' y='4' width='144' height='34' fill='none' stroke='%23609f66' stroke-width='2'/%3E%3Cpath d='M0 21 C19 5, 38 5, 57 21 S95 37, 114 21 S143 5, 150 21' fill='none' stroke='%23609f66' stroke-width='2.3' opacity='.9'/%3E%3Cpath d='M0 21 C19 37, 38 37, 57 21 S95 5, 114 21 S143 37, 150 21' fill='none' stroke='%23b88a30' stroke-width='1.8' opacity='.86'/%3E%3Cg fill='%23ef9ac0' stroke='%23609f66' stroke-width='1.2'%3E%3Cpath d='M21 21c5-10 13-10 18 0-5 10-13 10-18 0z'/%3E%3Cpath d='M111 21c5-10 13-10 18 0-5 10-13 10-18 0z'/%3E%3C/g%3E%3Cg fill='%23fff7cf' stroke='%23b88a30' stroke-width='1'%3E%3Ccircle cx='30' cy='21' r='3.5'/%3E%3Ccircle cx='120' cy='21' r='3.5'/%3E%3Ccircle cx='75' cy='21' r='3'/%3E%3C/g%3E%3C/svg%3E") center / 150px 42px repeat-x !important;
+  box-shadow:
+    inset 0 0 0 2px #f7fbef,
+    inset 0 0 0 4px rgba(15, 111, 109, 0.72),
+    0 0 0 1px #b88a30 !important;
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -8011,47 +8025,45 @@ useHead({
   margin: 0 auto !important;
 }
 
-/* Centered White Cartouche Badge */
+/* Sharp-cornered cream cartouche badge — warm white matching frame interior */
 .mushaf-surah-banner__name-box,
 .mushaf-page-box .mushaf-surah-banner__name-box,
 .mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__name-box,
 .mushaf-page-box--with-frame .mushaf-surah-banner__name-box {
-  background: #ffffff !important;
-  border: 1.5px solid #166d70 !important;
-  border-radius: 999px !important;
-  padding: 3px 28px !important;
+  background: linear-gradient(180deg, #fffdf3 0%, #eef7df 100%) !important;
+  border: 1.5px solid #0f6f6d !important;
+  border-radius: 0 !important;
+  padding: 4px 32px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 0 0 2px #fff7cf, 0 0 0 4px #b88a30, 0 1px 2px rgba(15, 40, 29, 0.14) !important;
   margin: 0 auto !important;
   z-index: 2 !important;
 }
 
-/* Calligraphic Image inside Cartouche */
-.mushaf-surah-banner-img {
-  height: 5.5cqw !important;
-  min-height: 26px !important;
-  max-height: 42px !important;
-  width: auto !important;
-  display: block !important;
-  margin: 0 auto !important;
-  object-fit: contain !important;
+/* SurahNameV4 calligraphic font — large and clear */
+.mushaf-surah-banner__name,
+.mushaf-page-box .mushaf-surah-banner__name,
+.mushaf-page-box:not(.mushaf-page-box--opening) .mushaf-surah-banner__name,
+.mushaf-page-box--with-frame .mushaf-surah-banner__name {
+  font-family: 'SurahNameV4', serif !important;
+  font-size: clamp(22px, 5.6cqw, 46px) !important;
+  line-height: 1 !important;
+  color: #000 !important;
+  text-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  direction: ltr !important;
+  text-align: center !important;
+  display: inline-block !important;
 }
 
 .mushaf-surah-banner__inner::before {
   display: none !important;
-}
-
-.mushaf-surah-banner__name {
-  color: #1a4f32 !important; /* Darker green text */
-  font-size: clamp(14px, 6.7cqw, 40px) !important;
-  text-shadow: none !important;
-  background: white !important;
-  padding: 0px 22px !important;
-  border-radius: 999px !important;
-  border: 1px solid #c2e2cc !important;
-  margin: 0 10px !important;
 }
 
 .mushaf-surah-banner__name::before,
@@ -11447,4 +11459,107 @@ color: #75471a !important;
   color: #d1d5db !important;
 }
 
+/* Final framed mushaf surah banner: one larger illuminated strip with a
+   single centered cartouche, tuned for page 604 and regular framed pages. */
+.mushaf-page-box--with-frame:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner {
+  width: 100% !important;
+  margin: 0.35cqw 0 0.65cqw !important;
+  padding: 0 0.25cqw !important;
+  box-sizing: border-box !important;
+}
+
+.mushaf-page-box--with-frame:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__inner,
+.mushaf-page-box--with-frame.mushaf-theme--classic:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__inner,
+.mushaf-page-box--with-frame.mushaf-theme--nabawiyyah:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__inner {
+  width: 100% !important;
+  min-height: 9.4cqw !important;
+  max-height: 10.2cqw !important;
+  padding: 0.95cqw 12.6cqw !important;
+  border: 1.5px solid #0f6f6d !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  background-color: #dbeed8 !important;
+  background-image:
+    radial-gradient(circle at 7% 50%, #ef9ac0 0 0.95cqw, #fff7cf 1cqw 1.25cqw, transparent 1.3cqw),
+    radial-gradient(circle at 93% 50%, #ef9ac0 0 0.95cqw, #fff7cf 1cqw 1.25cqw, transparent 1.3cqw),
+    radial-gradient(circle at 50% 50%, rgba(255, 247, 207, 0.8) 0 0.5cqw, transparent 0.55cqw),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='42' viewBox='0 0 150 42'%3E%3Crect width='150' height='42' fill='%23dbeed8'/%3E%3Crect x='3' y='4' width='144' height='34' fill='none' stroke='%23609f66' stroke-width='2'/%3E%3Cpath d='M0 21 C19 5, 38 5, 57 21 S95 37, 114 21 S143 5, 150 21' fill='none' stroke='%23609f66' stroke-width='2.3' opacity='.9'/%3E%3Cpath d='M0 21 C19 37, 38 37, 57 21 S95 5, 114 21 S143 37, 150 21' fill='none' stroke='%23b88a30' stroke-width='1.8' opacity='.86'/%3E%3Cg fill='%23ef9ac0' stroke='%23609f66' stroke-width='1.2'%3E%3Cpath d='M21 21c5-10 13-10 18 0-5 10-13 10-18 0z'/%3E%3Cpath d='M111 21c5-10 13-10 18 0-5 10-13 10-18 0z'/%3E%3C/g%3E%3Cg fill='%23fff7cf' stroke='%23b88a30' stroke-width='1'%3E%3Ccircle cx='30' cy='21' r='3.5'/%3E%3Ccircle cx='120' cy='21' r='3.5'/%3E%3Ccircle cx='75' cy='21' r='3'/%3E%3C/g%3E%3C/svg%3E") center / 150px 42px repeat-x !important;
+  box-shadow:
+    inset 0 0 0 2px #f7fbef,
+    inset 0 0 0 4px rgba(15, 111, 109, 0.72),
+    0 0 0 1px #b88a30 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.mushaf-page-box--with-frame:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name-box {
+  min-width: clamp(128px, 34cqw, 250px) !important;
+  height: 6.7cqw !important;
+  min-height: 34px !important;
+  max-height: 52px !important;
+  padding: 0 4.8cqw !important;
+  background: linear-gradient(180deg, #fffdf3 0%, #eef7df 100%) !important;
+  border: 1.5px solid #0f6f6d !important;
+  border-radius: 0 !important;
+  box-shadow:
+    0 0 0 2px #fff7cf,
+    0 0 0 4px #b88a30,
+    0 1px 2px rgba(15, 40, 29, 0.14) !important;
+}
+
+.mushaf-page-box--with-frame:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name,
+.mushaf-page-box--with-frame.mushaf-theme--classic:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name,
+.mushaf-page-box--with-frame.mushaf-theme--nabawiyyah:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name {
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #17271f !important;
+  font-size: clamp(28px, 6.45cqw, 52px) !important;
+  line-height: 0.92 !important;
+  text-shadow: none !important;
+}
+
+.mushaf-page-box--with-frame:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__sub {
+  display: none !important;
+}
+
+.mushaf-page-box--closing .mushaf-surah-banner {
+  margin: 0.25cqw 0 0.55cqw !important;
+}
+
+.mushaf-page-box--closing .mushaf-surah-banner__inner {
+  min-height: 10cqw !important;
+  max-height: 10.8cqw !important;
+}
+
+.mushaf-page-box--closing .mushaf-surah-banner__name-box {
+  min-width: clamp(132px, 36cqw, 260px) !important;
+  height: 7.1cqw !important;
+}
+
+.mushaf-page-box--with-frame.mushaf-theme--dark:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__inner {
+  background-color: #15241e !important;
+  border-color: #d8c486 !important;
+  box-shadow:
+    inset 0 0 0 2px #223a30,
+    inset 0 0 0 4px rgba(216, 196, 134, 0.58),
+    0 0 0 1px #0f6f6d !important;
+}
+
+.mushaf-page-box--with-frame.mushaf-theme--dark:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name-box {
+  background: linear-gradient(180deg, #17291f 0%, #101b16 100%) !important;
+  border-color: #d8c486 !important;
+  box-shadow:
+    0 0 0 2px #15241e,
+    0 0 0 4px #d8c486 !important;
+}
+
+.mushaf-page-box--with-frame.mushaf-theme--dark:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name {
+  color: #f4e5aa !important;
+}
 </style>
