@@ -1197,7 +1197,7 @@
           </header>
           
           <div class="surah-info-modal-content">
-            <div class="surah-info-modal-arabic">{{ activeSurahModalData.name_arabic }}</div>
+            <div class="surah-info-modal-arabic">surah-icon{{ surahNameGlyph(activeSurahModalData.number) }}</div>
             <h2 class="surah-info-modal-title">Surat {{ activeSurahModalData.number }}. {{ activeSurahModalData.name_latin }}</h2>
             <p class="surah-info-modal-translation">"{{ activeSurahModalData.name_translation }}"</p>
 
@@ -11325,12 +11325,14 @@ color: #75471a !important;
 }
 
 .surah-info-modal-arabic {
-  font-family: 'Amiri Quran', 'Uthmanic Hafs', serif;
-  font-size: 2.8rem;
+  font-family: 'SurahNameV4', serif;
+  font-size: 3.2rem;
   color: #044d33;
-  line-height: 1.4 !important;
+  line-height: 1.2 !important;
   margin-bottom: 16px !important;
   display: block !important;
+  text-align: center !important;
+  direction: ltr !important;
 }
 
 .surah-info-modal-title {
@@ -11474,38 +11476,35 @@ color: #75471a !important;
   width: 100% !important;
   min-height: 9.4cqw !important;
   max-height: 10.2cqw !important;
-  padding: 0.95cqw 12.6cqw !important;
-  border: 1.5px solid #0f6f6d !important;
-  border-radius: 4px !important;
+  padding: 0.95cqw 4cqw !important;
+  border: 2px solid #0f6f6d !important;
+  border-radius: 0px !important; /* Flat rectangle outer banner */
   overflow: hidden !important;
   background-color: #dbeed8 !important;
   background-image:
     radial-gradient(circle at 7% 50%, #ef9ac0 0 0.95cqw, #fff7cf 1cqw 1.25cqw, transparent 1.3cqw),
     radial-gradient(circle at 93% 50%, #ef9ac0 0 0.95cqw, #fff7cf 1cqw 1.25cqw, transparent 1.3cqw),
-    radial-gradient(circle at 50% 50%, rgba(255, 247, 207, 0.8) 0 0.5cqw, transparent 0.55cqw),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='42' viewBox='0 0 150 42'%3E%3Crect width='150' height='42' fill='%23dbeed8'/%3E%3Crect x='3' y='4' width='144' height='34' fill='none' stroke='%23609f66' stroke-width='2'/%3E%3Cpath d='M0 21 C19 5, 38 5, 57 21 S95 37, 114 21 S143 5, 150 21' fill='none' stroke='%23609f66' stroke-width='2.3' opacity='.9'/%3E%3Cpath d='M0 21 C19 37, 38 37, 57 21 S95 5, 114 21 S143 37, 150 21' fill='none' stroke='%23b88a30' stroke-width='1.8' opacity='.86'/%3E%3Cg fill='%23ef9ac0' stroke='%23609f66' stroke-width='1.2'%3E%3Cpath d='M21 21c5-10 13-10 18 0-5 10-13 10-18 0z'/%3E%3Cpath d='M111 21c5-10 13-10 18 0-5 10-13 10-18 0z'/%3E%3C/g%3E%3Cg fill='%23fff7cf' stroke='%23b88a30' stroke-width='1'%3E%3Ccircle cx='30' cy='21' r='3.5'/%3E%3Ccircle cx='120' cy='21' r='3.5'/%3E%3Ccircle cx='75' cy='21' r='3'/%3E%3C/g%3E%3C/svg%3E") center / 150px 42px repeat-x !important;
   box-shadow:
     inset 0 0 0 2px #f7fbef,
     inset 0 0 0 4px rgba(15, 111, 109, 0.72),
-    0 0 0 1px #b88a30 !important;
+    0 0 0 2px #b88a30 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
 
+/* Oval pill cartouche for surah name — high-specificity override */
 .mushaf-page-box--with-frame:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name-box {
-  min-width: clamp(128px, 34cqw, 250px) !important;
-  height: 6.7cqw !important;
-  min-height: 34px !important;
-  max-height: 52px !important;
-  padding: 0 4.8cqw !important;
   background: linear-gradient(180deg, #fffdf3 0%, #eef7df 100%) !important;
   border: 1.5px solid #0f6f6d !important;
-  border-radius: 0 !important;
-  box-shadow:
-    0 0 0 2px #fff7cf,
-    0 0 0 4px #b88a30,
-    0 1px 2px rgba(15, 40, 29, 0.14) !important;
+  border-radius: 999px !important;
+  padding: 4px 3cqw !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 0 2px #fff7cf, 0 0 0 4px #b88a30 !important;
+  margin: 0 auto !important;
 }
 
 .mushaf-page-box--with-frame:not(.mushaf-page-box--opening):not(.mushaf-page-box--fatihah):not(.mushaf-page-box--baqarah) .mushaf-surah-banner__name,
