@@ -9653,7 +9653,7 @@ useHead({
   margin: 0 !important;
   font-size: clamp(15px, 4.35cqw, 31px) !important;
   line-height: 1.05 !important;
-  transform: translateY(-3.85cqw) !important;
+  transform: translateY(-0.8cqw) !important;
 }
 
 .mushaf-page-box--with-frame .mushaf-surah-banner__inner,
@@ -9718,7 +9718,7 @@ useHead({
   .mushaf-page-box--with-frame .mushaf-bismillah-calligraphy {
     font-size: clamp(22px, 4vw, 34px) !important;
     line-height: 1.05 !important;
-    transform: translateY(-25px) !important;
+    transform: translateY(-5px) !important;
   }
 
   .mushaf-page-box--with-frame .mushaf-surah-banner__inner,
@@ -11241,7 +11241,7 @@ color: #75471a !important;
   align-items: center !important;
   justify-content: center !important;
   width: 100% !important;
-  margin: 0.5cqw 0 2cqw !important;
+  margin: 1.5cqw 0 1.2cqw !important;
   padding: 0 4.5cqw !important;
   /* Uthmanic Hafs = the same family as the physical mushaf font, renders ﷽ beautifully */
   font-family: 'Uthmanic Hafs', 'Amiri Quran', 'Amiri', serif !important;

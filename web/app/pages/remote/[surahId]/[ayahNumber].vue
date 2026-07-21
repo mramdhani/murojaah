@@ -1,7 +1,7 @@
 <template>
-  <div class="remote-page" :class="{ 'remote-page--hidden': isHiddenState, 'remote-page--listening': isListeningMode }" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
+  <div class="remote-page" :class="{ 'remote-page--hidden': isHiddenState, 'remote-page--listening': isListeningMode, 'remote-page--fullscreen': isListeningMode && isFullscreenMode }" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
     <!-- Header -->
-    <header class="remote-header">
+    <header class="remote-header" :class="{ 'remote-header--hidden': isListeningMode && isFullscreenMode }">
       <div class="remote-header__left">
         <div class="remote-header__surah-info">
           <button type="button" class="header-eyebrow" :class="'header-eyebrow--' + sessionMode" @click.stop="openModeDrawer">
@@ -50,7 +50,7 @@
     </div>
 
     <!-- Content -->
-    <main ref="remoteContentRef" class="remote-content" :class="{ 'remote-content--listening': isListeningMode }" @click="!isListeningMode && toggleReveal()">
+    <main ref="remoteContentRef" class="remote-content" :class="{ 'remote-content--listening': isListeningMode }" @click="isListeningMode ? (isFullscreenMode = !isFullscreenMode) : toggleReveal()">
       <template v-if="isListeningMode">
         <div v-if="listeningAyahsLoading" class="listening-splash" role="status" aria-live="polite">
           <div class="listening-splash__mark" aria-hidden="true"><span></span></div>
@@ -65,7 +65,11 @@
             class="listening-ayah-card"
             :class="{ 'listening-ayah-card--active': ayah.ayah_number === currentAyahNumber }"
             :data-ayah="ayah.ayah_number"
-            @click="changeAyah(ayah.ayah_number)"
+            @pointerdown.stop="onAyahPointerDown($event, ayah.ayah_number)"
+            @pointermove.stop="onAyahPointerMove($event)"
+            @pointerup.stop="onAyahPointerUp($event, ayah.ayah_number)"
+            @pointercancel.stop="onAyahPointerCancel()"
+            @click.stop
           >
 
             <div class="listening-ayah-card__badge" aria-hidden="true" v-html="formatListeningAyahBadge(ayah.ayah_number)"></div>
@@ -162,7 +166,7 @@
     </main>
 
     <!-- Unified Bottom Action Bar -->
-    <div class="remote-action-bar" :class="{ 'remote-action-bar--listening': isListeningMode }">
+    <div class="remote-action-bar" :class="{ 'remote-action-bar--listening': isListeningMode, 'remote-action-bar--hidden': isListeningMode && isFullscreenMode }">
       <template v-if="isListeningMode">
         <div class="listening-player" role="status" aria-live="polite">
           <div class="listening-player__controls">
@@ -556,6 +560,72 @@
 <script setup lang="ts">
 const route = useRoute()
 const router = useRouter()
+
+const isFullscreenMode = ref(false)
+
+// Long press / Pointer states for listening mode ayah card
+let ayahLongPressTimer: any = null
+let ayahLongPressTriggered = false
+let hasMoved = false
+let startPointerX = 0
+let startPointerY = 0
+
+const onAyahPointerDown = (event: PointerEvent, ayahNumber: number) => {
+  ayahLongPressTriggered = false
+  hasMoved = false
+  startPointerX = event.clientX
+  startPointerY = event.clientY
+
+  if (ayahLongPressTimer) {
+    clearTimeout(ayahLongPressTimer)
+  }
+  ayahLongPressTimer = window.setTimeout(() => {
+    ayahLongPressTriggered = true
+    changeAyah(ayahNumber)
+  }, 350)
+}
+
+const onAyahPointerMove = (event: PointerEvent) => {
+  if (ayahLongPressTriggered) return
+
+  const deltaX = Math.abs(event.clientX - startPointerX)
+  const deltaY = Math.abs(event.clientY - startPointerY)
+  if (deltaX > 8 || deltaY > 8) {
+    hasMoved = true
+    if (ayahLongPressTimer) {
+      clearTimeout(ayahLongPressTimer)
+      ayahLongPressTimer = null
+    }
+  }
+}
+
+const onAyahPointerUp = (event: PointerEvent, ayahNumber: number) => {
+  if (ayahLongPressTimer) {
+    clearTimeout(ayahLongPressTimer)
+    ayahLongPressTimer = null
+  }
+
+  if (ayahLongPressTriggered) {
+    ayahLongPressTriggered = false
+    return
+  }
+
+  if (hasMoved) {
+    hasMoved = false
+    return
+  }
+
+  isFullscreenMode.value = !isFullscreenMode.value
+}
+
+const onAyahPointerCancel = () => {
+  if (ayahLongPressTimer) {
+    clearTimeout(ayahLongPressTimer)
+    ayahLongPressTimer = null
+  }
+  ayahLongPressTriggered = false
+  hasMoved = false
+}
 const { apiFetch } = useApi()
 const { open: openMurojaahDrawer } = useMurojaahDrawer()
 const showToast = inject<(msg: string, type: string) => void>('showToast')
@@ -2235,6 +2305,35 @@ useHead({
   position: relative;
   touch-action: pan-x;
   transition: background 0.35s ease;
+}
+
+/* --- Immersive Fullscreen Mode for Listening mode --- */
+.remote-header {
+  transition: transform 0.3s ease, opacity 0.3s ease, flex-basis 0.3s ease, padding 0.3s ease, height 0.3s ease;
+}
+.remote-header--hidden {
+  transform: translateY(-100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  flex-basis: 0 !important;
+  height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.remote-action-bar {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.remote-action-bar--hidden {
+  transform: translateY(100%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.remote-page--fullscreen .remote-content--listening {
+  padding-bottom: 24px !important;
 }
 
 /* ─── Full-page immersive dark mode when ayat is hidden ─── */
