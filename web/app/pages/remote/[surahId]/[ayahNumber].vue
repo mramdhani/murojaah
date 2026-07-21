@@ -3,11 +3,6 @@
     <!-- Header -->
     <header class="remote-header">
       <div class="remote-header__left">
-        <button class="remote-header__back" @click="goBack" aria-label="Kembali">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
         <div class="remote-header__surah-info">
           <button type="button" class="header-eyebrow" :class="'header-eyebrow--' + sessionMode" @click.stop="openModeDrawer">
             {{ sessionMode === 'listening' ? 'Mendengarkan' : 'Uji Hafalan' }}
@@ -2037,7 +2032,8 @@ const submitReview = async (status: 'forgot' | 'doubtful' | 'fluent') => {
       await router.replace(buildRemoteRoute(surahId.value, currentAyahNumber.value))
     } else {
       showToast?.('Surat selesai!', 'fluent')
-      setTimeout(() => router.push(`/progress/${surahId.value}`), 1200)
+      const targetPage = currentAyah.value?.page || 2
+      setTimeout(() => router.push({ path: `/mushaf/${targetPage}`, query: { surah: surahId.value } }), 1200)
     }
   } catch (e) {
     console.error('Failed to submit review:', e)
@@ -2073,7 +2069,8 @@ const skipAyah = async () => {
 const goBack = () => {
   triggerHaptic(40)
   stopAudio()
-  router.push({ path: `/surahs/${surahId.value}`, query: { mode: sessionMode.value } })
+  const targetPage = currentAyah.value?.page || 2
+  router.push({ path: `/mushaf/${targetPage}`, query: { surah: surahId.value } })
 }
 
 // Parse Quran Tajweed API markup into color-coded HTML spans
@@ -2313,16 +2310,25 @@ useHead({
   height: 40px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
+  border: none;
+  outline: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: white !important;
   flex-shrink: 0;
   transition: background var(--transition-fast);
 }
 
 .remote-header__back:active {
   background: rgba(255, 255, 255, 0.25);
+}
+
+.remote-header__back svg {
+  width: 22px !important;
+  height: 22px !important;
+  display: block !important;
 }
 
 .remote-header__surah-trigger {
@@ -4374,7 +4380,7 @@ useHead({
 }
 .remote-header__left { min-width: 0; flex: 1; gap: 8px; }
 .remote-header__surah-trigger { min-width: 0; flex: 1; }
-.remote-header__back { width: 40px; height: 40px; }
+.remote-header__back { width: 40px !important; height: 40px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
 .remote-header__title {
   max-width: 100%;
   overflow: hidden;

@@ -14,7 +14,6 @@
 
     <template v-else>
       <NuxtPage />
-      <BottomNav />
       <MurojaahDrawer />
       <PwaPrompt />
     </template>

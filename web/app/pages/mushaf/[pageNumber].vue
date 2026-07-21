@@ -11,10 +11,6 @@
     @click.self="toggleFullscreen"
   >
     <header class="mushaf-header" :class="{ 'mushaf-header--hidden': isFullscreenMode }">
-      <button type="button" class="mushaf-header__back" aria-label="Kembali" @click="router.push('/')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
-
       <div class="mushaf-header__main">
         <button type="button" class="mushaf-header__mode" @click="openModeDrawer">
           <span>Mushaf Hafalan</span>
@@ -64,9 +60,10 @@
                 'mushaf-theme--' + mushafTheme,
                 {
                   'mushaf-page-box--loading': index === 1 && qcfLoading,
-                  'mushaf-page-box--opening': slidePage && slidePage <= 2,
-                  'mushaf-page-box--fatihah': slidePage === 1,
-                  'mushaf-page-box--baqarah': slidePage === 2,
+                  'mushaf-page-box--opening': false,
+                  'mushaf-page-box--fatihah': false,
+                  'mushaf-page-box--baqarah': false,
+                  'mushaf-page-box--short-page': slidePage && slidePage <= 2,
                   'mushaf-page-box--closing': slidePage === 604,
                   'mushaf-page-box--multi-surah': slidePage && getPageSurahCount(slidePage) > 1,
                   'mushaf-page-box--bottom-surah-banner': slidePage && hasBottomSurahBanner(slidePage),
@@ -182,7 +179,22 @@
 
                   <!-- Rendered lines -->
                   <template v-else>
-                    <div v-if="slidePage === 1" class="mushaf-opening-title mushaf-opening-title--fatihah">{{ surahNameGlyph(1) }}</div>
+                    <!-- Manual Surah Banner for Al-Fatihah on Page 1 -->
+                    <div v-if="slidePage === 1" class="mushaf-line mushaf-line--qcf mushaf-line--banner-row" style="border-bottom: none !important; margin-bottom: 0 !important;">
+                      <div class="mushaf-surah-banner" style="margin-top: 0 !important; margin-bottom: 0 !important;">
+                        <div class="mushaf-surah-banner__inner">
+                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--left">
+                            {{ '\u0622\u064a\u064e\u0627\u062a\u064f\u0647\u064e\u0627' }} {{ formatArabicNumber(7) }}
+                          </span>
+                          <span class="mushaf-surah-banner__name" aria-label="Al-Fatihah">
+                            {{ surahNameGlyph(1) }}
+                          </span>
+                          <span class="mushaf-surah-banner__sub mushaf-surah-banner__sub--right">
+                            {{ '\u0645\u064e\u0643\u0650\u0651\u064a\u064e\u0651\u0629\u064c' }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                     <template v-for="line in getPageLines(slidePage)" :key="line.line_number">
                       <!-- Render banner/Bismillah as a direct line substitute if mapped to this line number -->
                       <div
@@ -219,7 +231,7 @@
                           v-else-if="getBismillahAtLine(line.line_number, slidePage)"
                           class="mushaf-bismillah-calligraphy"
                           aria-label="Bismillahirrahmanirrahim"
-                        >{{ '\ufdfd' }}</div>
+                        >﷽</div>
                       </div>
 
                       <!-- Normal text line (Unicode Fallback) -->
@@ -253,7 +265,7 @@
 
                       <!-- Normal text line (QCF V2) -->
                       <div
-                        v-else
+                        v-else-if="line.words?.length"
                         class="mushaf-line mushaf-line--qcf"
                         :class="{ 'mushaf-line--no-border': isLastLineOfSurah(line.line_number, slidePage) }"
                         :data-line="line.line_number"
@@ -2396,7 +2408,7 @@ const fitQcfLines = async () => {
       const content = line.querySelector<HTMLElement>('.mushaf-line__qcf-content')
       if (!content) return
 
-      if (line.closest('.mushaf-page-box--opening, .mushaf-page-box--closing')) {
+      if (line.closest('.mushaf-page-box--opening, .mushaf-page-box--closing, .mushaf-page-box--short-page')) {
         content.style.removeProperty('--qcf-line-scale')
         content.style.width = ''
         content.style.justifyContent = ''
@@ -7653,6 +7665,7 @@ useHead({
   min-width: 0 !important;
   width: 100% !important;
 }
+
 /* Hide redundant page footer at the bottom */
 .mushaf-page-box--with-frame .mushaf-page-footer {
   display: none !important;
@@ -10981,4 +10994,88 @@ color: #75471a !important;
   left: 12cqw !important;
   right: 12cqw !important;
 }
+
+/* ============================================================= */
+/* GLOBAL: Bismillah Calligraphy — with-frame (all surahs)        */
+/* Uses Uthmanic Hafs font (same Quranic font as page 1 QCF lines)*/
+/* ============================================================= */
+.mushaf-page-box--with-frame .mushaf-bismillah-calligraphy {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 0.5cqw 0 2cqw !important;
+  padding: 0 4.5cqw !important;
+  /* Uthmanic Hafs = the same family as the physical mushaf font, renders ﷽ beautifully */
+  font-family: 'Uthmanic Hafs', 'Amiri Quran', 'Amiri', serif !important;
+  font-size: 6cqw !important;
+  font-weight: 400 !important;
+  color: #15110b !important;
+  line-height: 1.6 !important;
+  text-align: center !important;
+  direction: rtl !important;
+  min-height: auto !important;
+  box-sizing: border-box !important;
+  /* No box — same clean look as QCF line 1 on page 1 */
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================= */
+/* SHORT PAGE (Al-Fatihah pg1, Al-Baqarah pg2)                    */
+/* Height auto-fits content, tight line spacing, no borders        */
+/* ============================================================= */
+
+/* Frame height follows content */
+.mushaf-page-box--with-frame.mushaf-page-box--short-page {
+  aspect-ratio: 1 / 1.52 !important;
+  height: auto !important;
+  min-height: calc((100cqw - 20px) * 1.52) !important;
+}
+
+/* Content area padding tight to frame border inset */
+.mushaf-page-box--with-frame.mushaf-page-box--short-page .mushaf-qcf-content {
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0 !important;
+  height: calc(100% - 13.1cqw) !important;
+  margin-top: 11cqw !important;
+  margin-bottom: 2.1cqw !important;
+  padding-top: 2cqw !important;
+  padding-bottom: 2cqw !important;
+  flex: 0 0 auto !important;
+  box-sizing: border-box !important;
+}
+
+/* Text lines: tight, no borders */
+.mushaf-page-box--with-frame.mushaf-page-box--short-page .mushaf-line,
+.mushaf-page-box--with-frame.mushaf-page-box--short-page .mushaf-line--qcf,
+.mushaf-page-box--with-frame.mushaf-page-box--short-page .mushaf-line--unicode {
+  border-bottom: none !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1.55 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Banner row: compact margin */
+.mushaf-page-box--with-frame.mushaf-page-box--short-page .mushaf-line--banner-row {
+  width: 100% !important;
+  border-bottom: none !important;
+  padding: 0 !important;
+  margin-bottom: 0.8cqw !important;
+  flex-shrink: 0 !important;
+}
+
+/* Bismillah on short pages: tighter margin to match line spacing */
+.mushaf-page-box--with-frame.mushaf-page-box--short-page .mushaf-bismillah-calligraphy {
+  margin: 0.2cqw auto 1.2cqw !important;
+  padding: 1cqw 4.5cqw !important;
+  font-size: 6cqw !important;
+  line-height: 1.55 !important;
+  transform: none !important;
+}
+
 </style>
