@@ -4212,12 +4212,56 @@ watch(activePickerType, async (newVal) => {
 
 watch(() => route.params.pageNumber, handlePageChange)
 
+const navigatePageWithAnimation = (direction: number) => {
+  const targetPage = pageNumber.value + direction
+  if (targetPage < 1 || targetPage > 604) return
+
+  if (swipeAnimating.value) return
+
+  const viewportWidth = viewportRef.value?.clientWidth || window.innerWidth
+
+  swipeAnimating.value = true
+  swipeOffset.value = direction > 0 ? viewportWidth : -viewportWidth
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(12) } catch (e) {}
+  }
+
+  window.setTimeout(async () => {
+    await goToPage(targetPage)
+    swipeAnimating.value = false
+    swipeOffset.value = 0
+    startIdleTimer()
+  }, 360)
+}
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement
+  if (
+    target && (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable
+    )
+  ) {
+    return
+  }
+
+  if (event.key === 'ArrowLeft' || event.key === 'PageDown') {
+    event.preventDefault()
+    navigatePageWithAnimation(1) // Next page (RTL: left goes forward)
+  } else if (event.key === 'ArrowRight' || event.key === 'PageUp') {
+    event.preventDefault()
+    navigatePageWithAnimation(-1) // Prev page (RTL: right goes backward)
+  }
+}
+
 onMounted(() => {
   loadLastReadAyah()
   loadBookmarks()
   handlePageChange()
   loadSurahOptions()
   window.addEventListener('resize', fitQcfLines)
+  window.addEventListener('keydown', handleKeyDown)
   if (viewportRef.value) {
     viewportRef.value.addEventListener('touchstart', handleTouchStart, { passive: false })
     viewportRef.value.addEventListener('touchmove', handleTouchMove, { passive: false })
@@ -4242,6 +4286,7 @@ onBeforeUnmount(() => {
   clearIdleTimer()
   stopPlayer()
   window.removeEventListener('resize', fitQcfLines)
+  window.removeEventListener('keydown', handleKeyDown)
   if (qcfFitFrame !== null) cancelAnimationFrame(qcfFitFrame)
   if (viewportRef.value) {
     viewportRef.value.removeEventListener('touchstart', handleTouchStart)
