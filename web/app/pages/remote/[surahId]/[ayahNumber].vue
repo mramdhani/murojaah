@@ -98,11 +98,13 @@
               <!-- Surah Banner Calligraphy: Rendered when it's ayah_number === 1 -->
               <div
                 v-if="ayah.ayah_number === 1"
-                class="listening-surah-banner"
+                class="mushaf-line mushaf-line--qcf mushaf-line--banner-row mushaf-line--no-border"
               >
-                <div class="listening-surah-banner__inner">
-                  <div class="listening-surah-banner__name-box">
-                    <span class="listening-surah-banner__name">{{ surahNameGlyph(ayah.surah_id) }} surah-icon</span>
+                <div class="mushaf-surah-banner">
+                  <div class="mushaf-surah-banner__inner">
+                    <div class="mushaf-surah-banner__name-box">
+                      <span class="mushaf-surah-banner__name" :aria-label="ayah.surah_name">{{ surahNameGlyph(getSurahNumber(ayah)) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -6465,71 +6467,101 @@ useHead({
   font-display: swap;
 }
 
-/* Listening Mode Surah Banner */
-.listening-surah-banner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: calc(100% + 32px) !important;
-  margin-left: -16px !important;
-  margin-right: -16px !important;
-  margin-top: 16px !important;
-  margin-bottom: 12px !important;
-  user-select: none;
-  container-type: inline-size !important;
+/* Mushaf Surah Banner Integration */
+.mushaf-line {
+  position: relative;
+  z-index: 2;
+  max-width: 100%;
+  font-size: 4.95cqw;
+  line-height: 1.44;
 }
 
-.listening-surah-banner__inner {
-  position: relative;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  min-height: 8.5cqw !important;
-  max-height: 9.5cqw !important;
+.mushaf-line--banner-row {
+  padding: 0 !important;
+  border-bottom: 0 !important;
+  height: auto !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border: none !important;
-  border-radius: 0 !important;
-  background-image:
-    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc4MCcgaGVpZ2h0PSczNCcgdmlld0JveD0nMCAwIDgwIDM0Jz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2JnJyB4MT0nMCcgeTE9JzAnIHgyPScwJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJScgc3RvcC1jb2xvcj0nI2ZmZmNmMycvPjxzdG9wIG9mZnNldD0nNTAlJyBzdG9wLWNvbG9yPScjZmJmNWUyJy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjZjVlYmM4Jy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9JzgwJyBoZWlnaHQ9JzM0JyBmaWxsPSd1cmwoI2JnKScvPjxwYXRoIGQ9J00wIDE3IEMxNSA1LCAyNSA1LCA0MCAxNyBDNTUgMjksIDY1IDI5LCA4MCAxNycgZmlsbD0nbm9uZScgc3Ryb2tlPScjZDRhZjM3JyBzdHJva2Utd2lkdGg9JzEuMicgb3BhY2l0eT0nMC43Jy8+PHBhdGggZD0nTTAgMTcgQzE1IDI5LCAyNSAyOSwgNDAgMTcgQzU1IDUsIDY1IDUsIDgwIDE3JyBmaWxsPSdub25lJyBzdHJva2U9JyNkNGFmMzcnIHN0cm9rZS13aWR0aD0nMS4yJyBvcGFjaXR5PScwLjcnLz48Y2lyY2xlIGN4PSc0MCcgY3k9JzE3JyByPSczLjUnIGZpbGw9JyMxNjZkNzAnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScwLjg5Jy8+PGNpcmNsZSBjeD0nNDAnIGN5PScxNycgcj0nMS41JyBmaWxsPSd1cmwoI2JnKScvPjxwYXRoIGQ9J00wIDE3IEMxNSA1LCAyNSA1LCA0MCAxNyBDNTUgMjksIDY1IDI5LCA4MCAxNycgZmlsbD0nbm9uZScgc3Ryb2tlPScjZDRhZjM3JyBzdHJva2Utd2lkdGg9JzEuMicgb3BhY2l0eT0nMC43Jy8+PHBhdGggZD0nTTAgMTcgQzE1IDI5LCAyNSAyOSwgNDAgMTcgQzU1IDUsIDY1IDUsIDgwIDE3JyBmaWxsPSdub25lJyBzdHJva2U9JyNkNGFmMzcnIHN0cm9rZS13aWR0aD0nMS4yJyBvcGFjaXR5PScwLjcnLz48Y2lyY2xlIGN4PSc0MCcgY3k9JzE3JyByPSczLjUnIGZpbGw9JyMxNjZkNzAnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScwLjgnLz48Y2lyY2xlIGN4PSc0MCcgY3k9JzE3JyByPScxLjUnIGZpbGw9JyNkMzRmM2InLz48Y2lyY2xlIGN4PScwJyBjeT0nMTcnIHI9JzMuNScgZmlsbD0nIzE2ZDcwJyBzdHJva2U9JyNiZDhjMzAnIHN0cm9rZS13aWR0aD0nMC44Jy8+PGNpcmNsZSBjeD0nMCcgY3k9JzE3JyByPScxLjUnIGZpbGw9JyNkMzRmM2InLz48Y2lyY2xlIGN4PSc4MCcgY3k9JzE3JyByPSczLjUnIGZpbGw9JyMxNjZkNzAnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScwLjgnLz48Y2lyY2xlIGN4PSc4MCcgY3k9JzE3JyByPScxLjUnIGZpbGw9JyNkMzRmM2InLz48cGF0aCBkPSdNMTEgMTEgUTIwIDcgMjggMTMnIGZpbGw9J25vbmUnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScxJy8+PHBhdGggZD0nTTUyIDIzIFE2MCAyNyA2OCAyMScgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScxJy8+PGNpcmNsZSBjeD0nMjAnIGN5PSc5JyByPScxLjggZmlsbD0nI2QzNGYzYicvPjxjaXJjbGUgY3g9JzkwJyBjeT0nMjU5IHI9JzEuOCcgZmlsbD0nI2QzNGYzYicvPjxjaXJjbGUgY3g9JzI4JyBjeT0nMjInIHI9JzEuNScgZmlsbD0nI2VlYzI1NicvPjxjaXJjbGUgY3g9JzkwJyBjeT0nMjUnIHI9JzEuOCcgZmlsbD0nI2QzNGYzYicvPjxjaXJjbGUgY3g9JzI4JyBjeT0nMjInIHI9JzEuNScgZmlsbD0nI2VlYzI1NicvPjxjaXJjbGUgY3g9JzUyJyBjeT0nMTInIHI9JzEuNScgZmlsbD0nI2VlYzI1NicvPjxwYXRoIGQ9J00xNSAxNSBDMTMgMTIsIDkgMTQsIDExIDE3IFonIGZpbGw9JzMzYzc2M2QnIG9wYWNpdHk9JzAuODUnLz48cGF0aCBkPSdNNjUgMTkgQzE2NyAyMiwgNzEgMjAsIDY5IDE3IFonIGZpbGw9JzMzYzc2M2QnIG9wYWNpdHk9JzAuODUnLz48L3N2Zz4=") !important;
-  background-position: center !important;
-  background-size: auto 100% !important;
-  background-repeat: repeat-x !important;
-  box-shadow:
-    0 0 0 1px rgb(22, 109, 112),
-    0 0 0 3px rgb(255, 247, 207),
-    0 0 0 4.5px rgb(189, 140, 48) !important;
-  padding: 1.0cqw 1.5cqw !important;
+  width: 100% !important;
 }
 
-.listening-surah-banner__name-box {
+.mushaf-line--no-border {
+  border-bottom: 0 !important;
+}
+
+.mushaf-surah-banner {
+  margin: 0.35cqw 0 0.65cqw !important;
+  padding: 0 0.25cqw !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: calc(100% + 32px) !important;
+  margin-left: -16px !important;
+  margin-right: -16px !important;
+  flex: 1 1 auto !important;
+  flex-basis: auto !important;
+  flex-shrink: 0 !important;
+  container-type: inline-size !important;
+  user-select: none;
+}
+
+.mushaf-surah-banner__inner {
+  width: 100% !important;
+  min-height: 9.4cqw !important;
+  max-height: 10.2cqw !important;
+  padding: 0.95cqw 4cqw !important;
+  border: 2px solid #0f6f6d !important;
+  border-radius: 0px !important;
+  overflow: hidden !important;
+  background-color: #dbeed8 !important;
+      background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='34' viewBox='0 0 80 34'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23fffcf3'/%3E%3Cstop offset='50%25' stop-color='%23fbf5e2'/%3E%3Cstop offset='100%25' stop-color='%23f5ebc8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='80' height='34' fill='url(%23bg)'/%3E%3Cpath d='M0 17 C15 5, 25 5, 40 17 C55 29, 65 29, 80 17' fill='none' stroke='%23d4af37' stroke-width='1.2' opacity='0.7'/%3E%3Cpath d='M0 17 C15 29, 25 29, 40 17 C55 5, 65 5, 80 17' fill='none' stroke='%23d4af37' stroke-width='1.2' opacity='0.7'/%3E%3Ccircle cx='40' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='40' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Ccircle cx='0' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='0' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Ccircle cx='80' cy='17' r='3.5' fill='%23166d70' stroke='%23bd8c30' stroke-width='0.8'/%3E%3Ccircle cx='80' cy='17' r='1.5' fill='%23d34f3b'/%3E%3Cpath d='M12 11 Q20 7 28 13' fill='none' stroke='%23bd8c30' stroke-width='1'/%3E%3Cpath d='M52 23 Q60 27 68 21' fill='none' stroke='%23bd8c30' stroke-width='1'/%3E%3Ccircle cx='20' cy='9' r='1.8' fill='%23d34f3b'/%3E%3Ccircle cx='60' cy='25' r='1.8' fill='%23d34f3b'/%3E%3Ccircle cx='28' cy='22' r='1.5' fill='%23eec256'/%3E%3Ccircle cx='52' cy='12' r='1.5' fill='%23eec256'/%3E%3Cpath d='M15 15 C13 12, 9 14, 11 17 Z' fill='%233c763d' opacity='0.85'/%3E%3Cpath d='M65 19 C67 22, 71 20, 69 17 Z' fill='%233c763d' opacity='0.85'/%3E%3C/svg%3E") center / 80px 34px repeat !important;
+
+  box-shadow:
+    inset 0 0 0 2px #f7fbef,
+    inset 0 0 0 4px rgba(15, 111, 109, 0.72),
+    0 0 0 2px #b88a30 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+.mushaf-surah-banner__name-box {
+  background: linear-gradient(180deg, #fffdf3 0%, #eef7df 100%) !important;
+  border: 1.5px solid #0f6f6d !important;
+  border-radius: 999px !important;
+  padding: 4px 3cqw !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  height: 6.8cqw !important;
-  min-height: 6.8cqw !important;
-  background: rgb(255, 255, 250) !important;
-  border: 1px solid rgb(189, 140, 48) !important;
-  border-radius: 999px !important;
-  padding: 0 4.0cqw !important;
-  box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
-  z-index: 3 !important;
+  box-shadow: 0 0 0 2px #fff7cf, 0 0 0 4px #b88a30 !important;
   margin: 0 auto !important;
+  z-index: 3 !important;
   flex-shrink: 0 !important;
 }
 
-.listening-surah-banner__name {
-  font-family: 'SurahNameV4', serif !important;
-  font-size: 6.2cqw !important;
-  line-height: 1 !important;
-  color: #000 !important;
-  text-shadow: none !important;
-  background: transparent !important;
-  padding: 0 !important;
-  border: none !important;
-  border-radius: 0 !important;
+.mushaf-surah-banner__name {
+  height: auto !important;
+  min-height: 0 !important;
   margin: 0 !important;
-  direction: ltr !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #17271f !important;
+  font-family: 'QCF Surah Name V2', sans-serif !important;
+  font-size: clamp(33px, 6.45cqw, 52px) !important;
+  line-height: 0.92 !important;
+  text-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* ─── REMOVED: old placeholder styles replaced by wa-* classes ─── */
