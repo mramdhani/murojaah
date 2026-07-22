@@ -49,6 +49,44 @@ class AyahController extends Controller
     }
 
     /**
+     * GET /api/juz/{juzNumber}/ayahs — Get all ayahs for a given juz
+     */
+    public function byJuz(Request $request, int $juzNumber): JsonResponse
+    {
+        abort_unless($juzNumber >= 1 && $juzNumber <= 30, 404);
+
+        $userId = $request->user()?->id;
+
+        $ayahs = Ayah::where('juz', $juzNumber)
+            ->orderBy('id')
+            ->get();
+
+        $progressMap = $userId
+            ? MemorizationProgress::where('user_id', $userId)
+                ->whereIn('ayah_id', $ayahs->pluck('id'))
+                ->get()
+                ->keyBy('ayah_id')
+            : collect();
+
+        $data = $ayahs->map(function ($ayah) use ($progressMap) {
+            $progress = $progressMap->get($ayah->id);
+
+            return [
+                'id' => $ayah->id,
+                'surah_id' => $ayah->surah_id,
+                'ayah_number' => $ayah->ayah_number,
+                'text_arabic' => $ayah->text_arabic,
+                'translation_id' => $ayah->translation_id,
+                'juz' => $ayah->juz,
+                'page' => $ayah->page,
+                'progress_status' => $progress ? $progress->status : 'unreviewed',
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
      * GET /api/mushaf/pages/{pageNumber} - Get a Mushaf page with QCF V2 line data.
      */
     public function byPage(Request $request, int $pageNumber): JsonResponse

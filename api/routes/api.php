@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Surahs and Ayahs with progress context
     Route::get('/mushaf/pages/{pageNumber}', [AyahController::class, 'byPage']);
+    Route::get('/juz/{juzNumber}/ayahs', [AyahController::class, 'byJuz']);
     Route::get('/surahs', [SurahController::class, 'index']);
     Route::get('/surahs/{id}', [SurahController::class, 'show']);
     Route::get('/surahs/{surahId}/ayahs', [AyahController::class, 'index']);

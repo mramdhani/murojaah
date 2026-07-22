@@ -1,5 +1,9 @@
 <template>
-  <div class="remote-page" :class="{ 'remote-page--hidden': isHiddenState, 'remote-page--listening': isListeningMode, 'remote-page--fullscreen': isListeningMode && isFullscreenMode }" @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd">
+  <div
+    class="remote-page"
+    :class="isMounted ? { 'remote-page--hidden': isHiddenState, 'remote-page--listening': isListeningMode, 'remote-page--fullscreen': isListeningMode && isFullscreenMode } : {}"
+    @touchstart.passive="onTouchStart" @touchmove.passive="onTouchMove" @touchend.passive="onTouchEnd"
+  >
     <!-- Header -->
     <header class="remote-header" :class="{ 'remote-header--hidden': isListeningMode && isFullscreenMode }">
       <div class="remote-header__left">
@@ -10,17 +14,40 @@
           </button>
           <div class="remote-header__surah-trigger" @click="openNavigator">
             <h1 class="remote-header__title">{{ surahNumber }}. {{ surahName }}</h1>
-            <div class="remote-header__subtitle">Ayat {{ currentAyahNumber }} dari {{ totalAyah }}</div>
+            <div class="remote-header__subtitle">{{ displayViewMode === 'juz' ? `Juz ${currentJuzNumber}` : surahName }} · Ayat {{ currentAyahNumber }}</div>
           </div>
         </div>
       </div>
-      <button type="button" class="remote-header__browse" aria-label="Pilih surat dan ayat" @click="openNavigator">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h10"/>
-          <circle cx="18" cy="18" r="2.5"/>
-        </svg>
-      </button>
+      <div class="remote-header__actions">
+        <button type="button" class="remote-header__browse" aria-label="Pilih surat dan ayat" @click="openNavigator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h10"/>
+            <circle cx="18" cy="18" r="2.5"/>
+          </svg>
+        </button>
+        <button v-if="isListeningMode" type="button" class="remote-header__display-btn" aria-label="Pengaturan Tampilan" @click.stop="openDisplaySettings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
     </header>
+
+    <!-- Listening: Swipeable Surah/Juz Navigation Tabs -->
+    <nav v-if="isListeningMode && !isFullscreenMode" class="listening-nav-tabs" aria-label="Navigasi tampilan">
+      <div ref="navTabsScrollRef" class="listening-nav-tabs__track">
+        <button
+          v-for="tab in displayNavTabs"
+          :key="tab.key"
+          type="button"
+          class="listening-nav-tab"
+          :class="{ 'listening-nav-tab--active': tab.isActive }"
+          @click.stop="switchNavTab(tab)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+    </nav>
 
     <!-- Qari Audio Control Bar -->
     <div class="audio-panel" v-if="!isListeningMode && displayAyah && (isRevealed || shouldAutoplayAudio)">
@@ -52,36 +79,72 @@
     <!-- Content -->
     <main ref="remoteContentRef" class="remote-content" :class="{ 'remote-content--listening': isListeningMode }" @click="isListeningMode ? (isFullscreenMode = !isFullscreenMode) : toggleReveal()">
       <template v-if="isListeningMode">
-        <div v-if="listeningAyahsLoading" class="listening-splash" role="status" aria-live="polite">
+        <div v-if="isFirstLoad && listeningAyahsLoading" class="listening-splash" role="status" aria-live="polite">
           <div class="listening-splash__mark" aria-hidden="true"><span></span></div>
           <p class="listening-splash__title">Menyiapkan ayat</p>
           <p class="listening-splash__hint">Sebentar, bacaan sedang disusun.</p>
         </div>
-        <div class="listening-ayah-list" v-else-if="listeningAyahs.length">
-          <button
-            v-for="ayah in listeningAyahs"
-            :key="ayah.id"
-            type="button"
-            class="listening-ayah-card"
-            :class="{ 'listening-ayah-card--active': ayah.ayah_number === currentAyahNumber }"
-            :data-ayah="ayah.ayah_number"
-            @pointerdown.stop="onAyahPointerDown($event, ayah.ayah_number)"
-            @pointermove.stop="onAyahPointerMove($event)"
-            @pointerup.stop="onAyahPointerUp($event, ayah.ayah_number)"
-            @pointercancel.stop="onAyahPointerCancel()"
-            @click.stop
+        <Transition :name="transitionName" mode="out-in" v-else>
+          <div
+            v-if="listeningAyahs.length"
+            :key="transitionKey"
+            class="listening-ayah-list"
           >
+            <div
+              v-for="ayah in listeningAyahs"
+              :key="ayah.id"
+              class="listening-ayah-list__item"
+            >
+              <!-- Surah Banner Calligraphy: Rendered when it's ayah_number === 1 -->
+              <div
+                v-if="ayah.ayah_number === 1"
+                class="listening-surah-banner"
+              >
+                <div class="listening-surah-banner__inner">
+                  <div class="listening-surah-banner__name-box">
+                    <span class="listening-surah-banner__name">{{ surahNameGlyph(ayah.surah_id) }} surah-icon</span>
+                  </div>
+                </div>
+              </div>
 
-            <div class="listening-ayah-card__badge" aria-hidden="true" v-html="formatListeningAyahBadge(ayah.ayah_number)"></div>
-            <div class="listening-ayah-card__body">
-              <p class="listening-ayah-card__arabic" v-html="formatArabicText(ayah.text_arabic)"></p>
-              <p class="listening-ayah-card__translation" v-if="ayah.translation_id">{{ ayah.translation_id }}</p>
+              <!-- Bismillah Calligraphy: Rendered when it's ayah_number === 1 and NOT Surah 1 (Al-Fatihah) and NOT Surah 9 (At-Tawbah) -->
+              <div
+                v-if="ayah.ayah_number === 1 && ayah.surah_id !== 1 && getSurahNumber(ayah) !== 9"
+                class="listening-bismillah-row"
+              >
+                <div class="listening-bismillah-calligraphy">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+              </div>
+
+              <button
+                type="button"
+                class="listening-ayah-card"
+                :class="{ 'listening-ayah-card--active': ayah.ayah_number === currentAyahNumber }"
+                :data-ayah="ayah.ayah_number"
+                @pointerdown.stop="onAyahPointerDown($event, ayah)"
+                @pointermove.stop="onAyahPointerMove($event)"
+                @pointerup.stop="onAyahPointerUp($event, ayah)"
+                @pointercancel.stop="onAyahPointerCancel()"
+                @click.stop
+              >
+                <div class="listening-ayah-card__badge" aria-hidden="true" v-html="formatListeningAyahBadge(ayah.ayah_number)"></div>
+                <div class="listening-ayah-card__body">
+                  <p
+                    class="listening-ayah-card__arabic"
+                    :style="{ fontSize: displayFontSize + 'px' }"
+                    v-html="formatArabicText(ayah.text_arabic)"
+                  ></p>
+                  <p v-if="displayTransliteration && transliterations[`${getSurahNumber(ayah)}:${ayah.ayah_number}`]" class="listening-ayah-card__transliteration">
+                    {{ transliterations[`${getSurahNumber(ayah)}:${ayah.ayah_number}`] }}
+                  </p>
+                  <p v-if="displayTranslation && ayah.translation_id" class="listening-ayah-card__translation">{{ ayah.translation_id }}</p>
+                </div>
+              </button>
             </div>
-          </button>
-        </div>
-        <div v-else class="remote-hidden remote-hidden--loading">
-          <p class="remote-hidden__text">Ayat belum tersedia.</p>
-        </div>
+          </div>
+          <div v-else class="remote-hidden remote-hidden--loading" key="empty">
+            <p class="remote-hidden__text">Ayat belum tersedia.</p>
+          </div>
+        </Transition>
       </template>
 
       <template v-else>
@@ -166,7 +229,10 @@
     </main>
 
     <!-- Unified Bottom Action Bar -->
-    <div class="remote-action-bar" :class="{ 'remote-action-bar--listening': isListeningMode, 'remote-action-bar--hidden': isListeningMode && isFullscreenMode }">
+    <div
+      class="remote-action-bar"
+      :class="isMounted ? { 'remote-action-bar--listening': isListeningMode, 'remote-action-bar--hidden': isListeningMode && isFullscreenMode } : {}"
+    >
       <template v-if="isListeningMode">
         <div class="listening-player" role="status" aria-live="polite">
           <div class="listening-player__controls">
@@ -554,14 +620,250 @@
     <Transition name="flash">
       <div v-if="flashStatus" class="remote-flash" :class="`remote-flash--${flashStatus}`"></div>
     </Transition>
+
+    <!-- Display Settings Sheet -->
+    <Transition name="sheet">
+      <div v-if="showDisplaySettings" class="picker-overlay" @click="closeDisplaySettings">
+        <section class="picker-sheet display-settings-sheet" role="dialog" aria-modal="true" aria-labelledby="display-settings-title" @click.stop>
+          <div class="picker-sheet__indicator"></div>
+
+          <!-- Header matching screenshot -->
+          <header class="display-settings__header">
+            <div class="ds-header-title-wrap">
+              <span class="ds-eyebrow">PREFERENSI TAMPILAN</span>
+              <h3 id="display-settings-title">Pengaturan Tampilan</h3>
+              <p class="ds-subtitle">Sesuaikan tema halaman, transliterasi, tajwid, dan ukuran teks</p>
+            </div>
+            <button type="button" class="ds-close-x" @click="closeDisplaySettings" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </header>
+
+          <div class="display-settings__body">
+
+            <!-- Card 1: TAMPILAN MUSHAF -->
+            <div class="settings-card">
+              <div class="settings-card-title">TAMPILAN MUSHAF</div>
+
+              <!-- Row: Mode Tampilan (Surah | Juz) -->
+              <div class="settings-row settings-row--switch">
+                <div class="settings-row-header">
+                  <span class="settings-row-label">Mode Tampilan</span>
+                </div>
+                <div class="theme-segmented-control-new">
+                  <button
+                    type="button"
+                    class="theme-segment-btn-new"
+                    :class="{ 'theme-segment-btn-new--active': displayViewMode === 'surah' }"
+                    @click="setDisplayViewMode('surah')"
+                  >Surah</button>
+                  <button
+                    type="button"
+                    class="theme-segment-btn-new"
+                    :class="{ 'theme-segment-btn-new--active': displayViewMode === 'juz' }"
+                    @click="setDisplayViewMode('juz')"
+                  >Juz</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: TEKS & TERJEMAHAN -->
+            <div class="settings-card">
+              <div class="settings-card-title">TEKS & TERJEMAHAN</div>
+
+              <!-- Row: Transliterasi -->
+              <div class="settings-row settings-row--switch">
+                <div class="settings-row-header">
+                  <svg class="setting-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
+                  </svg>
+                  <span class="settings-row-label">Transliterasi</span>
+                </div>
+                <label class="tss-switch">
+                  <input type="checkbox" v-model="displayTransliteration" />
+                  <span class="tss-slider-toggle"></span>
+                </label>
+              </div>
+
+              <!-- Row: Terjemahan -->
+              <div class="settings-row settings-row--switch">
+                <div class="settings-row-header">
+                  <svg class="setting-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <span class="settings-row-label">Terjemahan</span>
+                </div>
+                <label class="tss-switch">
+                  <input type="checkbox" v-model="displayTranslation" />
+                  <span class="tss-slider-toggle"></span>
+                </label>
+              </div>
+
+              <!-- Row: Ukuran Teks Terjemahan -->
+              <div class="settings-row settings-row--slider">
+                <div class="settings-row-header" style="justify-content: space-between; width: 100%;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg class="setting-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 12h16M4 6h16M4 18h10"/>
+                    </svg>
+                    <span class="settings-row-label">Ukuran Teks Terjemahan</span>
+                  </div>
+                  <span class="tss-font-value-new">{{ displayFontSizeRaw }}%</span>
+                </div>
+                <div class="ds-slider-wrap">
+                  <input
+                    type="range"
+                    min="20"
+                    max="100"
+                    step="4"
+                    class="tss-slider-new"
+                    v-model.number="displayFontSizeRaw"
+                    :style="{ background: 'linear-gradient(to right, #059669 0%, #059669 ' + ((displayFontSizeRaw - 20) / 80 * 100) + '%, #e2e8f0 ' + ((displayFontSizeRaw - 20) / 80 * 100) + '%, #e2e8f0 100%)' }"
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  key: 'remote-page'
+})
 const route = useRoute()
 const router = useRouter()
 
 const isFullscreenMode = ref(false)
+const isMounted = ref(false)
+onMounted(() => { isMounted.value = true })
+
+const isFirstLoad = ref(true)
+const transitionName = ref('slide-next')
+const transitionKey = computed(() => {
+  return displayViewMode.value === 'juz' 
+    ? `juz-${currentJuzNumber.value}` 
+    : `surah-${surahId.value}`
+})
+
+// ─── Display Settings ───────────────────────────────────────────────────────
+const showDisplaySettings = ref(false)
+
+const displayViewMode = useCookie<'surah' | 'juz'>('listening_view_mode', {
+  default: () => 'surah',
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+const displayTransliteration = useCookie<boolean>('listening_show_transliteration', {
+  default: () => false,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+const displayTranslation = useCookie<boolean>('listening_show_translation', {
+  default: () => true,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+const displayFontSizeRaw = useCookie<number>('listening_font_size', {
+  default: () => 60,
+  maxAge: 60 * 60 * 24 * 365,
+  path: '/'
+})
+const displayFontSize = computed(() => {
+  // map 20-100 slider value to a real px range: 18px - 44px
+  const t = (displayFontSizeRaw.value - 20) / 80
+  return Math.round(18 + t * 26)
+})
+const clickedJuzOverride = ref<number | null>(null)
+const clickedSurahOverride = ref<number | null>(null)
+
+const currentJuzNumber = computed(() => {
+  if (clickedJuzOverride.value !== null) return clickedJuzOverride.value
+  if (currentAyah.value?.juz) return currentAyah.value.juz
+  const ayah = listeningAyahs.value.find(
+    a => a.surah_id === surahId.value && a.ayah_number === currentAyahNumber.value
+  )
+  return (ayah as any)?.juz || 30
+})
+
+const navTabsScrollRef = ref<HTMLElement | null>(null)
+
+const openDisplaySettings = () => {
+  showDisplaySettings.value = true
+}
+const closeDisplaySettings = () => {
+  showDisplaySettings.value = false
+}
+
+const setDisplayViewMode = async (mode: 'surah' | 'juz') => {
+  if (displayViewMode.value === mode) return
+  displayViewMode.value = mode
+  await fetchListeningAyahs()
+}
+
+// ─── Transliteration Dynamic Loader ──────────────────────────────────────────
+const transliterations = ref<Record<string, string>>({})
+const transliterationsLoading = ref(false)
+
+const getSurahNumber = (ayah: AyahData) => {
+  const s = surahList.value.find(item => item.id === ayah.surah_id)
+  return s ? s.number : surahId.value
+}
+
+const surahNameGlyph = (surahNumber?: number): string =>
+  `surah${String(surahNumber || 1).padStart(3, '0')}`
+
+const fetchTransliterations = async () => {
+  if (!displayTransliteration.value) return
+  const surahsToFetch = new Set<number>()
+  for (const ayah of listeningAyahs.value) {
+    const sNum = getSurahNumber(ayah)
+    if (sNum) {
+      surahsToFetch.add(sNum)
+    }
+  }
+
+  if (surahsToFetch.size === 0) return
+
+  transliterationsLoading.value = true
+  try {
+    for (const surahNum of surahsToFetch) {
+      const hasSurah = Object.keys(transliterations.value).some(k => k.startsWith(`${surahNum}:`))
+      if (!hasSurah) {
+        const res = await fetch(`https://equran.id/api/v2/surat/${surahNum}`).then(r => r.json())
+        if (res.code === 200 && res.data?.ayat) {
+          for (const ayat of res.data.ayat) {
+            const key = `${surahNum}:${ayat.nomorAyat}`
+            let text = ayat.teksLatin || ''
+            
+            // Strip Bismillah prefix from transliteration of Ayat 1 of all surahs except Surah 1 (Al-Fatihah)
+            if (surahNum !== 1 && ayat.nomorAyat === 1) {
+              text = text.replace(/^bismillaah[a-z\-']*\s+.*?\s+rahiim[a-z\-']*\.\s*/i, '')
+            }
+            
+            transliterations.value[key] = text
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch transliterations:', e)
+  } finally {
+    transliterationsLoading.value = false
+  }
+}
+
+watch(displayTransliteration, (newVal) => {
+  if (newVal) {
+    fetchTransliterations()
+  }
+})
 
 // Long press / Pointer states for listening mode ayah card
 let ayahLongPressTimer: any = null
@@ -569,8 +871,19 @@ let ayahLongPressTriggered = false
 let hasMoved = false
 let startPointerX = 0
 let startPointerY = 0
+const shouldPlayOnNavigate = ref(false)
 
-const onAyahPointerDown = (event: PointerEvent, ayahNumber: number) => {
+const changeAyahWithSurah = async (sId: number, aNum: number) => {
+  if (sId === surahId.value) {
+    await changeAyah(aNum)
+    startAudioPlayback({ restart: true })
+  } else {
+    shouldPlayOnNavigate.value = true
+    await router.push(buildRemoteRoute(sId, aNum))
+  }
+}
+
+const onAyahPointerDown = (event: PointerEvent, ayah: any) => {
   ayahLongPressTriggered = false
   hasMoved = false
   startPointerX = event.clientX
@@ -579,9 +892,9 @@ const onAyahPointerDown = (event: PointerEvent, ayahNumber: number) => {
   if (ayahLongPressTimer) {
     clearTimeout(ayahLongPressTimer)
   }
-  ayahLongPressTimer = window.setTimeout(() => {
+  ayahLongPressTimer = window.setTimeout(async () => {
     ayahLongPressTriggered = true
-    changeAyah(ayahNumber)
+    await changeAyahWithSurah(ayah.surah_id, ayah.ayah_number)
   }, 350)
 }
 
@@ -599,7 +912,7 @@ const onAyahPointerMove = (event: PointerEvent) => {
   }
 }
 
-const onAyahPointerUp = (event: PointerEvent, ayahNumber: number) => {
+const onAyahPointerUp = (event: PointerEvent, ayah: any) => {
   if (ayahLongPressTimer) {
     clearTimeout(ayahLongPressTimer)
     ayahLongPressTimer = null
@@ -645,8 +958,10 @@ interface AyahData {
   total_ayah: number
   text_arabic: string
   translation_id: string | null
+  transliteration_id?: string | null
   progress_status: string
   page?: number
+  juz?: number
 }
 
 interface SurahItem {
@@ -709,6 +1024,78 @@ const remoteContentRef = ref<HTMLElement | null>(null)
 const audioCurrentTime = ref(0)
 const audioDuration = ref(0)
 const surahList = ref<SurahItem[]>([])
+
+// Computed tabs for the swipeable nav bar (must be after surahList and surahId)
+const displayNavTabs = computed(() => {
+  if (displayViewMode.value === 'juz') {
+    const juzNums = Array.from({ length: 30 }, (_, i) => i + 1)
+    return juzNums.map(n => ({
+      key: `juz-${n}`,
+      label: `Juz ${n}`,
+      isActive: clickedJuzOverride.value !== null 
+        ? n === clickedJuzOverride.value 
+        : n === currentJuzNumber.value,
+      type: 'juz' as const,
+      value: n
+    }))
+  } else {
+    return surahList.value.map(s => ({
+      key: `surah-${s.id}`,
+      label: `${s.number}. ${s.name_latin}`,
+      isActive: clickedSurahOverride.value !== null 
+        ? s.id === clickedSurahOverride.value 
+        : s.id === surahId.value,
+      type: 'surah' as const,
+      value: s.id
+    }))
+  }
+})
+
+const switchNavTab = async (tab: { type: 'surah' | 'juz'; value: number; key: string }) => {
+  const currentVal = tab.type === 'juz' ? currentJuzNumber.value : surahId.value
+  if (tab.value > currentVal) {
+    transitionName.value = 'slide-next'
+  } else if (tab.value < currentVal) {
+    transitionName.value = 'slide-prev'
+  }
+
+  if (tab.type === 'juz') {
+    clickedJuzOverride.value = tab.value
+  } else {
+    clickedSurahOverride.value = tab.value
+  }
+
+  if (tab.type === 'surah') {
+    if (tab.value === surahId.value) return
+    await router.push(buildRemoteRoute(tab.value, 1))
+  } else {
+    listeningAyahsLoading.value = true
+    try {
+      const res = await apiFetch<{ data: AyahData[] }>(`/juz/${tab.value}/ayahs`)
+      listeningAyahs.value = res.data
+      if (res.data.length) {
+        const first = res.data[0]
+        currentAyahNumber.value = first.ayah_number
+        router.replace(buildRemoteRoute(first.surah_id, first.ayah_number))
+      }
+    } catch (e) {
+      console.error('Failed to load juz ayahs:', e)
+    } finally {
+      listeningAyahsLoading.value = false
+    }
+  }
+}
+
+// Scroll active nav tab into view whenever tabs change
+watch(displayNavTabs, async () => {
+  await nextTick()
+  const track = navTabsScrollRef.value
+  if (!track) return
+  const activeBtn = track.querySelector('.listening-nav-tab--active') as HTMLElement
+  if (activeBtn) {
+    activeBtn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' })
+  }
+}, { flush: 'post' })
 const isRevealed = ref(sessionMode.value === 'listening' ? true : learningRevealMode.value === 'revealed')
 const listeningRevealOverride = ref<boolean | null>(null)
 const submitting = ref(false)
@@ -939,17 +1326,22 @@ const clearAutoAdvanceTimer = () => {
 }
 
 const goToNextListeningTarget = async () => {
-  if (currentAyahNumber.value < totalAyah.value) {
-    return await syncListeningAyahState(currentAyahNumber.value + 1, { restartAudio: true })
-  }
-
-  if (!nextSurah.value) {
+  // Find the current ayah index in listeningAyahs
+  const currentIndex = listeningAyahs.value.findIndex(
+    a => a.surah_id === surahId.value && a.ayah_number === currentAyahNumber.value
+  )
+  if (currentIndex !== -1 && currentIndex < listeningAyahs.value.length - 1) {
+    const nextAyah = listeningAyahs.value[currentIndex + 1]
+    if (nextAyah.surah_id !== surahId.value) {
+      await router.replace(buildRemoteRoute(nextAyah.surah_id, nextAyah.ayah_number))
+    } else {
+      await syncListeningAyahState(nextAyah.ayah_number, { restartAudio: true })
+    }
+    return true
+  } else {
     showToast?.('Murottal selesai diputar', 'fluent')
     return false
   }
-
-  await router.replace(buildRemoteRoute(nextSurah.value.id, 1))
-  return true
 }
 
 const scheduleAutoAdvance = () => {
@@ -1212,9 +1604,21 @@ const fetchListeningAyahs = async () => {
   if (!isListeningMode.value) return [] as AyahData[]
   listeningAyahsLoading.value = true
   try {
-    const res = await apiFetch<{ data: AyahData[] }>(`/surahs/${surahId.value}/ayahs`)
+    let res: { data: AyahData[] }
+    if (displayViewMode.value === 'juz') {
+      // Use currentAyah's juz directly if available, otherwise search the list, otherwise fallback to 1
+      const juz = currentAyah.value?.juz ||
+                  (listeningAyahs.value.find(a => a.ayah_number === currentAyahNumber.value) as any)?.juz ||
+                  1
+      res = await apiFetch<{ data: AyahData[] }>(`/juz/${juz}/ayahs`)
+    } else {
+      res = await apiFetch<{ data: AyahData[] }>(`/surahs/${surahId.value}/ayahs`)
+    }
     listeningAyahs.value = res.data
     await scrollListeningAyahIntoView('auto')
+    if (displayTransliteration.value) {
+      fetchTransliterations()
+    }
     return res.data
   } catch (e) {
     console.error('Failed to load listening ayahs:', e)
@@ -1225,13 +1629,10 @@ const fetchListeningAyahs = async () => {
 }
 
 const initializeListeningAyahs = async (targetAyahNum: number) => {
+  await fetchAyah(targetAyahNum, { skipAutoplay: true, skipScroll: true })
   await fetchListeningAyahs()
   await syncListeningAyahState(targetAyahNum)
-  await fetchAyah(targetAyahNum, { skipAutoplay: true, skipScroll: true })
-
-  if (shouldAutoplayAudio.value && listeningAyahs.value.length) {
-    startAudioPlayback({ restart: true })
-  }
+  isFirstLoad.value = false
 }
 
 const playAudio = () => {
@@ -1660,10 +2061,18 @@ const cleanupVoice = () => {
   voicePlayProgress.value = 0
 }
 
-const buildRemoteRoute = (targetSurahId: number, targetAyahNumber: number) => ({
-  path: `/remote/${targetSurahId}/${targetAyahNumber}`,
-  query: remoteRouteQuery.value,
-})
+const buildRemoteRoute = (targetSurahId: number, targetAyahNumber: number) => {
+  const query: Record<string, string> = {}
+  if (isListeningMode.value) {
+    query.mode = 'listening'
+  } else if (route.query.mode) {
+    query.mode = String(route.query.mode)
+  }
+  return {
+    path: `/remote/${targetSurahId}/${targetAyahNumber}`,
+    query,
+  }
+}
 
 const replaceRemoteUrlLocally = (targetSurahId: number, targetAyahNumber: number) => {
   if (typeof window === 'undefined') return
@@ -1837,15 +2246,27 @@ const filteredPickerSurahs = computed(() => {
 let touchStartX = 0
 let touchStartY = 0
 let isScrolling = false
+let ignoreSwipe = false
+
 const onTouchStart = (e: TouchEvent) => {
   // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
   if (showSurahPicker.value || showAyahPicker.value || navigatorOpen.value) return
+  
+  // Ignore swipe if the touch starts inside the nav tabs container
+  const target = e.target as HTMLElement
+  if (target && target.closest('.listening-nav-tabs')) {
+    ignoreSwipe = true
+    return
+  }
+  
+  ignoreSwipe = false
   touchStartX = e.touches[0].clientX
   touchStartY = e.touches[0].clientY
   isScrolling = false
 }
 
 const onTouchMove = (e: TouchEvent) => {
+  if (ignoreSwipe) return
   if (showSurahPicker.value || showAyahPicker.value || navigatorOpen.value) return
   const diffX = Math.abs(e.touches[0].clientX - touchStartX)
   const diffY = Math.abs(e.touches[0].clientY - touchStartY)
@@ -1854,19 +2275,54 @@ const onTouchMove = (e: TouchEvent) => {
     isScrolling = true
   }
 }
+const handleListeningSwipe = async (dir: 'left' | 'right') => {
+  transitionName.value = dir === 'right' ? 'slide-next' : 'slide-prev'
+  
+  if (displayViewMode.value === 'juz') {
+    const currentJuz = currentJuzNumber.value
+    if (dir === 'right') { // Swipe right -> Next Juz
+      if (currentJuz < 30) {
+        await switchNavTab({ type: 'juz', value: currentJuz + 1, key: `juz-${currentJuz + 1}` })
+      }
+    } else { // Swipe left -> Prev Juz
+      if (currentJuz > 1) {
+        await switchNavTab({ type: 'juz', value: currentJuz - 1, key: `juz-${currentJuz - 1}` })
+      }
+    }
+  } else {
+    const currentSurahNum = surahId.value
+    if (dir === 'right') { // Swipe right -> Next Surah
+      if (currentSurahNum < 114) {
+        await router.push(buildRemoteRoute(currentSurahNum + 1, 1))
+      }
+    } else { // Swipe left -> Prev Surah
+      if (currentSurahNum > 1) {
+        await router.push(buildRemoteRoute(currentSurahNum - 1, 1))
+      }
+    }
+  }
+}
+
 const onTouchEnd = (e: TouchEvent) => {
+  if (ignoreSwipe) {
+    ignoreSwipe = false
+    return
+  }
   // Jika pop-up picker sedang terbuka, jangan aktifkan swipe gesture halaman utama
   if (showSurahPicker.value || showAyahPicker.value || navigatorOpen.value) return
 
   const diffX = e.changedTouches[0].clientX - touchStartX
   const diffY = e.changedTouches[0].clientY - touchStartY
 
-  // Hanya aktifkan swipe horizontal (kiri/kanan) untuk ganti ayat.
-  // Swipe vertikal (atas/bawah) kita matikan agar tidak memicu ganti surat secara tidak sengaja saat men-scroll atau mengetuk layar.
   if (Math.abs(diffX) > Math.abs(diffY)) {
     if (Math.abs(diffX) > 75) {
-      if (diffX > 0 && currentAyahNumber.value > 1) prevAyah()
-      else if (diffX < 0 && (currentAyahNumber.value < totalAyah.value || (isListeningMode.value && nextSurah.value))) skipAyah()
+      if (isListeningMode.value) {
+        if (diffX > 0) handleListeningSwipe('right')
+        else handleListeningSwipe('left')
+      } else {
+        if (diffX > 0 && currentAyahNumber.value > 1) prevAyah()
+        else if (diffX < 0 && (currentAyahNumber.value < totalAyah.value || nextSurah.value)) skipAyah()
+      }
     }
   }
 }
@@ -2203,25 +2659,57 @@ const formatListeningAyahBadge = (ayahNum: number) => {
 }
 
 watch(() => [route.params.surahId, route.params.ayahNumber], async (newVals, oldVals) => {
-  if (!isInitialized) return
+  if (!isInitialized) {
+    clickedJuzOverride.value = null
+    clickedSurahOverride.value = null
+    return
+  }
   const [newSurahId, newAyahNum] = newVals
   const [oldSurahId, oldAyahNum] = oldVals || []
 
   if (newSurahId && newAyahNum) {
+    const targetSurahId = Number(newSurahId)
     const targetAyahNum = Number(newAyahNum)
-    if (newSurahId === oldSurahId && targetAyahNum === Number(oldAyahNum)) {
+    
+    if (targetSurahId === oldSurahId && targetAyahNum === Number(oldAyahNum)) {
+      clickedJuzOverride.value = null
+      clickedSurahOverride.value = null
       return
     }
 
     currentAyahNumber.value = targetAyahNum
     syncRevealState()
 
-    if (isListeningMode.value && newSurahId !== oldSurahId) {
-      await initializeListeningAyahs(targetAyahNum)
-      return
+    const playTriggered = shouldPlayOnNavigate.value
+    shouldPlayOnNavigate.value = false
+
+    if (isListeningMode.value) {
+      const hasTarget = listeningAyahs.value.some(
+        a => a.surah_id === targetSurahId && a.ayah_number === targetAyahNum
+      )
+      if (hasTarget) {
+        await fetchAyah(targetAyahNum, { skipAutoplay: !playTriggered, skipScroll: true })
+        clickedJuzOverride.value = null
+        clickedSurahOverride.value = null
+        await scrollListeningAyahIntoView('smooth')
+        if (playTriggered) {
+          startAudioPlayback({ restart: true })
+        }
+        return
+      } else {
+        await initializeListeningAyahs(targetAyahNum)
+        clickedJuzOverride.value = null
+        clickedSurahOverride.value = null
+        if (playTriggered) {
+          startAudioPlayback({ restart: true })
+        }
+        return
+      }
     }
 
-    await fetchAyah(targetAyahNum, { skipAutoplay: isListeningMode.value })
+    await fetchAyah(targetAyahNum, { skipAutoplay: !playTriggered })
+    clickedJuzOverride.value = null
+    clickedSurahOverride.value = null
   }
 })
 
@@ -3856,6 +4344,12 @@ useHead({
   flex-direction: column;
   gap: 12px;
 }
+.listening-ayah-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
 
 .listening-ayah-card {
   position: relative;
@@ -3895,20 +4389,583 @@ useHead({
 .listening-ayah-card__arabic {
   margin: 0;
   font-family: var(--font-arabic);
-  font-size: clamp(1.85rem, 5.6vw, 2.5rem);
+  font-size: clamp(1.85rem, 5.6vw, 2.5rem); /* overridden by inline style */
   line-height: 1.85;
   text-align: right;
   color: var(--color-text-primary);
+  transition: font-size 0.2s ease;
+}
+
+.listening-ayah-card__transliteration {
+  clear: both;
+  margin: 10px 0 0;
+  padding: 0 3px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--color-primary);
+  font-style: italic;
+  letter-spacing: 0.01em;
 }
 
 .listening-ayah-card__translation {
   clear: both;
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   padding: 0 3px 1px;
   font-size: 0.975rem;
   line-height: 1.65;
   color: var(--color-text-secondary);
 }
+
+/* ─── Listening Navigation Tabs ─────────────────────────────────────────────── */
+.listening-nav-tabs {
+  flex-shrink: 0;
+  background: var(--color-bg-card);
+  border-bottom: 1.5px solid rgba(0,0,0,0.07);
+  z-index: 5;
+}
+
+.listening-nav-tabs__track {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 4px;
+}
+.listening-nav-tabs__track::-webkit-scrollbar { display: none; }
+
+.listening-nav-tab {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.listening-nav-tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* ─── Display Settings Sheet ─────────────────────────────────────────────────── */
+.display-settings-sheet {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.display-settings__header {
+  padding: 0 20px 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.display-settings__header h3 {
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.display-settings__body {
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.display-settings__footer {
+  padding: 12px 20px 0;
+}
+
+.ds-close-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.05);
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ds-close-btn:active { background: rgba(0,0,0,0.1); }
+
+.ds-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.ds-row:last-child { border-bottom: none; }
+
+.ds-row--column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.ds-row__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ds-row__label {
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Pill toggle (Surah | Juz) */
+.ds-pill-toggle {
+  display: flex;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.06);
+  padding: 3px;
+  gap: 2px;
+}
+
+.ds-pill-btn {
+  padding: 6px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.ds-pill-btn--active {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+/* Toggle switch */
+.ds-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ds-toggle__label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.ds-toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.15);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.ds-toggle--on {
+  background: var(--color-primary);
+}
+.ds-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+.ds-toggle--on .ds-toggle__knob {
+  transform: translateX(20px);
+}
+
+/* Slider */
+.ds-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ds-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.ds-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0%,
+    var(--color-primary) calc((var(--v, 60) - 20) / 80 * 100%),
+    rgba(0,0,0,0.12) calc((var(--v, 60) - 20) / 80 * 100%),
+    rgba(0,0,0,0.12) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+.ds-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+.ds-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+
+/* ─── Listening Navigation Tabs (RTL order: Al-Fatihah/Juz 1 on right, An-Nas/Juz 30 on left) ──── */
+.listening-nav-tabs {
+  flex-shrink: 0;
+  background: var(--color-bg-card);
+  border-bottom: 1.5px solid rgba(0,0,0,0.07);
+  z-index: 5;
+}
+
+.listening-nav-tabs__track {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 4px;
+  direction: rtl; /* RTL order: Al-Fatihah / Juz 1 starts on the right */
+}
+.listening-nav-tabs__track::-webkit-scrollbar { display: none; }
+
+.listening-nav-tab {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  direction: ltr; /* keep tab text LTR (e.g. 1. Al-Fatihah) */
+}
+
+.listening-nav-tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* ─── Display Settings Sheet (screenshot style) ───────────────────────────── */
+.display-settings-sheet {
+  background: #F8FAF9 !important;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 12px 18px env(safe-area-inset-bottom, 18px);
+  max-width: 500px;
+}
+
+.display-settings__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 4px 4px 14px;
+}
+
+.ds-header-title-wrap {
+  flex: 1;
+}
+
+.ds-eyebrow {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #059669;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.display-settings__header h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.ds-subtitle {
+  font-size: 0.82rem;
+  color: #6B7280;
+  margin: 4px 0 0;
+  line-height: 1.35;
+}
+
+.ds-close-x {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #E2E8F0;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 12px;
+  transition: background 0.15s;
+}
+.ds-close-x:active {
+  background: #CBD5E1;
+}
+.ds-close-x svg {
+  width: 18px;
+  height: 18px;
+}
+
+.display-settings__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 8px;
+}
+
+/* Group Card & Row styles (matching Mushaf) */
+.settings-card {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.settings-card-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #8c9d96;
+  letter-spacing: 0.08em;
+  margin-bottom: -4px;
+  text-transform: uppercase;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-row--switch {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+.settings-row--slider {
+  gap: 12px;
+}
+
+.settings-row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2c3e35;
+}
+
+.settings-row-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.setting-label-icon {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+/* Switches iOS Theme */
+.tss-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.tss-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.tss-slider-toggle {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #e2e8f0;
+  transition: .3s;
+  border-radius: 99px;
+}
+.tss-slider-toggle:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.tss-switch input:checked + .tss-slider-toggle {
+  background-color: #059669;
+}
+.tss-switch input:checked + .tss-slider-toggle:before {
+  transform: translateX(20px);
+}
+
+.tss-font-value-new {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #064e3b;
+  margin-left: auto;
+  background: #eef7f4;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+/* Segmented control styles */
+.theme-segmented-control-new {
+  display: flex;
+  background: #f1f6f4;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid #e5edea;
+}
+
+.theme-segment-btn-new {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4a5d55;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.theme-segment-btn-new--active {
+  background: #fff;
+  color: #064e3b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Range Slider */
+.ds-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.tss-slider-new {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  outline: none;
+  background: #e2e8f0;
+}
+.tss-slider-new::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #059669;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s ease;
+}
+.tss-slider-new::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+}
+
+/* Bismillah Calligraphy in listening mode */
+.listening-bismillah-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 0 12px;
+  width: 100%;
+}
+
+.listening-bismillah-calligraphy {
+  font-family: 'Uthmanic Hafs', 'Amiri', 'Amiri Quran', serif;
+  font-size: clamp(1.6rem, 5.2vw, 2.1rem);
+  color: var(--color-text-primary);
+  text-align: center;
+  direction: rtl;
+  letter-spacing: normal;
+  line-height: 1.8;
+}
+
+/* Adjust header actions area */
+.remote-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.remote-header__display-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 50% !important; /* Circular gear icon identical to browse button */
+  background: rgba(255,255,255,0.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  border: none;
+  cursor: pointer;
+  color: white;
+  transition: background 0.15s;
+}
+.remote-header__display-btn:active { background: rgba(255,255,255,0.25); }
+.remote-header__display-btn svg { width: 21px; height: 21px; }
 
 .listening-ayah-card__badge :deep(.ayah-ornament),
 .listening-ayah-card__badge ::v-deep(.ayah-ornament) {
@@ -5373,6 +6430,107 @@ useHead({
   max-height: 96dvh;
 }
 
+/* Snappy slide transitions for horizontal swipe */
+.slide-next-enter-active,
+.slide-next-leave-active,
+.slide-prev-enter-active,
+.slide-prev-leave-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+}
+
+.slide-next-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+.slide-next-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-prev-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+.slide-prev-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* QCF Surah Name Calligraphy Font */
+@font-face {
+  font-family: 'SurahNameV4';
+  src: url('/fonts/qcf/surah-name-v4.woff2') format('woff2'),
+       url('/fonts/qcf/surah-name-v4.woff') format('woff'),
+       url('/fonts/qcf/surah-name-v4.ttf') format('truetype');
+  font-display: swap;
+}
+
+/* Listening Mode Surah Banner */
+.listening-surah-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: calc(100% + 32px) !important;
+  margin-left: -16px !important;
+  margin-right: -16px !important;
+  margin-top: 16px !important;
+  margin-bottom: 12px !important;
+  user-select: none;
+  container-type: inline-size !important;
+}
+
+.listening-surah-banner__inner {
+  position: relative;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-height: 8.5cqw !important;
+  max-height: 9.5cqw !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background-image:
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc4MCcgaGVpZ2h0PSczNCcgdmlld0JveD0nMCAwIDgwIDM0Jz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2JnJyB4MT0nMCcgeTE9JzAnIHgyPScwJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJScgc3RvcC1jb2xvcj0nI2ZmZmNmMycvPjxzdG9wIG9mZnNldD0nNTAlJyBzdG9wLWNvbG9yPScjZmJmNWUyJy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjZjVlYmM4Jy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9JzgwJyBoZWlnaHQ9JzM0JyBmaWxsPSd1cmwoI2JnKScvPjxwYXRoIGQ9J00wIDE3IEMxNSA1LCAyNSA1LCA0MCAxNyBDNTUgMjksIDY1IDI5LCA4MCAxNycgZmlsbD0nbm9uZScgc3Ryb2tlPScjZDRhZjM3JyBzdHJva2Utd2lkdGg9JzEuMicgb3BhY2l0eT0nMC43Jy8+PHBhdGggZD0nTTAgMTcgQzE1IDI5LCAyNSAyOSwgNDAgMTcgQzU1IDUsIDY1IDUsIDgwIDE3JyBmaWxsPSdub25lJyBzdHJva2U9JyNkNGFmMzcnIHN0cm9rZS13aWR0aD0nMS4yJyBvcGFjaXR5PScwLjcnLz48Y2lyY2xlIGN4PSc0MCcgY3k9JzE3JyByPSczLjUnIGZpbGw9JyMxNjZkNzAnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScwLjg5Jy8+PGNpcmNsZSBjeD0nNDAnIGN5PScxNycgcj0nMS41JyBmaWxsPSd1cmwoI2JnKScvPjxwYXRoIGQ9J00wIDE3IEMxNSA1LCAyNSA1LCA0MCAxNyBDNTUgMjksIDY1IDI5LCA4MCAxNycgZmlsbD0nbm9uZScgc3Ryb2tlPScjZDRhZjM3JyBzdHJva2Utd2lkdGg9JzEuMicgb3BhY2l0eT0nMC43Jy8+PHBhdGggZD0nTTAgMTcgQzE1IDI5LCAyNSAyOSwgNDAgMTcgQzU1IDUsIDY1IDUsIDgwIDE3JyBmaWxsPSdub25lJyBzdHJva2U9JyNkNGFmMzcnIHN0cm9rZS13aWR0aD0nMS4yJyBvcGFjaXR5PScwLjcnLz48Y2lyY2xlIGN4PSc0MCcgY3k9JzE3JyByPSczLjUnIGZpbGw9JyMxNjZkNzAnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScwLjgnLz48Y2lyY2xlIGN4PSc0MCcgY3k9JzE3JyByPScxLjUnIGZpbGw9JyNkMzRmM2InLz48Y2lyY2xlIGN4PScwJyBjeT0nMTcnIHI9JzMuNScgZmlsbD0nIzE2ZDcwJyBzdHJva2U9JyNiZDhjMzAnIHN0cm9rZS13aWR0aD0nMC44Jy8+PGNpcmNsZSBjeD0nMCcgY3k9JzE3JyByPScxLjUnIGZpbGw9JyNkMzRmM2InLz48Y2lyY2xlIGN4PSc4MCcgY3k9JzE3JyByPSczLjUnIGZpbGw9JyMxNjZkNzAnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScwLjgnLz48Y2lyY2xlIGN4PSc4MCcgY3k9JzE3JyByPScxLjUnIGZpbGw9JyNkMzRmM2InLz48cGF0aCBkPSdNMTEgMTEgUTIwIDcgMjggMTMnIGZpbGw9J25vbmUnIHN0cm9rZT0nI2JkOGMzMCcgc3Ryb2tlLXdpZHRoPScxJy8+PHBhdGggZD0nTTUyIDIzIFE2MCAyNyA2OCAyMScgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScxJy8+PGNpcmNsZSBjeD0nMjAnIGN5PSc5JyByPScxLjggZmlsbD0nI2QzNGYzYicvPjxjaXJjbGUgY3g9JzkwJyBjeT0nMjU5IHI9JzEuOCcgZmlsbD0nI2QzNGYzYicvPjxjaXJjbGUgY3g9JzI4JyBjeT0nMjInIHI9JzEuNScgZmlsbD0nI2VlYzI1NicvPjxjaXJjbGUgY3g9JzkwJyBjeT0nMjUnIHI9JzEuOCcgZmlsbD0nI2QzNGYzYicvPjxjaXJjbGUgY3g9JzI4JyBjeT0nMjInIHI9JzEuNScgZmlsbD0nI2VlYzI1NicvPjxjaXJjbGUgY3g9JzUyJyBjeT0nMTInIHI9JzEuNScgZmlsbD0nI2VlYzI1NicvPjxwYXRoIGQ9J00xNSAxNSBDMTMgMTIsIDkgMTQsIDExIDE3IFonIGZpbGw9JzMzYzc2M2QnIG9wYWNpdHk9JzAuODUnLz48cGF0aCBkPSdNNjUgMTkgQzE2NyAyMiwgNzEgMjAsIDY5IDE3IFonIGZpbGw9JzMzYzc2M2QnIG9wYWNpdHk9JzAuODUnLz48L3N2Zz4=") !important;
+  background-position: center !important;
+  background-size: auto 100% !important;
+  background-repeat: repeat-x !important;
+  box-shadow:
+    0 0 0 1px rgb(22, 109, 112),
+    0 0 0 3px rgb(255, 247, 207),
+    0 0 0 4.5px rgb(189, 140, 48) !important;
+  padding: 1.0cqw 1.5cqw !important;
+}
+
+.listening-surah-banner__name-box {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 6.8cqw !important;
+  min-height: 6.8cqw !important;
+  background: rgb(255, 255, 250) !important;
+  border: 1px solid rgb(189, 140, 48) !important;
+  border-radius: 999px !important;
+  padding: 0 4.0cqw !important;
+  box-shadow: 0 0 0 1.5px rgb(22, 109, 112) !important;
+  z-index: 3 !important;
+  margin: 0 auto !important;
+  flex-shrink: 0 !important;
+}
+
+.listening-surah-banner__name {
+  font-family: 'SurahNameV4', serif !important;
+  font-size: 6.2cqw !important;
+  line-height: 1 !important;
+  color: #000 !important;
+  text-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  direction: ltr !important;
+}
 
 /* ─── REMOVED: old placeholder styles replaced by wa-* classes ─── */
 </style>
