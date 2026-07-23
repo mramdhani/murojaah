@@ -879,6 +879,248 @@
       </div>
     </Transition>
 
+    <!-- Display Settings Bottom Sheet (Slide Up - Standalone Top-Level Modal) -->
+    <Transition name="sheet">
+      <div v-if="showDisplaySettingsSheet" class="qari-overlay" @click="showDisplaySettingsSheet = false">
+        <section class="qari-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" aria-labelledby="display-settings-title" :style="displaySettingsSheet.sheetStyle.value" @click.stop>
+          <div class="qari-sheet__handle" v-bind="displaySettingsSheet.bindHandle"></div>
+          <header class="qari-sheet__header">
+            <div>
+              <span>Preferensi Tampilan</span>
+              <h2 id="display-settings-title">Pengaturan Tampilan</h2>
+              <p>Sesuaikan tema halaman, transliterasi, tajwid, dan audio offline</p>
+            </div>
+            <button type="button" aria-label="Tutup pengaturan" @click="showDisplaySettingsSheet = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="qari-list settings-sheet-body">
+            <!-- Group 1: Visual & Tema -->
+            <div class="settings-card">
+              <div class="settings-card-title">TAMPILAN MUSHAF</div>
+              
+              <!-- Row 1: Themes -->
+              <div class="settings-row">
+                <div class="settings-row-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M5 5l1.5 1.5M17.5 17.5 19 19M2 12h2M20 12h2M6.5 17.5 5 19M19 5l-1.5 1.5"/></svg>
+                  <span class="settings-row-label">Tema Halaman</span>
+                </div>
+                <div class="theme-segmented-control-new" style="margin-top: 4px;">
+                  <button
+                    type="button"
+                    class="theme-segment-btn-new theme-segment-btn-new--classic"
+                    :class="{ 'theme-segment-btn-new--active': mushafTheme === 'classic' }"
+                    @click="mushafTheme = 'classic'"
+                  >
+                    Terang
+                  </button>
+                  <button
+                    type="button"
+                    class="theme-segment-btn-new theme-segment-btn-new--dark"
+                    :class="{ 'theme-segment-btn-new--active': mushafTheme === 'dark' }"
+                    @click="mushafTheme = 'dark'"
+                  >
+                    Malam
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 2: Konten & Terjemahan -->
+            <div class="settings-card">
+              <div class="settings-card-title">TEKS & TERJEMAHAN</div>
+              
+              <!-- Row 1: Transliterasi -->
+              <div class="settings-row settings-row--switch">
+                <div class="settings-row-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                  <span class="settings-row-label">Transliterasi</span>
+                </div>
+                <label class="tss-switch">
+                  <input type="checkbox" v-model="showTransliteration" />
+                  <span class="tss-slider-toggle"></span>
+                </label>
+              </div>
+
+              <!-- Row 2: Tajwid -->
+              <div class="settings-row settings-row--switch">
+                <div class="settings-row-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.03454 19.176 5.09437 19.434 5.00898 19.6705C4.82587 20.1777 4.79373 20.7308 4.93329 21.2662C5.07285 21.8016 5.37877 22.2891 5.81188 22.6517C5.97341 22.787 6.1856 22.8427 6.39088 22.8038C6.98592 22.6908 7.59546 22.7712 8.15689 23.0371C8.36159 23.134 8.60155 23.1118 8.78465 22.9786C9.7562 22.2713 10.9275 22 12 22Z"/><circle cx="7.5" cy="10.5" r="1.5"/><circle cx="11.5" cy="7.5" r="1.5"/><circle cx="16.5" cy="9.5" r="1.5"/><circle cx="15.5" cy="14.5" r="1.5"/></svg>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="settings-row-label">Warna Tajwid</span>
+                    <button
+                      type="button"
+                      class="tss-info-link-btn"
+                      @click="showTajweedLegendSheet = true"
+                      aria-label="Panduan Tajwid"
+                    >
+                      Panduan
+                    </button>
+                  </div>
+                </div>
+                <label class="tss-switch">
+                  <input type="checkbox" v-model="showTajweedColors" />
+                  <span class="tss-slider-toggle"></span>
+                </label>
+              </div>
+
+              <!-- Row 3: Font Size -->
+              <div class="settings-row settings-row--slider">
+                <div class="settings-row-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="setting-label-icon"><path d="M4 9h12M4 15h12M10 3v18"/></svg>
+                  <span class="settings-row-label">Ukuran Teks Terjemahan</span>
+                  <span class="tss-font-value-new">{{ translationFontSizeLevel }}%</span>
+                </div>
+                <div class="tss-slider-wrap-new">
+                  <input
+                    v-model.number="translationFontSizeLevel"
+                    type="range"
+                    min="20"
+                    max="100"
+                    step="20"
+                    class="tss-slider-new"
+                    :style="{ background: 'linear-gradient(to right, #064e3b 0%, #064e3b ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e2e8f0 ' + ((translationFontSizeLevel - 20) / 80 * 100) + '%, #e2e8f0 100%)' }"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 3: Offline Audio Download Manager (Per-Qari List UI) -->
+            <div class="settings-card">
+              <div class="settings-card-title">UNDUH AUDIO QORI (OFFLINE)</div>
+              <p style="font-size: 0.72rem; color: #718079; margin: 0 0 10px 0;">
+                Unduh audio {{ primarySurah ? 'Surat ' + primarySurah.name_latin : 'surat ini' }} per qori untuk diputar instan tanpa kuota/internet:
+              </p>
+
+              <div class="qari-offline-list">
+                <div
+                  v-for="qari in qariList"
+                  :key="qari.id"
+                  class="qari-offline-item"
+                  :class="{ 'qari-offline-item--cached': cachedQariMap[qari.id] }"
+                >
+                  <img :src="qari.image" :alt="qari.name" class="qari-offline-avatar" />
+                  <div class="qari-offline-info">
+                    <strong>{{ qari.name }}</strong>
+                    <small>{{ qari.country }}</small>
+                    
+                    <!-- Progress bar when downloading -->
+                    <div v-if="downloadingQariMap[qari.id]" class="qari-offline-progress">
+                      <div class="qari-offline-progress-fill" :style="{ width: downloadingQariMap[qari.id].percentage + '%' }"></div>
+                    </div>
+                    <span v-if="downloadingQariMap[qari.id]" class="qari-offline-progress-text">
+                      Mengunduh {{ downloadingQariMap[qari.id].percentage }}% ({{ (downloadingQariMap[qari.id].loaded / 1024 / 1024).toFixed(1) }} MB)
+                    </span>
+                  </div>
+
+                  <div class="qari-offline-action">
+                    <!-- Cached checkmark badge -->
+                    <template v-if="cachedQariMap[qari.id]">
+                      <span class="qari-offline-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width: 12px; height: 12px;"><path d="m5 12 4 4L19 6"/></svg>
+                        Tersimpan
+                      </span>
+                      <button
+                        type="button"
+                        class="qari-offline-delete-btn"
+                        aria-label="Hapus cache"
+                        title="Hapus cache"
+                        @click.stop="removeQariAudioCache(qari.id)"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    </template>
+
+                    <!-- Downloading status -->
+                    <template v-else-if="downloadingQariMap[qari.id]">
+                      <span class="qari-offline-downloading-text">
+                        Unduh...
+                      </span>
+                    </template>
+
+                    <!-- Download button -->
+                    <template v-else>
+                      <button
+                        type="button"
+                        class="qari-offline-download-btn"
+                        @click.stop="startDownloadQariAudio(qari.id)"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 13px; height: 13px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Unduh
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </Transition>
+
+    <!-- Tajweed Legend Bottom Sheet (Slide Up - Standalone Top-Level Modal) -->
+    <Transition name="sheet">
+      <div v-if="showTajweedLegendSheet" class="qari-overlay" @click="showTajweedLegendSheet = false">
+        <section class="qari-sheet" :class="{ 'qari-sheet--dark': mushafTheme === 'dark' }" role="dialog" aria-modal="true" aria-labelledby="tajweed-legend-title" :style="legendSheet.sheetStyle.value" @click.stop>
+          <div class="qari-sheet__handle" v-bind="legendSheet.bindHandle"></div>
+          <header class="qari-sheet__header">
+            <div>
+              <span>Panduan Membaca</span>
+              <h2 id="tajweed-legend-title">Warna Tajwid</h2>
+              <p>Kaidah pewarnaan hukum bacaan Mushaf</p>
+            </div>
+            <button type="button" aria-label="Tutup panduan" @click="showTajweedLegendSheet = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="qari-list" style="padding: 16px; gap: 14px;">
+            <div class="tajweed-legend-row-item">
+              <span class="tajweed-legend-badge tss-color-dot--madd"></span>
+              <div class="tajweed-legend-info-box">
+                <strong>Mad (Panjang)</strong>
+                <p>Hukum pemanjangan harakat huruf (merah terang).</p>
+              </div>
+            </div>
+            <div class="tajweed-legend-row-item">
+              <span class="tajweed-legend-badge tss-color-dot--ghunnah"></span>
+              <div class="tajweed-legend-info-box">
+                <strong>Ghunnah (Dengung)</strong>
+                <p>Suara dengung yang ditahan pada huruf Noon atau Meem tasydid (hijau).</p>
+              </div>
+            </div>
+            <div class="tajweed-legend-row-item">
+              <span class="tajweed-legend-badge tss-color-dot--ikhfa"></span>
+              <div class="tajweed-legend-info-box">
+                <strong>Ikhfa (Samar)</strong>
+                <p>Menyamarkan bunyi Nun sukun atau Tanwin (merah muda/magenta).</p>
+              </div>
+            </div>
+            <div class="tajweed-legend-row-item">
+              <span class="tajweed-legend-badge tss-color-dot--idgham"></span>
+              <div class="tajweed-legend-info-box">
+                <strong>Idgham (Melebur)</strong>
+                <p>Memasukkan bunyi Nun sukun/Tanwin ke huruf berikutnya (biru).</p>
+              </div>
+            </div>
+            <div class="tajweed-legend-row-item">
+              <span class="tajweed-legend-badge tss-color-dot--qalqalah"></span>
+              <div class="tajweed-legend-info-box">
+                <strong>Qalqalah (Memantul)</strong>
+                <p>Bunyi memantul pada huruf Ba, Jim, Dal, Ta, Qaf saat sukun/waqaf (cyan/biru muda).</p>
+              </div>
+            </div>
+            <div class="tajweed-legend-row-item">
+              <span class="tajweed-legend-badge tss-color-dot--other"></span>
+              <div class="tajweed-legend-info-box">
+                <strong>Hukum Lainnya</strong>
+                <p>Variasi tajwid khusus sesuai rasm mushaf.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </Transition>
+
     <Transition name="fade">
       <div v-if="showAyahDrawer" class="navigator-overlay" @click="showAyahDrawer = false"></div>
     </Transition>
@@ -1767,8 +2009,70 @@ const playingPageNumber = ref<number | null>(null)
 const playingAyahsList = ref<any[]>([])
 
 const { fetchTimings } = useMurottalAudio()
-const loadedTimings = ref<any>(null)
-const timingsLoading = ref(false)
+const { isAudioCached, getCachedAudioUrl, downloadAudioWithProgress, deleteCachedAudio } = useAudioCache()
+const cachedQariMap = ref<Record<string, boolean>>({})
+const downloadingQariMap = ref<Record<string, { percentage: number, loaded: number, total: number }>>({})
+
+const checkAllQariCacheStatus = async () => {
+  if (!primarySurah.value) return
+  const surahNum = primarySurah.value.number || primarySurah.value.id
+  for (const qari of qariList) {
+    const data = await fetchTimings(qari.id, surahNum)
+    if (data?.audio_url) {
+      cachedQariMap.value[qari.id] = await isAudioCached(data.audio_url)
+    } else {
+      cachedQariMap.value[qari.id] = false
+    }
+  }
+}
+
+const startDownloadQariAudio = async (qariId: string) => {
+  if (!primarySurah.value) {
+    showToast?.('Silakan muat data surat terlebih dahulu', 'doubtful')
+    return
+  }
+  const surahNum = primarySurah.value.number || primarySurah.value.id
+  const data = await fetchTimings(qariId, surahNum)
+  if (!data?.audio_url) {
+    showToast?.('Gagal mengambil data audio qori ini', 'forgot')
+    return
+  }
+
+  downloadingQariMap.value[qariId] = { percentage: 0, loaded: 0, total: 0 }
+  const success = await downloadAudioWithProgress(
+    data.audio_url,
+    surahNum,
+    qariId,
+    (progress) => {
+      downloadingQariMap.value[qariId] = {
+        percentage: progress.percentage,
+        loaded: progress.loadedBytes,
+        total: progress.totalBytes
+      }
+    }
+  )
+
+  delete downloadingQariMap.value[qariId]
+
+  if (success) {
+    cachedQariMap.value[qariId] = true
+    const qariObj = qariList.find(q => q.id === qariId)
+    showToast?.(`Audio Surat ${primarySurah.value.name_latin} (${qariObj?.name}) berhasil diunduh!`, 'fluent')
+  } else {
+    showToast?.('Gagal mengunduh audio offline. Coba lagi.', 'forgot')
+  }
+}
+
+const removeQariAudioCache = async (qariId: string) => {
+  if (!primarySurah.value) return
+  const surahNum = primarySurah.value.number || primarySurah.value.id
+  const data = await fetchTimings(qariId, surahNum)
+  if (data?.audio_url) {
+    await deleteCachedAudio(data.audio_url)
+    cachedQariMap.value[qariId] = false
+    showToast?.('Cache audio qori berhasil dihapus', 'fluent')
+  }
+}
 
 const legacyAutoNextAyah = useCookie<boolean>('auto_next_ayah', {
   default: () => false,
@@ -2457,7 +2761,12 @@ watch([pageNumber, selectedEdition], async ([newPage, newEdition]) => {
 watch(showAyahDrawer, (val) => { if (val) ayahDrawerSheet.reset() })
 watch(navigatorOpen, (val) => { if (val) navigatorSheet.reset() })
 watch(showTajweedLegendSheet, (val) => { if (val) legendSheet.reset() })
-watch(showDisplaySettingsSheet, (val) => { if (val) displaySettingsSheet.reset() })
+watch(showDisplaySettingsSheet, (val) => {
+  if (val) {
+    displaySettingsSheet.reset()
+    checkAllQariCacheStatus()
+  }
+})
 watch(showQariPicker, (val) => { if (val) qariPickerSheet.reset() })
 watch(showAudioSettings, (val) => { if (val) audioSettingsSheet.reset() })
 watch(showEditionPicker, (val) => { if (val) editionPickerSheet.reset() })
@@ -5035,6 +5344,145 @@ useHead({
   flex: 0 0 auto;
 }
 
+/* --- Offline Audio Download Per-Qari List Widget Styles --- */
+.qari-offline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qari-offline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 111, 109, 0.12);
+  background: rgba(16, 111, 109, 0.03);
+  transition: background 0.15s ease;
+}
+
+.qari-offline-item--cached {
+  background: rgba(16, 111, 109, 0.08);
+  border-color: rgba(16, 111, 109, 0.24);
+}
+
+.qari-offline-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(16, 111, 109, 0.2);
+}
+
+.qari-offline-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.qari-offline-info strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1d2b26;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qari-offline-info small {
+  font-size: 0.68rem;
+  color: #718079;
+}
+
+.qari-offline-progress {
+  width: 100%;
+  height: 5px;
+  background: rgba(16, 111, 109, 0.14);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.qari-offline-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #104e47 0%, #169777 100%);
+  border-radius: 99px;
+  transition: width 0.15s ease;
+}
+
+.qari-offline-progress-text {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #104e47;
+  margin-top: 2px;
+}
+
+.qari-offline-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.qari-offline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 99px;
+  background: #104e47;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.qari-offline-downloading-text {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #104e47;
+}
+
+.qari-offline-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 99px;
+  background: #104e47;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
+}
+
+.qari-offline-download-btn:active {
+  transform: scale(0.95);
+  background: #093732;
+}
+
+.qari-offline-delete-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 50%;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.qari-offline-delete-btn:hover,
+.qari-offline-delete-btn:active {
+  background: rgba(220, 38, 38, 0.08);
+}
+
 .mushaf-theme-selector {
   display: flex;
   align-items: center;
@@ -6612,8 +7060,16 @@ useHead({
 .qari-sheet__header h2 { margin: 2px 0 0; color: #1f2e28; font-size: 1.2rem; }
 .qari-sheet__header p { margin: 3px 0 0; color: #7b8580; font-size: .68rem; }
 .qari-sheet__header > button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #65716b; background: #f0f3f1; }
-.qari-sheet__header > button svg { width: 19px; height: 19px; }
-.qari-list { display: flex; flex-direction: column; gap: 9px; }
+.qari-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
 .qari-item { width: 100%; display: flex; align-items: center; gap: 12px; border: 1px solid #e4e8e5; border-radius: 15px; padding: 10px 12px; background: #fbfcfa; text-align: left; }
 .qari-item--active { border-color: rgba(8, 125, 89, .32); background: #edf8f3; }
 .qari-item img { width: 45px; height: 45px; flex: 0 0 45px; border: 1px solid rgba(180, 146, 77, .22); border-radius: 50%; object-fit: cover; background: #f3efe5; }
@@ -10832,7 +11288,12 @@ color: #75471a !important;
 
 /* --- Premium Settings Card Layout --- */
 .settings-sheet-body {
-  padding: 16px 20px 30px 20px !important;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 16px 0px 30px 0px !important;
   display: flex;
   flex-direction: column;
   gap: 16px;

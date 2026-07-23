@@ -1064,9 +1064,9 @@ const displayNavTabs = computed(() => {
 const switchNavTab = async (tab: { type: 'surah' | 'juz'; value: number; key: string }) => {
   const currentVal = tab.type === 'juz' ? currentJuzNumber.value : surahId.value
   if (tab.value > currentVal) {
-    transitionName.value = 'slide-next'
-  } else if (tab.value < currentVal) {
     transitionName.value = 'slide-prev'
+  } else if (tab.value < currentVal) {
+    transitionName.value = 'slide-next'
   }
 
   if (tab.type === 'juz') {
@@ -1513,9 +1513,14 @@ const startAudioPlayback = (options: { withHaptic?: boolean, restart?: boolean }
         const isStartOfSurah = Number(currentAyahNumber.value) === 1
         const seekTime = (isStartOfSurah && isBismillahSurah(surahId.value)) ? 0 : (activeTiming.timestamp_from / 1000)
 
-        const diff = Math.abs(audioObj.currentTime - seekTime)
-        if (diff > 1.2) {
-          audioObj.currentTime = seekTime
+        // Only set currentTime if audio metadata is loaded to prevent Chrome seek errors
+        if (audioObj.readyState >= 1) {
+          try {
+            const diff = Math.abs(audioObj.currentTime - seekTime)
+            if (diff > 0.5 || audioObj.paused) {
+              audioObj.currentTime = seekTime
+            }
+          } catch (e) {}
         }
 
         audioObj.play().catch(err => {
@@ -2217,14 +2222,9 @@ const playTick = (type: 'fluent' | 'doubtful' | 'forgot' | 'normal' = 'normal') 
 // Helper for haptic vibration and sound
 const triggerHaptic = (ms = 40, soundType: 'fluent' | 'doubtful' | 'forgot' | 'normal' = 'normal') => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
-    const hasActivation = typeof navigator.userActivation !== 'undefined' 
-      ? navigator.userActivation.hasBeenActive 
-      : true
-    if (hasActivation) {
-      try {
-        navigator.vibrate(ms)
-      } catch (e) {}
-    }
+    try {
+      navigator.vibrate(ms)
+    } catch (e) {}
   }
   playTick(soundType)
 }
@@ -2286,7 +2286,7 @@ const onTouchMove = (e: TouchEvent) => {
   }
 }
 const handleListeningSwipe = async (dir: 'left' | 'right') => {
-  transitionName.value = dir === 'right' ? 'slide-next' : 'slide-prev'
+  transitionName.value = dir === 'right' ? 'slide-prev' : 'slide-next'
   
   if (displayViewMode.value === 'juz') {
     const currentJuz = currentJuzNumber.value

@@ -17,13 +17,19 @@ export const QARI_MAP: Record<string, number> = {
   'Husary_64kbps': 6            // Mahmoud Khalil Al-Husary
 }
 
+export const TIMINGS_CACHE_VERSION = 2
+
 export const useMurottalAudio = () => {
   const fetchTimings = async (qariKey: string, chapter: number): Promise<ChapterAudioData | null> => {
     const qariId = QARI_MAP[qariKey]
     if (!qariId) return null
 
-    const cacheKey = `murottal_timings_${qariId}_${chapter}`
+    const cacheKey = `murottal_timings_v${TIMINGS_CACHE_VERSION}_${qariId}_${chapter}`
     if (process.client) {
+      // Clean up old cache keys from previous versions
+      const oldKey = `murottal_timings_${qariId}_${chapter}`
+      localStorage.removeItem(oldKey)
+
       const cached = localStorage.getItem(cacheKey)
       if (cached) {
         try {
