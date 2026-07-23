@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="100" height="120" viewBox="0 0 100 120"
+     fill="none" shape-rendering="geometricPrecision"
+     role="img" aria-labelledby="title desc">
+  <title id="title">Ornamen nomor ayat mini gaya Mushaf Madinah</title>
+  <desc id="desc">Ornamen SVG transparan berbentuk oval dengan pilinan atas dan bawah, tanpa nomor ayat.</desc>
+
+  <!-- Mahkota bunga belakang: warna mengikuti palet bunga -->
+  <g id="top-flower" stroke="#176B62" stroke-width="2.8" stroke-linejoin="round">
+    <path d="M50 23C44 18 43 10 47 5C48.7 3 51.3 3 53 5C57 10 56 18 50 23Z" fill="#F7C843"/>
+    <path d="M47 23C39 20 35 15 36.5 10.5C37.2 8.3 39.5 7.5 41.4 8.5C47 11.5 49 16.7 47 23Z" fill="#F47B3C"/>
+    <path d="M53 23C61 20 65 15 63.5 10.5C62.8 8.3 60.5 7.5 58.6 8.5C53 11.5 51 16.7 53 23Z" fill="#F47B3C"/>
+    <path d="M40.8 24C34.2 23.9 29 20.7 28.7 16.7C28.5 14.6 30.3 13 32.4 13.2C38 13.8 41.7 18.2 40.8 24Z" fill="#F05A3F"/>
+    <path d="M59.2 24C65.8 23.9 71 20.7 71.3 16.7C71.5 14.6 69.7 13 67.6 13.2C62 13.8 58.3 18.2 59.2 24Z" fill="#F05A3F"/>
+  </g>
+
+  <g id="bottom-flower" transform="translate(0 120) scale(1 -1)"
+     stroke="#176B62" stroke-width="2.8" stroke-linejoin="round">
+    <path d="M50 23C44 18 43 10 47 5C48.7 3 51.3 3 53 5C57 10 56 18 50 23Z" fill="#F7C843"/>
+    <path d="M47 23C39 20 35 15 36.5 10.5C37.2 8.3 39.5 7.5 41.4 8.5C47 11.5 49 16.7 47 23Z" fill="#F47B3C"/>
+    <path d="M53 23C61 20 65 15 63.5 10.5C62.8 8.3 60.5 7.5 58.6 8.5C53 11.5 51 16.7 53 23Z" fill="#F47B3C"/>
+    <path d="M40.8 24C34.2 23.9 29 20.7 28.7 16.7C28.5 14.6 30.3 13 32.4 13.2C38 13.8 41.7 18.2 40.8 24Z" fill="#F05A3F"/>
+    <path d="M59.2 24C65.8 23.9 71 20.7 71.3 16.7C71.5 14.6 69.7 13 67.6 13.2C62 13.8 58.3 18.2 59.2 24Z" fill="#F05A3F"/>
+  </g>
+
+  <!-- Badan oval utama -->
+  <path id="cartouche"
+        d="M50 20C24.5 20 5 38.5 5 64.5S24.5 108 50 108S95 90.5 95 64.5S75.5 20 50 20Z"
+        fill="#DCEDED" stroke="#176B62" stroke-width="3.4"/>
+
+  <!-- Sayap ukiran atas -->
+  <g id="upper-wings" fill="#FFF8E6" stroke="#176B62" stroke-width="2.7"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6.5 52C9 35.5 20 23.7 36.5 21.2C30.5 26.4 29.5 32.5 34.5 39.2C24 33.4 13.3 38.3 6.5 52Z"/>
+    <path d="M93.5 52C91 35.5 80 23.7 63.5 21.2C69.5 26.4 70.5 32.5 65.5 39.2C76 33.4 86.7 38.3 93.5 52Z"/>
+  </g>
+
+  <!-- Pilinan tengah atas -->
+  <g id="upper-curls" fill="#FFF8E6" stroke="#176B62" stroke-width="2.8"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 26C46.2 18.2 38.7 17.5 34.6 21.7C30.8 25.6 32.6 32.4 37.8 34.1C43 35.8 48.3 32.1 47.2 27.7C46.5 24.7 43 23.8 41.2 26C41.4 20.5 47 20.5 50 26Z"/>
+    <path d="M50 26C53.8 18.2 61.3 17.5 65.4 21.7C69.2 25.6 67.4 32.4 62.2 34.1C57 35.8 51.7 32.1 52.8 27.7C53.5 24.7 57 23.8 58.8 26C58.6 20.5 53 20.5 50 26Z"/>
+  </g>
+
+  <!-- Sayap ukiran bawah -->
+  <g id="lower-wings" transform="translate(0 128) scale(1 -1)"
+     fill="#FFF8E6" stroke="#176B62" stroke-width="2.7"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6.5 52C9 35.5 20 23.7 36.5 21.2C30.5 26.4 29.5 32.5 34.5 39.2C24 33.4 13.3 38.3 6.5 52Z"/>
+    <path d="M93.5 52C91 35.5 80 23.7 63.5 21.2C69.5 26.4 70.5 32.5 65.5 39.2C76 33.4 86.7 38.3 93.5 52Z"/>
+  </g>
+
+  <!-- Pilinan tengah bawah -->
+  <g id="lower-curls" transform="translate(0 128) scale(1 -1)"
+     fill="#FFF8E6" stroke="#176B62" stroke-width="2.8"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 26C46.2 18.2 38.7 17.5 34.6 21.7C30.8 25.6 32.6 32.4 37.8 34.1C43 35.8 48.3 32.1 47.2 27.7C46.5 24.7 43 23.8 41.2 26C41.4 20.5 47 20.5 50 26Z"/>
+    <path d="M50 26C53.8 18.2 61.3 17.5 65.4 21.7C69.2 25.6 67.4 32.4 62.2 34.1C57 35.8 51.7 32.1 52.8 27.7C53.5 24.7 57 23.8 58.8 26C58.6 20.5 53 20.5 50 26Z"/>
+  </g>
+
+  <!-- Titik emas kecil untuk menyatukan palet bunga -->
+  <circle cx="50" cy="20.7" r="2.2" fill="#F7C843" stroke="#176B62" stroke-width="1.4"/>
+  <circle cx="50" cy="107.3" r="2.2" fill="#F7C843" stroke="#176B62" stroke-width="1.4"/>
+</svg>

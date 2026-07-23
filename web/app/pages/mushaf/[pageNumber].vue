@@ -22,20 +22,22 @@
         </button>
       </div>
 
-      <!-- Translate & Display Settings Button -->
-      <button type="button" class="mushaf-header__translate" aria-label="Pengaturan Tampilan & Terjemahan" @click="showTranslationDrawer = true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-          <path d="M6 6h10M6 10h10M6 14h6"/>
-        </svg>
-      </button>
+      <!-- Header Action Buttons -->
+      <div class="mushaf-header__actions">
+        <button type="button" class="mushaf-header__translate" aria-label="Terjemahan" @click="showTranslationDrawer = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="M6 6h10M6 10h10M6 14h6"/>
+          </svg>
+        </button>
 
-      <button type="button" class="mushaf-header__browse" aria-label="Pilih surat, ayat, atau halaman" @click="openNavigator">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h10"/>
-          <circle cx="18" cy="18" r="2.5"/>
-        </svg>
-      </button>
+        <button type="button" class="mushaf-header__display-btn" aria-label="Pengaturan Tampilan" @click="showDisplaySettingsSheet = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
     </header>
     <main class="mushaf-content">
       <section
@@ -254,14 +256,10 @@
                           <span>{{ verse.text }}</span>
                           <span
                             class="mushaf-ayah-ornament mushaf-ayah-ornament--unicode"
+                            :class="{ 'mushaf-ayah-ornament--3digit': verse.ayah_number > 99 }"
                             :aria-label="`Ayat ${verse.ayah_number}`"
                           >
-                            <svg viewBox="0 0 100 100" aria-hidden="true">
-                              <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="#bd8c30" stroke-width="5" transform="rotate(45 50 50)"/>
-                              <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="#bd8c30" stroke-width="5"/>
-                              <circle cx="50" cy="50" r="26" fill="#fffcf5" stroke="#166d70" stroke-width="2.5"/>
-                              <circle cx="50" cy="50" r="21.5" fill="none" stroke="#d34f3b" stroke-width="1.5" stroke-dasharray="3 2.5"/>
-                            </svg>
+                            <img src="/images/mushaf/ornamen_nomor_ayat_mini_madinah.svg" class="mushaf-ayah-ornament__img" alt="" aria-hidden="true" />
                             <span>{{ formatArabicNumber(verse.ayah_number) }}</span>
                           </span>
                         </span>
@@ -309,14 +307,10 @@
                               >
                                 <span
                                   class="mushaf-ayah-ornament"
+                                  :class="{ 'mushaf-ayah-ornament--3digit': ayahNumberFromVerseKey(word.attachedOrnament.verse_key) > 99 }"
                                   :aria-label="`Ayat ${ayahNumberFromVerseKey(word.attachedOrnament.verse_key)}`"
                                 >
-                                  <svg viewBox="0 0 100 100" aria-hidden="true">
-                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="#bd8c30" stroke-width="5" transform="rotate(45 50 50)"/>
-                                    <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="#bd8c30" stroke-width="5"/>
-                                    <circle cx="50" cy="50" r="26" fill="#fffcf5" stroke="#166d70" stroke-width="2.5"/>
-                                    <circle cx="50" cy="50" r="21.5" fill="none" stroke="#d34f3b" stroke-width="1.5" stroke-dasharray="3 2.5"/>
-                                  </svg>
+                                  <img src="/images/mushaf/ornamen_nomor_ayat_mini_madinah.svg" class="mushaf-ayah-ornament__img" alt="" aria-hidden="true" />
                                   <span>{{ formatArabicNumber(ayahNumberFromVerseKey(word.attachedOrnament.verse_key)) }}</span>
                                 </span>
                               </span>
@@ -611,17 +605,6 @@
             </p>
           </div>
           <div class="translation-sheet-header__right-actions">
-            <button
-              type="button"
-              class="translation-sheet-settings-toggle"
-              :class="{ 'translation-sheet-settings-toggle--active': showDisplaySettingsSheet }"
-              aria-label="Pengaturan Tampilan"
-              @click="showDisplaySettingsSheet = true"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-cog-icon">
-                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-            </button>
             <button type="button" class="translation-sheet-close" aria-label="Tutup terjemahan" @click="showTranslationDrawer = false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
             </button>
@@ -637,15 +620,11 @@
               :class="{ 'translation-sheet-item--active': ayah.verse_key === `${activeHighlightVerse.surah}:${activeHighlightVerse.ayah}` }"
               @click="selectAyahFromTranslation(ayah.surah_id, ayah.ayah_number)"
             >
-              <!-- Islamic Geometric Number Frame -->
+              <!-- Medina Ayah Ornament -->
               <div class="translation-sheet-item__number-wrap">
-                <svg viewBox="0 0 100 100" class="ayah-frame-svg">
-                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/>
-                  <rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/>
-                  <circle cx="50" cy="50" r="23" fill="#fff" stroke="currentColor" stroke-width="2.5"/>
-                </svg>
-                <span :style="{ fontSize: ayah.ayah_number >= 100 ? '0.62rem' : (ayah.ayah_number >= 10 ? '0.74rem' : '0.82rem') }">
-                  {{ ayah.ayah_number }}
+                <span class="mushaf-ayah-ornament mushaf-ayah-ornament--latin" :class="{ 'mushaf-ayah-ornament--3digit': ayah.ayah_number > 99 }">
+                  <img src="/images/mushaf/ornamen_nomor_ayat_mini_madinah.svg" class="mushaf-ayah-ornament__img" alt="" aria-hidden="true" />
+                  <span>{{ ayah.ayah_number }}</span>
                 </span>
               </div>
 
@@ -2634,8 +2613,10 @@ const getJuzImage = (page: number): string => {
   return `/images/part_names/${juz[0]}.png`
 }
 
-const getPageSurahsList = (page: number): any[] =>
-  qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
+const getPageSurahsList = (page: number): any[] => {
+  const surahs = qcfPageCache.value[page]?.surahs || pageData.value?.surahs || []
+  return [...surahs].sort((a, b) => (a.number || a.id) - (b.number || b.id))
+}
 
 const ayahNumberFromVerseKey = (verseKey: string): number =>
   Number(verseKey.split(':')[1] || 0)
@@ -4594,31 +4575,39 @@ useHead({
   background: rgba(255, 255, 255, 0.28);
 }
 
-.mushaf-header__translate {
-  width: 42px;
-  height: 42px;
+.mushaf-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.mushaf-header__translate,
+.mushaf-header__display-btn {
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   border: 0;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.15);
-  transition: background 0.15s ease;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: background 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
 }
 
-.mushaf-header__translate:active {
+.mushaf-header__translate:active,
+.mushaf-header__display-btn:active {
+  transform: scale(0.94);
   background: rgba(255, 255, 255, 0.28);
 }
 
-.mushaf-header__translate svg {
-  width: 20px;
-  height: 20px;
-}
-
-.mushaf-header__browse svg {
-  width: 21px;
-  height: 21px;
+.mushaf-header__translate svg,
+.mushaf-header__display-btn svg {
+  width: 19px;
+  height: 19px;
 }
 
 .mushaf-content {
@@ -4840,11 +4829,11 @@ useHead({
 }
 
 .mushaf-word-group .mushaf-word--end {
-  margin-right: -0.05em; /* Natural spacing next to word, no overlap */
+  margin: 0 !important;
 }
 
 .mushaf-word-group--with-ornament {
-  margin-left: -0.05em; /* Natural spacing, no overlap */
+  margin: 0 !important;
 }
 
 /* Individual word spans */
@@ -4863,8 +4852,15 @@ useHead({
 
 /* Verse number marker (end glyph) */
 .mushaf-word--end {
-  font-size: 0.88em;
-  opacity: 0.9;
+  font-size: 0.98em !important;
+  color: #0f6f6d !important; /* Authentic Medina Emerald/Teal rosette color */
+  padding: 0 0.08em !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  transform: translateY(-0.08em) !important;
 }
 
 .mushaf-word--active {
@@ -5295,31 +5291,38 @@ useHead({
 /* --- Translation Sheet Item Customizations --- */
 .translation-sheet-item__number-wrap {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 38.4px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-right: 12px;
 }
 
-.ayah-frame-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  color: #c6952b; /* Premium Gold border */
+.translation-sheet-item__number-wrap .mushaf-ayah-ornament {
+  width: 30px !important;
+  height: 36px !important;
+  margin: 0 !important;
 }
 
-.translation-sheet-item__number-wrap span {
-  position: relative;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #1e2e28;
-  z-index: 1;
+.translation-sheet-item__number-wrap .mushaf-ayah-ornament > span {
+  top: 55.5% !important;
+  transform: translateY(-50%) !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  color: #104e47 !important;
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif !important;
+  letter-spacing: -0.04em !important;
 }
-.translation-bottom-sheet--dark .translation-sheet-item__number-wrap span {
- color: #a8b7b1 !important;
+
+.translation-sheet-item__number-wrap .mushaf-ayah-ornament.mushaf-ayah-ornament--3digit > span {
+  font-size: 0.58rem !important;
+  letter-spacing: -0.06em !important;
+}
+
+.translation-bottom-sheet--dark .translation-sheet-item__number-wrap .mushaf-ayah-ornament > span {
+  color: #2dd4bf !important;
 }
 
 .translation-sheet-list {
@@ -6680,7 +6683,9 @@ useHead({
 .mushaf-header__title strong { color: #fff; }
 .mushaf-header__title small { color: rgba(255,255,255,.72); }
 .mushaf-header__title small span { color: rgba(243,217,148,.8); }
-.mushaf-header__browse {
+.mushaf-header__browse,
+.mushaf-page--dark .mushaf-header__translate,
+.mushaf-page--dark .mushaf-header__display-btn {
   color: #fff;
   background: rgba(255,255,255,.12);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
@@ -7796,6 +7801,8 @@ useHead({
 }
 .mushaf-meta__left {
   display: flex !important;
+  flex-direction: row !important;
+  direction: ltr !important;
   justify-content: flex-start !important;
   align-items: flex-end !important;
   gap: 2.2cqw !important; /* Space between multiple surah names */
@@ -8262,58 +8269,51 @@ useHead({
 }
 
 .mushaf-ayah-ornament {
-  position: relative;
-  width: 1.85em !important; /* Expanded for 3-digit support and breathing room */
-  height: 1.85em !important;
+  position: relative !important;
+  width: 0.82em !important;  /* Slightly smaller fitting 100x120 SVG ratio (0.833) */
+  height: 0.98em !important; /* Compact inline height */
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: #bd8c30 !important;
-  font-family: 'Outfit', 'Inter', sans-serif !important;
-  font-size: .88em !important; /* Slightly larger text */
-  font-weight: 800 !important;
-  line-height: 1 !important;
   vertical-align: middle !important;
-  margin-left: 0px !important;
-  margin-right: 0px !important;
+  margin: 0 0.04em !important;
 }
 
-.mushaf-ayah-ornament svg {
+.mushaf-ayah-ornament__img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-/* Premium Traditional Mushaf Rosette Coloring */
-.mushaf-ayah-ornament svg rect {
-  stroke: #bd8c30 !important; /* Gold/Bronze outer frames */
-  stroke-width: 5 !important;
-}
-.mushaf-ayah-ornament svg circle:nth-of-type(1) {
-  stroke: #166d70 !important; /* Teal outline */
-  fill: #fffcf5 !important;   /* Cream fill */
-  stroke-width: 3.5 !important;
-}
-.mushaf-ayah-ornament svg circle:nth-of-type(2) {
-  stroke: #d34f3b !important; /* Red inner dashed dot ring */
-  stroke-width: 1.5 !important;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .mushaf-ayah-ornament > span {
-  position: relative;
-  z-index: 2;
-  /* Force number color to dark brown regardless of parent tajweed coloring */
-  color: #261607 !important;
-  font-size: 0.55em !important; /* Proportional font size to leave elegant padding around numbers */
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 60% !important; /* Shifted down for exact optical center inside oval cartouche */
+  transform: translateY(-50%) !important;
+  z-index: 2 !important;
+  color: #104e47 !important; /* Deep rich teal matching SVG stroke #176B62 */
+  font-size: 0.44em !important; /* Proportional size for neat padding inside oval */
   font-weight: 800 !important;
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transform: translateY(0.6px) !important; /* Micro-adjust for perfect vertical alignment inside larger circle */
-  line-height: .8 !important;
+  text-align: center !important;
+  direction: ltr !important;
+  line-height: 1 !important;
+  letter-spacing: -0.07em !important; /* Tight letter spacing for 2-digit numbers */
   width: 100% !important;
-  height: 100% !important;
+}
+
+/* 3-digit verse numbers (e.g. 100 - 286, such as 344) pulled extra tight to eliminate gaps */
+.mushaf-ayah-ornament.mushaf-ayah-ornament--3digit > span {
+  font-size: 0.35em !important;
+  letter-spacing: -0.16em !important;
+  font-weight: 900 !important;
 }
 .mushaf-ayah-ornament--unicode {
   flex: 0 0 auto !important;
@@ -8322,7 +8322,7 @@ useHead({
 /* Extra specificity to prevent any tajweed span color from bleeding into ornament numbers */
 .mushaf-word--end .mushaf-ayah-ornament > span,
 .mushaf-viewport:not(.mushaf-viewport--monochrome) .mushaf-word--end .mushaf-ayah-ornament > span {
-  color: #261607 !important;
+  color: #000000 !important;
 }
 
 /* Tajweed Class Color Overrides (Applied when showTajweedColors is ON) */
@@ -8376,6 +8376,10 @@ useHead({
 .mushaf-theme--dark {
   background: #151d1a !important; /* Deep warm black/green tint */
   color: #edf2f0;
+}
+
+.mushaf-theme--dark .mushaf-word--end {
+  color: #2dd4bf !important; /* Vibrant teal/mint in dark mode */
 }
 
 .mushaf-theme--dark .mushaf-word--active {

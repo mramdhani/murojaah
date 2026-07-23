@@ -19,12 +19,12 @@
         </div>
       </div>
       <div class="remote-header__actions">
-        <button type="button" class="remote-header__browse" aria-label="Pilih surat dan ayat" @click="openNavigator">
+        <!-- <button type="button" class="remote-header__browse" aria-label="Pilih surat dan ayat" @click="openNavigator">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h10"/>
             <circle cx="18" cy="18" r="2.5"/>
           </svg>
-        </button>
+        </button> -->
         <button v-if="isListeningMode" type="button" class="remote-header__display-btn" aria-label="Pengaturan Tampilan" @click.stop="openDisplaySettings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
             <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -2648,16 +2648,18 @@ const formatArabicText = (text: string) => {
 // Combines Arabic text + end-of-ayah ornament into a single HTML string
 // so they share one bidi text run ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â preventing the ornament from wrapping
 // to its own line due to the browser's RTL/LTR bidi boundary algorithm.
-const ORNAMENT_SVG = `<svg viewBox="0 0 100 100" class="ayah-ornament__svg"><rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(45 50 50)"/><rect x="22" y="22" width="56" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="50" cy="50" r="23" fill="#FAF8F2" stroke="currentColor" stroke-width="2.5"/><circle cx="50" cy="50" r="19" fill="none" stroke="var(--color-primary-dark)" stroke-width="1.5" stroke-dasharray="3,2.5"/><circle cx="50" cy="11" r="3.5" fill="var(--color-primary-dark)"/><circle cx="50" cy="89" r="3.5" fill="var(--color-primary-dark)"/><circle cx="11" cy="50" r="3.5" fill="var(--color-primary-dark)"/><circle cx="89" cy="50" r="3.5" fill="var(--color-primary-dark)"/><circle cx="22.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)"/><circle cx="77.5" cy="22.5" r="3.5" fill="var(--color-primary-dark)"/><circle cx="22.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)"/><circle cx="77.5" cy="77.5" r="3.5" fill="var(--color-primary-dark)"/></svg>`
+const ORNAMENT_SVG = `<img src="/images/mushaf/ornamen_nomor_ayat_mini_madinah.svg" class="ayah-ornament__img" alt="" aria-hidden="true" />`
 
 const formatArabicWithOrnament = (text: string, ayahNum: number) => {
   const arabicHtml = formatArabicText(text)
-  const ornament = `<span class="ayah-ornament">${ORNAMENT_SVG}<span class="ayah-ornament__num">${ayahNum}</span></span>`
+  const is3Digit = ayahNum > 99 ? ' ayah-ornament--3digit' : ''
+  const ornament = `<span class="ayah-ornament${is3Digit}">${ORNAMENT_SVG}<span class="ayah-ornament__num">${ayahNum}</span></span>`
   return arabicHtml + ornament
 }
 
 const formatListeningAyahBadge = (ayahNum: number) => {
-  return `<span class="ayah-ornament ayah-ornament--mini">${ORNAMENT_SVG}<span class="ayah-ornament__num">${ayahNum}</span></span>`
+  const is3Digit = ayahNum > 99 ? ' ayah-ornament--3digit' : ''
+  return `<span class="ayah-ornament ayah-ornament--mini${is3Digit}">${ORNAMENT_SVG}<span class="ayah-ornament__num">${ayahNum}</span></span>`
 }
 
 watch(() => [route.params.surahId, route.params.ayahNumber], async (newVals, oldVals) => {
@@ -3928,9 +3930,9 @@ useHead({
 :deep(.ayah-ornament) {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 44px;
-  margin: 0 10px;
+  width: 28px;
+  height: 33.6px;
+  margin: 0 6px;
   user-select: none;
   flex-shrink: 0;
   vertical-align: middle;
@@ -3944,8 +3946,8 @@ useHead({
 
 .remote-ayah-card__ornament {
   float: left;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 33.6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3958,12 +3960,14 @@ useHead({
   margin: 0;
 }
 
+:deep(.ayah-ornament__img),
 :deep(.ayah-ornament__svg) {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  color: #C29B38; /* Gold color */
+  object-fit: contain;
+  pointer-events: none;
   transition: transform var(--transition-normal);
 }
 
@@ -3973,16 +3977,28 @@ useHead({
 
 :deep(.ayah-ornament__num) {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 58.5%;
+  transform: translateY(-50%);
   z-index: 10;
-  font-size: 0.8125rem;
-  font-weight: 900;
-  color: var(--color-primary-dark);
-  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #000000;
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  direction: ltr;
   line-height: 1;
+  letter-spacing: -0.07em;
+}
+
+:deep(.ayah-ornament--3digit .ayah-ornament__num) {
+  font-size: 0.54rem;
+  letter-spacing: -0.16em;
+  font-weight: 900;
 }
 
 .remote-translation {
