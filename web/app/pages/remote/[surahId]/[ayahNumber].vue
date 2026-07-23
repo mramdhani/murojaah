@@ -2805,11 +2805,14 @@ useHead({
   transform: translateY(-100%) !important;
   opacity: 0 !important;
   pointer-events: none !important;
+  flex: 0 0 0px !important;
   flex-basis: 0 !important;
   height: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
   margin: 0 !important;
+  border: 0 !important;
   overflow: hidden !important;
 }
 
@@ -2823,7 +2826,8 @@ useHead({
 }
 
 .remote-page--fullscreen .remote-content--listening {
-  padding-bottom: 24px !important;
+  padding-top: calc(var(--safe-top, 0px) + 8px) !important;
+  padding-bottom: calc(var(--safe-bottom, 0px) + 24px) !important;
 }
 
 /* ─── Full-page immersive dark mode when ayat is hidden ─── */

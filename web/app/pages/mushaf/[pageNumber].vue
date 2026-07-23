@@ -7179,11 +7179,11 @@ useHead({
 
 
 .mushaf-page-box {
-  width: min(calc(100cqw - 20px), calc((100cqh - 16px) * 941 / 1672));
-  height: calc(100cqh - 16px);
+  width: min(calc(100cqw - 20px), calc((100cqh - 38px) * 941 / 1672));
+  height: calc(100cqh - 38px);
   flex: 0 0 auto;
-  margin: auto;
-  padding: 8px 11px 11px;
+  margin: 6px auto 32px;
+  padding: 8px 11px 24px;
   border-color: rgba(10, 92, 98, .28);
   box-shadow: 0 4px 14px rgba(33, 41, 32, .1);
 }
@@ -7399,10 +7399,12 @@ useHead({
 
 @media (max-width: 415px) {
   .mushaf-page-box {
-    width: min(calc(100cqw - 14px), calc((100cqh - 14px) * 941 / 1672));
-    margin: auto;
-    padding-right: 8px;
-    padding-left: 8px;
+    width: min(calc(100cqw - 10px), calc((100cqh - 38px) * 941 / 1672));
+    height: calc(100cqh - 38px);
+    margin: 4px auto 30px;
+    padding-right: 6px;
+    padding-left: 6px;
+    padding-bottom: 24px;
   }
 
   .mushaf-qcf-content { padding-right: 10px; padding-left: 10px; }
@@ -10147,7 +10149,14 @@ useHead({
   }
 }
 .mushaf-page--fullscreen .mushaf-viewport {
-  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px) !important;
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 12px) !important;
+  padding-bottom: 12px !important;
+  overflow: hidden !important;
+}
+
+.mushaf-page--fullscreen .mushaf-page-box {
+  margin-bottom: 24px !important;
+  padding-bottom: 24px !important;
 }
 
 /* ===== Dark Mode Polish Overrides ===== */
