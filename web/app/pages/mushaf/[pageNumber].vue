@@ -7330,8 +7330,9 @@ useHead({
 }
 
 .mushaf-surah-banner__inner::before {
+  content: '';
   inset: 6px;
-  border: 1px solid rgba(7, 104, 113, .48);
+  border: 1px solid rgba(7, 104, 113, 0.48);
   border-radius: 48% / 34%;
 }
 
@@ -7353,14 +7354,14 @@ useHead({
   line-height: 1.05;
   transform: scaleX(1.08);
   transform-origin: center;
-  text-shadow: 0 1px 0 rgba(181, 125, 24, .24);
+  text-shadow: 0 1px 0 rgba(181, 125, 24, 0.24);
 }
 
 .mushaf-surah-banner__name::before,
 .mushaf-surah-banner__name::after {
   content: '';
-  width: .28em;
-  height: .28em;
+  width: 0.28em;
+  height: 0.28em;
   flex: 0 0 auto;
   border: 1px solid #916117;
   background: #d3a139;
@@ -7370,6 +7371,7 @@ useHead({
 
 .mushaf-surah-banner::before,
 .mushaf-surah-banner::after {
+  content: '';
   width: 2.4cqw;
   height: 2.4cqw;
   top: 50%;

@@ -126,7 +126,7 @@
                 @pointermove.stop="onAyahPointerMove($event)"
                 @pointerup.stop="onAyahPointerUp($event, ayah)"
                 @pointercancel.stop="onAyahPointerCancel()"
-                @click.stop
+                @click.stop.prevent="onAyahCardClick($event, ayah)"
               >
                 <div class="listening-ayah-card__badge" aria-hidden="true" v-html="formatListeningAyahBadge(ayah.ayah_number)"></div>
                 <div class="listening-ayah-card__body">
@@ -919,7 +919,9 @@ const onAyahPointerUp = (event: PointerEvent, ayah: any) => {
     clearTimeout(ayahLongPressTimer)
     ayahLongPressTimer = null
   }
+}
 
+const onAyahCardClick = (event: Event, ayah: any) => {
   if (ayahLongPressTriggered) {
     ayahLongPressTriggered = false
     return
@@ -930,7 +932,13 @@ const onAyahPointerUp = (event: PointerEvent, ayah: any) => {
     return
   }
 
-  isFullscreenMode.value = !isFullscreenMode.value
+  if (isListeningMode.value) {
+    if (ayah.ayah_number !== currentAyahNumber.value) {
+      changeAyahWithSurah(ayah.surah_id, ayah.ayah_number)
+    } else {
+      isFullscreenMode.value = !isFullscreenMode.value
+    }
+  }
 }
 
 const onAyahPointerCancel = () => {
